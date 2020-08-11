@@ -757,7 +757,7 @@ private:
 		}
 
 		
-		VkGraphicsPipelineCreateInfo pipelineInfo;
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
 		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		// Reference programmable stages
 		pipelineInfo.stageCount = 2;
@@ -782,8 +782,8 @@ private:
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		if(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create graphics pipeline!");
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create graphics pipeline!");
 		}
 		
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);

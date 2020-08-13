@@ -1,6 +1,11 @@
 ﻿#include "Renderer.h"
+
+#include <algorithm>
+#include <fstream>
 #include <set>
 #include <map>
+#include <stdexcept>
+#include <iostream>
 
 QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	QueueFamilyIndices indices;

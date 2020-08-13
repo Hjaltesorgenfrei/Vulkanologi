@@ -1,7 +1,9 @@
 ﻿#pragma once
 #define GLFW_INCLUDE_VULKAN
+#include <memory>
 #include <GLFW/glfw3.h>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include "Window.h"

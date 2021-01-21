@@ -2,9 +2,14 @@
 #define GLFW_INCLUDE_VULKAN
 #include <memory>
 #include <GLFW/glfw3.h>
+
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#include <vulkan/vulkan.hpp>
+
 #include <optional>
 #include <string>
 #include <vector>
+
 
 #include "Window.h"
 
@@ -30,52 +35,52 @@ struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
 
-	bool isComplete() const {
+	[[nodiscard]] bool isComplete() const {
 		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
 
 struct SwapChainSupportDetails {
-	VkSurfaceCapabilitiesKHR capabilities;
-	std::vector<VkSurfaceFormatKHR> formats;
-	std::vector<VkPresentModeKHR> presentModes;
+	vk::SurfaceCapabilitiesKHR capabilities;
+	std::vector<vk::SurfaceFormatKHR> formats;
+	std::vector<vk::PresentModeKHR> presentModes;
 };
 
-QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
+QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
 static std::vector<char> readFile(const std::string& filename);
 
 class Renderer {
 public:
 
-	VkInstance instance;
-	VkDebugUtilsMessengerEXT debugMessenger;
-	VkSurfaceKHR surface;
+	vk::Instance instance;
+	vk::DebugUtilsMessengerEXT debugMessenger;
+	vk::SurfaceKHR surface;
 
-	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-	VkDevice device;
+	vk::PhysicalDevice physicalDevice;
+	vk::Device device;
 
-	VkQueue presentQueue;
-	VkQueue graphicsQueue;
+	vk::Queue presentQueue;
+	vk::Queue graphicsQueue;
 
-	VkSwapchainKHR swapChain;
-	std::vector<VkImage> swapChainImages;
-	std::vector<VkImageView> swapChainImagesViews;
-	VkFormat swapChainImageFormat;
-	VkExtent2D swapChainExtent;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
+	vk::SwapchainKHR swapChain;
+	vk::Format swapChainImageFormat;
+	vk::Extent2D swapChainExtent;
+	std::vector<vk::Image> swapChainImages;
+	std::vector<vk::ImageView> swapChainImagesViews;
+	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
-	VkPipelineLayout pipelineLayout;
-	VkRenderPass renderPass;
-	VkPipeline graphicsPipeline;
+	vk::PipelineLayout pipelineLayout;
+	vk::RenderPass renderPass;
+	vk::Pipeline graphicsPipeline;
 
-	VkCommandPool commandPool;
-	std::vector<VkCommandBuffer> commandBuffers;
+	vk::CommandPool commandPool;
+	std::vector<vk::CommandBuffer> commandBuffers;
 
-	std::vector<VkSemaphore> imageAvailableSemaphores;
-	std::vector<VkSemaphore> renderFinishedSemaphores;
-	std::vector<VkFence> inFlightFences;
-	std::vector<VkFence> imagesInFlight;
+	std::vector<vk::Semaphore> imageAvailableSemaphores;
+	std::vector<vk::Semaphore> renderFinishedSemaphores;
+	std::vector<vk::Fence> inFlightFences;
+	std::vector<vk::Fence> imagesInFlight;
 	size_t currentFrame = 0;
 
 	Renderer(std::unique_ptr<Window> & window);
@@ -88,46 +93,46 @@ public:
 	std::vector<const char*> getRequiredExtensions();
 
 	bool validateExtensions(std::vector<const char*> extensions,
-	                        std::vector<VkExtensionProperties> supportedExtensions);
+	                        std::vector<vk::ExtensionProperties> supportedExtensions);
 
-	bool checkValidationLayerSupport();
+	bool checkValidationLayerSupport() const;
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		VkDebugUtilsMessageTypeFlagsEXT messageType,
-		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
+		vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		vk::DebugUtilsMessageTypeFlagsEXT messageType,
+		const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
 
 	void setupDebugMessenger();
 
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+	void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
 
-	VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	                                      const VkAllocationCallbacks* pAllocator,
-	                                      VkDebugUtilsMessengerEXT* pDebugMessenger);
+	vk::Result CreateDebugUtilsMessengerEXT(vk::Instance instance, const vk::DebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	                                      const vk::AllocationCallbacks* pAllocator,
+	                                      vk::DebugUtilsMessengerEXT* pDebugMessenger);
 
-	void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
-	                                   const VkAllocationCallbacks* pAllocator);
+	void DestroyDebugUtilsMessengerEXT(vk::Instance instance, vk::DebugUtilsMessengerEXT debugMessenger,
+	                                   const vk::AllocationCallbacks* pAllocator);
 
 	void createSurface(std::unique_ptr<Window>& window);
 
 	void pickPhysicalDevice();
 
-	int rateDeviceSuitability(VkPhysicalDevice device);
+	int rateDeviceSuitability(vk::PhysicalDevice device);
 
-	bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+	bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
 
-	SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+	SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
 
 	void createLogicalDevice();
 
 	void createSwapChain(std::unique_ptr<Window>& window);
 
-	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<struct VkSurfaceFormatKHR>& availableFormats);
+	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<struct vk::SurfaceFormatKHR>& availableFormats);
 
-	VkPresentModeKHR chooseSwapPresentMode(const std::vector<enum VkPresentModeKHR>& availablePresentModes);
+	vk::PresentModeKHR chooseSwapPresentMode(const std::vector<enum vk::PresentModeKHR>& availablePresentModes);
 
-	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window);
+	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window);
 
 	void createImageViews();
 
@@ -135,7 +140,7 @@ public:
 
 	void createGraphicsPipeline();
 
-	VkShaderModule createShaderModule(const std::vector<char>& code);
+	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
 	void createFramebuffers();
 

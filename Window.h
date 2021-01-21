@@ -12,9 +12,9 @@ public:
 	Window& operator=(const Window&) = delete;
 	Window(const Window&) = delete;
 
-	std::pair<int, int> getFramebufferSize();
-	GLFWwindow* getGLFWwindow() const;
+	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
+	[[nodiscard]] GLFWwindow* getGLFWwindow() const;
 
-	
-	bool windowShouldClose() const;
+
+	[[nodiscard]] bool windowShouldClose() const;
 };

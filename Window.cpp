@@ -1,6 +1,6 @@
 ﻿#include "Window.h"
 
-Window::Window(int width, int height, const char* title) {
+Window::Window(const int width, const int height, const char* title) {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -15,7 +15,7 @@ Window::~Window() {
 	glfwTerminate();
 }
 
-std::pair<int, int> Window::getFramebufferSize() {
+std::pair<int, int> Window::getFramebufferSize() const {
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 	return std::pair<int, int>(width, height);

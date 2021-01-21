@@ -56,13 +56,13 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-Renderer::Renderer(std::unique_ptr<Window>& window) {
+Renderer::Renderer(std::unique_ptr<Window>& window) {	
 	createInstance();
 	setupDebugMessenger();
 	createSurface(window);
 	pickPhysicalDevice();
 	createLogicalDevice();
-	createSwapChain();
+	createSwapChain(window);
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
@@ -409,12 +409,12 @@ void Renderer::createLogicalDevice() {
 	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void Renderer::createSwapChain() {
+void Renderer::createSwapChain(std::unique_ptr<Window>& window) {
 	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
 	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
 
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -489,12 +489,17 @@ VkPresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<enum VkPresen
 	return VK_PRESENT_MODE_FIFO_KHR; // Standard Vsync, Guaranteed by Vulkan to be available.
 }
 
-VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+VkExtent2D Renderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window) {
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	}
 	else {
-		VkExtent2D actualExtent = {WIDTH, HEIGHT};
+		const auto [width, height] = window->getFramebufferSize();
+		
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width,
 		                              std::min(capabilities.maxImageExtent.width, actualExtent.width));

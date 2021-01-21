@@ -9,8 +9,7 @@
 #include "Window.h"
 
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 const std::vector<const char*> validationLayers = {
@@ -122,13 +121,13 @@ public:
 
 	void createLogicalDevice();
 
-	void createSwapChain();
+	void createSwapChain(std::unique_ptr<Window>& window);
 
 	VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<struct VkSurfaceFormatKHR>& availableFormats);
 
 	VkPresentModeKHR chooseSwapPresentMode(const std::vector<enum VkPresentModeKHR>& availablePresentModes);
 
-	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window);
 
 	void createImageViews();
 

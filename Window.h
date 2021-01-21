@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <utility>
 #include <GLFW/glfw3.h>
 
 class Window {
@@ -11,7 +12,9 @@ public:
 	Window& operator=(const Window&) = delete;
 	Window(const Window&) = delete;
 
-	GLFWwindow* getGLFWwindow();
+	std::pair<int, int> getFramebufferSize();
+	GLFWwindow* getGLFWwindow() const;
+
 	
 	bool windowShouldClose() const;
 };

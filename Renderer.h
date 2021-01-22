@@ -3,7 +3,7 @@
 #include <memory>
 #include <GLFW/glfw3.h>
 
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS
+#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS // Version 145 at least
 #include <vulkan/vulkan.hpp>
 
 #include <optional>
@@ -53,12 +53,12 @@ static std::vector<char> readFile(const std::string& filename);
 class Renderer {
 public:
 
-	vk::Instance instance;
+	vk::UniqueInstance instance;
 	vk::DebugUtilsMessengerEXT debugMessenger;
 	vk::SurfaceKHR surface;
 
 	vk::PhysicalDevice physicalDevice;
-	vk::Device device;
+	vk::UniqueDevice device;
 
 	vk::Queue presentQueue;
 	vk::Queue graphicsQueue;
@@ -67,7 +67,7 @@ public:
 	vk::Format swapChainImageFormat;
 	vk::Extent2D swapChainExtent;
 	std::vector<vk::Image> swapChainImages;
-	std::vector<vk::ImageView> swapChainImagesViews;
+	std::vector<vk::ImageView> swapChainImageViews;
 	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
 	vk::PipelineLayout pipelineLayout;
@@ -97,21 +97,21 @@ public:
 
 	bool checkValidationLayerSupport() const;
 
-	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
-		vk::DebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-		vk::DebugUtilsMessageTypeFlagsEXT messageType,
-		const vk::DebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData);
 
 	void setupDebugMessenger();
 
 	void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
 
-	vk::Result CreateDebugUtilsMessengerEXT(vk::Instance instance, const vk::DebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	                                      const vk::AllocationCallbacks* pAllocator,
-	                                      vk::DebugUtilsMessengerEXT* pDebugMessenger);
+	vk::Result CreateDebugUtilsMessengerEXT(vk::UniqueInstance instance, const vk::DebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	                                        const vk::AllocationCallbacks* pAllocator,
+	                                        vk::DebugUtilsMessengerEXT* pDebugMessenger);
 
-	void DestroyDebugUtilsMessengerEXT(vk::Instance instance, vk::DebugUtilsMessengerEXT debugMessenger,
+	void DestroyDebugUtilsMessengerEXT(vk::UniqueInstance instance, vk::DebugUtilsMessengerEXT debugMessenger,
 	                                   const vk::AllocationCallbacks* pAllocator);
 
 	void createSurface(std::unique_ptr<Window>& window);

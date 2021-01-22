@@ -1,14 +1,11 @@
 ﻿#include "Renderer.h"
 
-
 #include <algorithm>
 #include <fstream>
 #include <set>
 #include <map>
 #include <stdexcept>
 #include <iostream>
-
-
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 	QueueFamilyIndices indices;
@@ -34,6 +31,24 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 	return indices;
 }
+
+VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pCallback) {
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	if (func != nullptr) {
+		return func(instance, pCreateInfo, pAllocator, pCallback);
+	}
+	else {
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
+	}
+}
+
+void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback, const VkAllocationCallbacks* pAllocator) {
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func != nullptr) {
+		func(instance, callback, pAllocator);
+	}
+}
+
 
 std::vector<char> readFile(const std::string& filename) {
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -114,8 +129,7 @@ void Renderer::createInstance() {
 	if (enableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
 		createInfo.ppEnabledLayerNames = validationLayers.data();
-
-		populateDebugMessengerCreateInfo(debugCreateInfo);
+		
 		createInfo.pNext = static_cast<vk::DebugUtilsMessengerCreateInfoEXT*>(&debugCreateInfo);
 	}
 	else {
@@ -127,8 +141,8 @@ void Renderer::createInstance() {
 	try {
 		instance = vk::createInstanceUnique(createInfo, nullptr);
 	}
-	catch (vk::SystemError err) {
-		throw std::runtime_error("Failed to create Vulkan Instance!");
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("Failed to create Vulkan Instance!") + err.what());
 	}
 
 }
@@ -211,17 +225,9 @@ void Renderer::setupDebugMessenger() {
 		.pfnUserCallback = debugCallback // I don't know if this works, it needs to be tested, as the types are not the same anymore
 	};
 
-	try {
-		debugMessenger = instance->createDebugUtilsMessengerEXT(createInfo);
+	if (createDebugUtilsMessengerEXT(*instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr, &debugMessenger) != VK_SUCCESS) {
+		throw std::runtime_error("failed to set up debug callback!");
 	}
-	catch (vk::SystemError e) {
-		throw std::runtime_error("failed to set up debug messenger!");
-	}
-}
-
-void Renderer::DestroyDebugUtilsMessengerEXT(vk::UniqueInstance instance, vk::DebugUtilsMessengerEXT debugMessenger,
-                                             const vk::AllocationCallbacks* pAllocator) {
-	instance->destroyDebugUtilsMessengerEXT(debugMessenger);
 }
 
 void Renderer::createSurface(std::unique_ptr<Window>& window) {
@@ -235,9 +241,9 @@ void Renderer::createSurface(std::unique_ptr<Window>& window) {
 }
 
 void Renderer::pickPhysicalDevice() {
-	auto devices = instance->enumeratePhysicalDevices();;
+	auto devices = instance->enumeratePhysicalDevices();
 
-	if (devices.size() == 0) {
+	if (devices.empty()) {
 		throw std::runtime_error("Failed to find GPUs with Vulkan Support!");
 	}
 
@@ -294,8 +300,8 @@ int Renderer::rateDeviceSuitability(vk::PhysicalDevice device) {
 	return score;
 }
 
-bool Renderer::checkDeviceExtensionSupport(vk::PhysicalDevice device) {
-	auto availableExtensions = device.enumerateDeviceExtensionProperties();
+bool Renderer::checkDeviceExtensionSupport(const vk::PhysicalDevice physicalDevice) {
+	auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
 	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 	for (const auto& extension : availableExtensions) {
@@ -353,8 +359,8 @@ void Renderer::createLogicalDevice() {
 	try {
 		device = physicalDevice.createDeviceUnique(createInfo);
 	}
-	catch (vk::SystemError) {
-		throw std::runtime_error("Failed to create logical device!");
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
 	}
 	
 	device->getQueue(indices.graphicsFamily.value(), 0, &graphicsQueue);
@@ -409,8 +415,8 @@ void Renderer::createSwapChain(std::unique_ptr<Window>& window) {
 	try {
 		swapChain = device->createSwapchainKHR(createInfo);
 	}
-	catch (vk::SystemError err) {
-		throw std::runtime_error("failed to create swap chain!");
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("failed to create swap chain!") + err.what());
 	}
 
 	swapChainImages = device->getSwapchainImagesKHR(swapChain);
@@ -491,8 +497,8 @@ void Renderer::createImageViews() {
 		try {
 			swapChainImageViews[i] = device->createImageView(createInfo);
 		}
-		catch (vk::SystemError err) {
-			throw std::runtime_error("failed to create image views!");
+		catch (vk::SystemError& err) {
+			throw std::runtime_error(std::string("failed to create image views!") + err.what());
 		}
 	}
 }
@@ -541,8 +547,8 @@ void Renderer::createRenderPass() {
 	try {
 		renderPass = device->createRenderPass(renderPassInfo);
 	}
-	catch (vk::SystemError err) {
-		throw std::runtime_error("failed to create render pass!");
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("failed to create render pass!") + err.what());
 	}
 
 }
@@ -651,8 +657,8 @@ void Renderer::createGraphicsPipeline() {
 	try {
 		pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
 	}
-	catch (vk::SystemError err) {
-		throw std::runtime_error("failed to create pipeline layout!");
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("failed to create pipeline layout!") + err.what());
 	}
 
 	
@@ -700,7 +706,7 @@ vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
 		shaderModule = device->createShaderModule(createInfo);
 	}
 	catch (vk::SystemError& err) {
-		throw std::runtime_error("Failed to create shader module!");
+		throw std::runtime_error(std::string("Failed to create shader module!") + err.what());
 	}
 
 	return shaderModule;
@@ -726,7 +732,7 @@ void Renderer::createFramebuffers() {
 			swapChainFramebuffers[i] = device->createFramebuffer(framebufferInfo);
 		}
 		catch (vk::SystemError& err) {
-			throw std::runtime_error("Failed to create framebuffer");
+			throw std::runtime_error(std::string("Failed to create framebuffer") + err.what());
 		}
 	}
 }
@@ -741,7 +747,7 @@ void Renderer::createCommandPool() {
 		commandPool = device->createCommandPool(poolInfo);
 	}
 	catch (vk::SystemError& err) {
-		throw std::runtime_error("Failed to create command pool!");
+		throw std::runtime_error(std::string("Failed to create command pool!") + err.what());
 	}
 }
 
@@ -758,7 +764,7 @@ void Renderer::createCommandBuffers() {
 		commandBuffers = device->allocateCommandBuffers(allocateInfo);
 	}
 	catch (vk::SystemError& err) {
-		throw std::runtime_error("failed to allocate command buffers");
+		throw std::runtime_error(std::string("failed to allocate command buffers") + err.what());
 	}
 
 	// Record to command buffers
@@ -769,7 +775,7 @@ void Renderer::createCommandBuffers() {
 			commandBuffers[i].begin(beginInfo);
 		}
 		catch (vk::SystemError& err) {
-			throw std::runtime_error("failed to begin recording command buffer!");
+			throw std::runtime_error(std::string("failed to begin recording command buffer!") + err.what());
 		}
 
 		vk::RenderPassBeginInfo renderPassInfo{
@@ -797,7 +803,7 @@ void Renderer::createCommandBuffers() {
 			commandBuffers[i].end();
 		}
 		catch (vk::SystemError& err) {
-			throw std::runtime_error("failed to record command buffer!");
+			throw std::runtime_error(std::string("failed to record command buffer!") + err.what());
 		}
 	}
 }
@@ -819,7 +825,7 @@ void Renderer::createSyncObjects() {
 			inFlightFences[i] = device->createFence(fenceInfo);
 		}
 	} catch (vk::SystemError& err) {
-		throw std::runtime_error("Failed to create synchronization objects for a frame!");
+		throw std::runtime_error(std::string("Failed to create synchronization objects for a frame!") + err.what());
 	}
 }
 
@@ -834,7 +840,7 @@ void Renderer::drawFrame() {
 	try {
 		imageIndex = device->acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr).value;
 	} catch (vk::SystemError& err) {
-		throw std::runtime_error("failed to acquire swap chain image!");
+		throw std::runtime_error(std::string("failed to acquire swap chain image!") + err.what());
 	}
 
 	if (imagesInFlight[imageIndex]) { // This might be buggy or an error, as it checked for null before
@@ -871,7 +877,7 @@ void Renderer::drawFrame() {
 		graphicsQueue.submit(submitInfo, inFlightFences[currentFrame]);
 	}
 	catch (vk::SystemError& err){
-		throw std::runtime_error("failed to submit draw command buffer");
+		throw std::runtime_error(std::string("failed to submit draw command buffer") + err.what());
 
 	}
 	
@@ -926,10 +932,11 @@ void Renderer::cleanup() {
 	
 
 	if (enableValidationLayers) {
-		instance->destroyDebugUtilsMessengerEXT(debugMessenger);
+		destroyDebugUtilsMessengerEXT(instance.get(), debugMessenger, nullptr);
 	}
 
 	instance->destroySurfaceKHR(surface);
 
+	
 }
 

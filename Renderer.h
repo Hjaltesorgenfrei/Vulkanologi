@@ -54,7 +54,7 @@ class Renderer {
 public:
 
 	vk::UniqueInstance instance;
-	vk::DebugUtilsMessengerEXT debugMessenger;
+	VkDebugUtilsMessengerEXT debugMessenger;
 	vk::SurfaceKHR surface;
 
 	vk::PhysicalDevice physicalDevice;
@@ -104,12 +104,6 @@ public:
 		void* pUserData);
 
 	void setupDebugMessenger();
-
-	void populateDebugMessengerCreateInfo(vk::DebugUtilsMessengerCreateInfoEXT& createInfo);
-
-	vk::Result CreateDebugUtilsMessengerEXT(vk::UniqueInstance instance, const vk::DebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-	                                        const vk::AllocationCallbacks* pAllocator,
-	                                        vk::DebugUtilsMessengerEXT* pDebugMessenger);
 
 	void DestroyDebugUtilsMessengerEXT(vk::UniqueInstance instance, vk::DebugUtilsMessengerEXT debugMessenger,
 	                                   const vk::AllocationCallbacks* pAllocator);

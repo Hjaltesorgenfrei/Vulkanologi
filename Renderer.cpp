@@ -97,10 +97,24 @@ void Renderer::createInstance() {
 		.apiVersion = VK_API_VERSION_1_0
 	};
 
+
+	
 	vk::InstanceCreateInfo createInfo{
-		.pApplicationInfo = &appInfo
+		
+		.pApplicationInfo = &appInfo,
 	};
 
+	// Enable validation of best practices
+	if (enableValidationLayers) {
+		vk::ValidationFeatureEnableEXT enables[] = { vk::ValidationFeatureEnableEXT::eBestPractices };
+		vk::ValidationFeaturesEXT features = {
+			.sType = vk::StructureType::eValidationFeaturesEXT,
+			.enabledValidationFeatureCount = 1,
+			.pEnabledValidationFeatures = enables
+		};
+		createInfo.pNext = &features;
+	}
+	
 
 	auto extensions = getRequiredExtensions();
 	createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());

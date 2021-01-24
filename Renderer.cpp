@@ -68,13 +68,15 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-Renderer::Renderer(std::unique_ptr<Window>& window) {
+Renderer::Renderer(std::shared_ptr<Window>& window) {
+	this->window = window;
+	
 	createInstance();
 	setupDebugMessenger();
-	createSurface(window);
+	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
-	createSwapChain(window);
+	createSwapChain();
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
@@ -244,7 +246,7 @@ void Renderer::setupDebugMessenger() {
 	}
 }
 
-void Renderer::createSurface(std::unique_ptr<Window>& window) {
+void Renderer::createSurface() {
 	VkSurfaceKHR rawSurface;
 
 	if (glfwCreateWindowSurface(*instance, window->getGLFWwindow(), nullptr, &rawSurface) != VK_SUCCESS) { // Ugly c :(
@@ -381,12 +383,12 @@ void Renderer::createLogicalDevice() {
 	device->getQueue(indices.presentFamily.value(), 0, &presentQueue);
 }
 
-void Renderer::createSwapChain(std::unique_ptr<Window>& window) {
+void Renderer::createSwapChain() {
 	const SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
 	const vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 	const vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-	const vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities, window);
+	const vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
 	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
 	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
@@ -439,6 +441,46 @@ void Renderer::createSwapChain(std::unique_ptr<Window>& window) {
 	swapChainExtent = extent;
 }
 
+void Renderer::cleanupSwapChain() {
+	for (const auto framebuffer : swapChainFramebuffers) {
+		device->destroyFramebuffer(framebuffer);
+	}
+
+	device->freeCommandBuffers(commandPool, commandBuffers);
+
+	device->destroyPipeline(graphicsPipeline);
+	device->destroyPipelineLayout(pipelineLayout);
+	device->destroyRenderPass(renderPass);
+
+	for (const auto imageView : swapChainImageViews) {
+		device->destroyImageView(imageView);
+	}
+
+	device->destroySwapchainKHR(swapChain);
+}
+
+void Renderer::recreateSwapchain() {
+	int width = 0, height = 0;
+	auto glfwWindow = window->getGLFWwindow();
+	glfwGetFramebufferSize(glfwWindow, &width, &height);
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(glfwWindow, &width, &height);
+		glfwWaitEvents();
+	}
+	
+	device->waitIdle(); // Has to wait for rendering to finish before creating new swapchain. Better solutions exists.
+	
+	cleanupSwapChain();
+
+	createSwapChain();
+	createImageViews();
+	createRenderPass();
+	createGraphicsPipeline();
+	createFramebuffers();
+	createCommandBuffers();
+	std::cout << "Recreated swapchain" << std::endl;
+}
+
 vk::SurfaceFormatKHR Renderer::chooseSwapSurfaceFormat(const std::vector<struct vk::SurfaceFormatKHR>& availableFormats) {
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == vk::Format::eB8G8R8A8Srgb && availableFormat.colorSpace ==
@@ -462,13 +504,15 @@ vk::PresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<enum vk::Pr
 	return vk::PresentModeKHR::eFifo; // Standard Vsync, Guaranteed by Vulkan to be available.
 }
 
-vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window) {
+vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
+	std::cout << "owidth: " << capabilities.currentExtent.width << ", oheight: " << capabilities.currentExtent.height << "\n";
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	}
 	else {
 		const auto [width, height] = window->getFramebufferSize();
-
+		std::cout << "width: " << width << ", height: " << height << "\n";
+		
 		vk::Extent2D actualExtent = {
 			static_cast<uint32_t>(width),
 			static_cast<uint32_t>(height)
@@ -853,13 +897,36 @@ void Renderer::drawFrame() {
 
 	uint32_t imageIndex;
 	try {
-		imageIndex = device->acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr).value;
+		const auto acquired = 
+			device->acquireNextImageKHR(swapChain, 
+			std::numeric_limits<uint64_t>::max(), 
+				imageAvailableSemaphores[currentFrame], 
+				nullptr);
+		
+		switch(acquired.result) {
+			case vk::Result::eSuccess:
+			case vk::Result::eSuboptimalKHR: // Swap chain is still valid, but surface properties are a miss match
+				imageIndex = acquired.value; 
+				break;
+			case vk::Result::eErrorOutOfDateKHR:
+				recreateSwapchain();
+
+				return;
+			default:
+				throw std::runtime_error("failed to acquire swap chain image!");
+		}
+		
+		
+	}
+	catch (vk::OutOfDateKHRError err) { // https://github.com/KhronosGroup/Vulkan-Hpp/issues/599
+		recreateSwapchain();
+		return;
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to acquire swap chain image!") + err.what());
 	}
 
-	if (imagesInFlight[imageIndex]) { // This might be buggy or an error, as it checked for null before
+	if (imagesInFlight[imageIndex]) {
 		while (device->waitForFences(imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max())
 			== vk::Result::eTimeout) {
 			// Wait
@@ -898,7 +965,7 @@ void Renderer::drawFrame() {
 	}
 
 	vk::SwapchainKHR swapChains[] = { swapChain };
-	vk::PresentInfoKHR presentInfo {
+	const vk::PresentInfoKHR presentInfo {
 
 		.waitSemaphoreCount = 1,
 		.pWaitSemaphores = signalSemaphores,
@@ -908,13 +975,25 @@ void Renderer::drawFrame() {
 		.pImageIndices = &imageIndex,
 	};
 
-	switch (presentQueue.presentKHR(presentInfo)) {
-	case vk::Result::eSuccess: break;
-	case vk::Result::eSuboptimalKHR:
-		std::cout << "vk::Queue::presentKHR returned vk::Result::eSuboptimalKHR !\n";
-		break;
-	default: assert(false);  // an unexpected result is returned !
+	try {
+		switch (presentQueue.presentKHR(presentInfo)) {
+		case vk::Result::eSuccess:
+			if (framebufferResized) {
+				recreateSwapchain();
+				framebufferResized = false;
+			}
+			break;
+		case vk::Result::eSuboptimalKHR:
+		case vk::Result::eErrorOutOfDateKHR: // What we would like to do :) But it's actually an exception
+			recreateSwapchain();
+			break;
+		default:
+			throw std::runtime_error("failed to present swap chain image!");  // an unexpected result is returned!
+		}
+	} catch (vk::OutOfDateKHRError err) {
+		recreateSwapchain();		
 	}
+	
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -930,22 +1009,9 @@ void Renderer::cleanup() {
 		device->destroyFence(inFlightFences[i]);
 	}
 
+	cleanupSwapChain();
+	
 	device->destroyCommandPool(commandPool);
-
-	for (const auto framebuffer : swapChainFramebuffers) {
-		device->destroyFramebuffer(framebuffer);
-	}
-
-	device->destroyPipeline(graphicsPipeline);
-	device->destroyPipelineLayout(pipelineLayout);
-	device->destroyRenderPass(renderPass);
-
-	for (const auto imageView : swapChainImageViews) {
-		device->destroyImageView(imageView);
-	}
-
-	device->destroySwapchainKHR(swapChain);
-
 
 	if (enableValidationLayers) {
 		destroyDebugUtilsMessengerEXT(instance.get(), debugMessenger, nullptr);

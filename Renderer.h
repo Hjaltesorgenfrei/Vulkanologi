@@ -52,7 +52,8 @@ static std::vector<char> readFile(const std::string& filename);
 
 class Renderer {
 public:
-
+	std::shared_ptr<Window> window;
+	
 	vk::UniqueInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	vk::SurfaceKHR surface;
@@ -83,7 +84,9 @@ public:
 	std::vector<vk::Fence> imagesInFlight;
 	size_t currentFrame = 0;
 
-	Renderer(std::unique_ptr<Window> & window);
+	bool framebufferResized = false;
+
+	Renderer(std::shared_ptr<Window> & window);
 	~Renderer();
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const Renderer&) = delete;
@@ -108,7 +111,7 @@ public:
 	void DestroyDebugUtilsMessengerEXT(vk::UniqueInstance instance, vk::DebugUtilsMessengerEXT debugMessenger,
 	                                   const vk::AllocationCallbacks* pAllocator);
 
-	void createSurface(std::unique_ptr<Window>& window);
+	void createSurface();
 
 	void pickPhysicalDevice();
 
@@ -120,13 +123,17 @@ public:
 
 	void createLogicalDevice();
 
-	void createSwapChain(std::unique_ptr<Window>& window);
+	void createSwapChain();
+
+	void cleanupSwapChain();
+
+	void recreateSwapchain();
 
 	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<struct vk::SurfaceFormatKHR>& availableFormats);
 
 	vk::PresentModeKHR chooseSwapPresentMode(const std::vector<enum vk::PresentModeKHR>& availablePresentModes);
 
-	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, std::unique_ptr<Window>& window);
+	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
 

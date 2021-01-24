@@ -179,7 +179,7 @@ glslc shaders/shader.frag -o shaders/frag.spv</Command>
   <ItemGroup>
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="VulkanDevice.cpp" />
-    <ClCompile Include="VulkanTut.cpp" />
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -187,6 +187,7 @@ glslc shaders/shader.frag -o shaders/frag.spv</Command>
     <None Include="shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Application.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="Window.h" />

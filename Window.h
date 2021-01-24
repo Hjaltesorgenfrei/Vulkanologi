@@ -2,16 +2,20 @@
 #include <utility>
 #include <GLFW/glfw3.h>
 
+class App;
+
 class Window {
 private:
 	GLFWwindow* window;
+	
 
-public:
-	Window(int width, int height, const char* title);
+public:	
+	Window(int width, int height, const char* title, App* app);
 	~Window();
 	Window& operator=(const Window&) = delete;
 	Window(const Window&) = delete;
 
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
 	[[nodiscard]] GLFWwindow* getGLFWwindow() const;
 

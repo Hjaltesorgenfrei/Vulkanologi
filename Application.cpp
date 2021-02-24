@@ -22,15 +22,6 @@ void App::run() {
 	mainLoop();
 }
 
-void App::windowResized() {
-	renderer->framebufferResized = true;
-	renderer->drawFrame();
-}
-
-void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-
-}
-
 void App::mainLoop() {
 	while (!window->windowShouldClose()) {
 		glfwPollEvents();

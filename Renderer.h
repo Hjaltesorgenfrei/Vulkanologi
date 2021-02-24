@@ -82,9 +82,15 @@ public:
 	std::vector<vk::Semaphore> renderFinishedSemaphores;
 	std::vector<vk::Fence> inFlightFences;
 	std::vector<vk::Fence> imagesInFlight;
+
+	vk::Buffer vertexBuffer;
+	vk::DeviceMemory vertexBufferMemory;
+	
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
+
+
 
 	Renderer(std::shared_ptr<Window> & window);
 	~Renderer();
@@ -146,7 +152,10 @@ public:
 	void createFramebuffers();
 
 	void createCommandPool();
+	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
+	void createVertexBuffer();
+	
 	void createCommandBuffers();
 
 	void createSyncObjects();
@@ -155,4 +164,7 @@ public:
 
 	void cleanup();
 
+	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+
+	void createResizeCallback();
 };

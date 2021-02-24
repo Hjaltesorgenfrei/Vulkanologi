@@ -14,8 +14,7 @@ public:
 	~Window();
 	Window& operator=(const Window&) = delete;
 	Window(const Window&) = delete;
-
-	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+	
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
 	[[nodiscard]] GLFWwindow* getGLFWwindow() const;
 

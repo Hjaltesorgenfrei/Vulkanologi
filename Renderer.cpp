@@ -1,4 +1,5 @@
 ﻿#include "Renderer.h"
+#include "Vertice.h"
 
 #include <algorithm>
 #include <fstream>
@@ -6,6 +7,7 @@
 #include <map>
 #include <stdexcept>
 #include <iostream>
+
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 	QueueFamilyIndices indices;
@@ -82,8 +84,11 @@ Renderer::Renderer(std::shared_ptr<Window>& window) {
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createVertexBuffer();
 	createCommandBuffers();
 	createSyncObjects();
+	createResizeCallback();
+
 }
 
 Renderer::~Renderer() {
@@ -630,11 +635,14 @@ void Renderer::createGraphicsPipeline() {
 	};
 	vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
+	auto bindingDescriptions = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+	
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
-		.vertexBindingDescriptionCount = 0,
-		.pVertexBindingDescriptions = nullptr,
-		.vertexAttributeDescriptionCount = 0,
-		.pVertexAttributeDescriptions = nullptr,
+		.vertexBindingDescriptionCount = 1,
+		.pVertexBindingDescriptions = &bindingDescriptions,
+		.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+		.pVertexAttributeDescriptions = attributeDescriptions.data(),
 	};
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
@@ -809,6 +817,51 @@ void Renderer::createCommandPool() {
 	}
 }
 
+uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const {
+	vk::PhysicalDeviceMemoryProperties memoryProperties;
+	physicalDevice.getMemoryProperties(&memoryProperties);
+
+	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+		if (typeFilter & (1 << i) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
+}
+
+void Renderer::createVertexBuffer() {
+	vk::BufferCreateInfo bufferInfo{
+		.size = sizeof(vertices[0]) * vertices.size(),
+		.usage = vk::BufferUsageFlagBits::eVertexBuffer,
+		.sharingMode = vk::SharingMode::eExclusive,
+	};
+
+	if(device->createBuffer(&bufferInfo, nullptr, &vertexBuffer) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to create vertex buffer!");
+	}
+
+	vk::MemoryRequirements memoryRequirements;
+	device->getBufferMemoryRequirements(vertexBuffer, &memoryRequirements);
+
+	vk::MemoryAllocateInfo allocateInfo{
+		.allocationSize = memoryRequirements.size,
+		.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits,
+			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+	};
+
+	if(device->allocateMemory(&allocateInfo, nullptr, &vertexBufferMemory) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to allocate vertex buffer memory!");
+	}
+
+	// If memory allocation was successful we can bind it to the buffer
+	device->bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+
+	void* data = device->mapMemory(vertexBufferMemory, 0, bufferInfo.size);
+		memcpy(data, vertices.data(), static_cast<size_t>(bufferInfo.size));
+	device->unmapMemory(vertexBufferMemory);
+}
+
 void Renderer::createCommandBuffers() {
 	commandBuffers.resize(swapChainFramebuffers.size());
 
@@ -853,6 +906,10 @@ void Renderer::createCommandBuffers() {
 			//Add commands to buffer
 			commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
+			vk::Buffer vertexBuffers[] = { vertexBuffer };
+			vk::DeviceSize offsets[] = { 0 };
+			commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+			
 			commandBuffers[i].draw(3, 1, 0, 0);
 		}
 		commandBuffers[i].endRenderPass();
@@ -1010,6 +1067,9 @@ void Renderer::cleanup() {
 	}
 
 	cleanupSwapChain();
+
+	device->destroyBuffer(vertexBuffer, nullptr);
+	device->freeMemory(vertexBufferMemory, nullptr);
 	
 	device->destroyCommandPool(commandPool);
 
@@ -1020,5 +1080,15 @@ void Renderer::cleanup() {
 	instance->destroySurfaceKHR(surface);
 
 
+}
+
+void Renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+	auto* const render = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
+	render->framebufferResized = true;
+}
+
+void Renderer::createResizeCallback() {
+	glfwSetWindowUserPointer(window->getGLFWwindow(), this);
+	glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
 }
 

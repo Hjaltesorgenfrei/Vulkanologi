@@ -111,7 +111,7 @@ glslc shaders/shader.frag -o shaders/frag.spv</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\libs\glfw-3.3.2.bin.WIN64\include;D:\libs\VulkanSDK\1.2.162.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\glfw-3.3.2.bin.WIN64\include;D:\libs\VulkanSDK\1.2.162.1\Include;D:\libs\VulkanSDK\1.2.162.1\Third-Party\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -160,7 +160,7 @@ glslc shaders/shader.frag -o shaders/frag.spv</Command>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>D:\libs\glfw-3.3.2.bin.WIN64\include;D:\libs\VulkanSDK\1.2.162.1\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\libs\glfw-3.3.2.bin.WIN64\include;D:\libs\VulkanSDK\1.2.162.1\Include;D:\libs\VulkanSDK\1.2.162.1\Third-Party\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
@@ -189,6 +189,7 @@ glslc shaders/shader.frag -o shaders/frag.spv</Command>
   <ItemGroup>
     <ClInclude Include="Application.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Vertice.h" />
     <ClInclude Include="VulkanDevice.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

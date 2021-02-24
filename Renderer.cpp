@@ -90,6 +90,7 @@ Renderer::Renderer(std::shared_ptr<Window>& window) {
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffer();
+	createIndexBuffer();
 	createCommandBuffers();
 	createSyncObjects();
 	createResizeCallback();
@@ -388,7 +389,8 @@ void Renderer::createLogicalDevice() {
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
 	}
-
+	graphicsQueueIndex = indices.graphicsFamily.value();
+	transferQueueIndex = indices.transferFamily.value();
 	device->getQueue(indices.graphicsFamily.value(), 0, &graphicsQueue);
 	device->getQueue(indices.presentFamily.value(), 0, &presentQueue);
 	device->getQueue(indices.transferFamily.value(), 0, &transferQueue);
@@ -847,36 +849,136 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void Renderer::createVertexBuffer() {
-	vk::BufferCreateInfo bufferInfo{
-		.size = sizeof(vertices[0]) * vertices.size(),
-		.usage = vk::BufferUsageFlagBits::eVertexBuffer,
+void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
+	vk::Buffer& buffer, vk::DeviceMemory& bufferMemory) {
+
+	std::array<uint32_t, 2> allowedQueueIndices { graphicsQueueIndex, transferQueueIndex };
+	vk::BufferCreateInfo bufferInfo {
+		.size = size,
+		.usage = usage,
 		.sharingMode = vk::SharingMode::eConcurrent,
+		.queueFamilyIndexCount = allowedQueueIndices.size(),
+		.pQueueFamilyIndices = allowedQueueIndices.data()
 	};
 
-	if(device->createBuffer(&bufferInfo, nullptr, &vertexBuffer) != vk::Result::eSuccess) {
+	if (device->createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create vertex buffer!");
 	}
 
 	vk::MemoryRequirements memoryRequirements;
-	device->getBufferMemoryRequirements(vertexBuffer, &memoryRequirements);
+	device->getBufferMemoryRequirements(buffer, &memoryRequirements);
 
-	vk::MemoryAllocateInfo allocateInfo{
+	vk::MemoryAllocateInfo allocateInfo {
 		.allocationSize = memoryRequirements.size,
-		.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits,
-			vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent)
+		.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties)
 	};
 
-	if(device->allocateMemory(&allocateInfo, nullptr, &vertexBufferMemory) != vk::Result::eSuccess) {
+	if (device->allocateMemory(&allocateInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to allocate vertex buffer memory!");
 	}
 
 	// If memory allocation was successful we can bind it to the buffer
-	device->bindBufferMemory(vertexBuffer, vertexBufferMemory, 0);
+	device->bindBufferMemory(buffer, bufferMemory, 0);
+}
 
-	void* data = device->mapMemory(vertexBufferMemory, 0, bufferInfo.size);
-		memcpy(data, vertices.data(), static_cast<size_t>(bufferInfo.size));
-	device->unmapMemory(vertexBufferMemory);
+void Renderer::createIndexBuffer() {
+	vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	vk::Buffer stagingBuffer;
+	vk::DeviceMemory stagingBufferMemory;
+	createBuffer(
+		bufferSize,
+		vk::BufferUsageFlagBits::eTransferSrc,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		stagingBuffer,
+		stagingBufferMemory
+	);
+
+	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
+	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+	device->unmapMemory(stagingBufferMemory);
+
+	createBuffer(
+		bufferSize,
+		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		indexBuffer,
+		indexBufferMemory
+	);
+
+	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+	device->destroyBuffer(stagingBuffer, nullptr);
+	device->freeMemory(stagingBufferMemory, nullptr);
+}
+
+void Renderer::createVertexBuffer() {
+	vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+	vk::Buffer stagingBuffer;
+	vk::DeviceMemory stagingBufferMemory;
+
+	createBuffer(
+		bufferSize,
+		vk::BufferUsageFlagBits::eTransferSrc,
+		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		stagingBuffer,
+		stagingBufferMemory
+	);
+	
+	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
+		memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+	device->unmapMemory(stagingBufferMemory);
+
+	createBuffer(
+		bufferSize,
+		vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
+		vk::MemoryPropertyFlagBits::eDeviceLocal,
+		vertexBuffer,
+		vertexBufferMemory
+	);
+
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+	device->destroyBuffer(stagingBuffer, nullptr);
+	device->freeMemory(stagingBufferMemory, nullptr);
+}
+
+void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
+	vk::CommandBufferAllocateInfo allocateInfo {
+		.commandPool = transferCommandPool,
+		.level = vk::CommandBufferLevel::ePrimary,
+		.commandBufferCount = 1
+	};
+
+	vk::CommandBuffer commandBuffer;
+	if(device->allocateCommandBuffers(&allocateInfo, &commandBuffer) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to copy command buffer!");
+	}
+
+	vk::CommandBufferBeginInfo beginInfo {
+		.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+	};
+	commandBuffer.begin(beginInfo);
+	{
+		vk::BufferCopy copyRegion{
+			.srcOffset = 0,
+			.dstOffset = 0,
+			.size = size
+		};
+		commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
+	}
+	commandBuffer.end();
+
+	vk::SubmitInfo submitInfo{
+		.commandBufferCount = 1,
+		.pCommandBuffers = &commandBuffer
+	};
+	
+	if (transferQueue.submit(1, &submitInfo, nullptr) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to copy command buffer!");
+	}
+	transferQueue.waitIdle();
+
+	device->freeCommandBuffers(transferCommandPool, 1, &commandBuffer);
 }
 
 void Renderer::createCommandBuffers() {
@@ -926,8 +1028,10 @@ void Renderer::createCommandBuffers() {
 			vk::Buffer vertexBuffers[] = { vertexBuffer };
 			vk::DeviceSize offsets[] = { 0 };
 			commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+
+			commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
 			
-			commandBuffers[i].draw(3, 1, 0, 0);
+			commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 		}
 		commandBuffers[i].endRenderPass();
 
@@ -1085,10 +1189,14 @@ void Renderer::cleanup() {
 
 	cleanupSwapChain();
 
+	device->destroyBuffer(indexBuffer, nullptr);
+	device->freeMemory(indexBufferMemory, nullptr);
+	
 	device->destroyBuffer(vertexBuffer, nullptr);
 	device->freeMemory(vertexBufferMemory, nullptr);
 	
 	device->destroyCommandPool(commandPool);
+	device->destroyCommandPool(transferCommandPool);
 
 	if (enableValidationLayers) {
 		destroyDebugUtilsMessengerEXT(instance.get(), debugMessenger, nullptr);

@@ -88,11 +88,14 @@ public:
 
 	vk::Buffer vertexBuffer;
 	vk::DeviceMemory vertexBufferMemory;
+	vk::Buffer indexBuffer;
+	vk::DeviceMemory indexBufferMemory;
 	
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
-	
+	uint32_t graphicsQueueIndex;
+	uint32_t transferQueueIndex;
 
 
 	Renderer(std::shared_ptr<Window> & window);
@@ -156,9 +159,13 @@ public:
 
 	void createCommandPool();
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
+	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
+	void createIndexBuffer();
 
 	void createVertexBuffer();
-	
+	void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
+
 	void createCommandBuffers();
 
 	void createSyncObjects();

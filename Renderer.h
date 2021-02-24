@@ -34,9 +34,10 @@ const bool enableValidationLayers = true;
 struct QueueFamilyIndices {
 	std::optional<uint32_t> graphicsFamily;
 	std::optional<uint32_t> presentFamily;
+	std::optional<uint32_t> transferFamily;
 
 	[[nodiscard]] bool isComplete() const {
-		return graphicsFamily.has_value() && presentFamily.has_value();
+		return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
 	}
 };
 
@@ -63,6 +64,7 @@ public:
 
 	vk::Queue presentQueue;
 	vk::Queue graphicsQueue;
+	vk::Queue transferQueue;
 
 	vk::SwapchainKHR swapChain;
 	vk::Format swapChainImageFormat;
@@ -76,6 +78,7 @@ public:
 	vk::Pipeline graphicsPipeline;
 
 	vk::CommandPool commandPool;
+	vk::CommandPool transferCommandPool;
 	std::vector<vk::CommandBuffer> commandBuffers;
 
 	std::vector<vk::Semaphore> imageAvailableSemaphores;
@@ -89,7 +92,7 @@ public:
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
-
+	
 
 
 	Renderer(std::shared_ptr<Window> & window);

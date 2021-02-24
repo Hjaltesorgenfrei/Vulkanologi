@@ -16,13 +16,18 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 	int i = 0;
 	for (const auto& queueFamily : queueFamilies) {
-
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+		// documentation of VkQueueFamilyProperties states that "Each queue family must support at least one queue".
+		
+		if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
 			indices.graphicsFamily = i;
 		}
 
-		if (queueFamily.queueCount > 0 && device.getSurfaceSupportKHR(i, surface)) {
+		if (device.getSurfaceSupportKHR(i, surface)) {
 			indices.presentFamily = i;
+		}
+
+		if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer && !(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)) {
+			indices.transferFamily = i;
 		}
 
 		if (indices.isComplete()) {
@@ -346,7 +351,7 @@ void Renderer::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
 
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -386,6 +391,7 @@ void Renderer::createLogicalDevice() {
 
 	device->getQueue(indices.graphicsFamily.value(), 0, &graphicsQueue);
 	device->getQueue(indices.presentFamily.value(), 0, &presentQueue);
+	device->getQueue(indices.transferFamily.value(), 0, &transferQueue);
 }
 
 void Renderer::createSwapChain() {
@@ -813,7 +819,18 @@ void Renderer::createCommandPool() {
 		commandPool = device->createCommandPool(poolInfo);
 	}
 	catch (vk::SystemError& err) {
-		throw std::runtime_error(std::string("Failed to create command pool!") + err.what());
+		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
+	}
+
+	const vk::CommandPoolCreateInfo transferPoolInfo {
+		.queueFamilyIndex = queueFamilyIndices.transferFamily.value(),
+	};
+
+	try {
+		transferCommandPool = device->createCommandPool(transferPoolInfo);
+	}
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
 	}
 }
 
@@ -834,7 +851,7 @@ void Renderer::createVertexBuffer() {
 	vk::BufferCreateInfo bufferInfo{
 		.size = sizeof(vertices[0]) * vertices.size(),
 		.usage = vk::BufferUsageFlagBits::eVertexBuffer,
-		.sharingMode = vk::SharingMode::eExclusive,
+		.sharingMode = vk::SharingMode::eConcurrent,
 	};
 
 	if(device->createBuffer(&bufferInfo, nullptr, &vertexBuffer) != vk::Result::eSuccess) {

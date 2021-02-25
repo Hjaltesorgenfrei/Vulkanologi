@@ -73,6 +73,9 @@ public:
 	std::vector<vk::ImageView> swapChainImageViews;
 	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
+	vk::DescriptorSetLayout descriptorSeyLayout;
+	std::vector<vk::DescriptorSet> descriptorSets;
+	vk::DescriptorPool descriptorPool;
 	vk::PipelineLayout pipelineLayout;
 	vk::RenderPass renderPass;
 	vk::Pipeline graphicsPipeline;
@@ -90,6 +93,9 @@ public:
 	vk::DeviceMemory vertexBufferMemory;
 	vk::Buffer indexBuffer;
 	vk::DeviceMemory indexBufferMemory;
+
+	std::vector<vk::Buffer> uniformBuffers;
+	std::vector<vk::DeviceMemory> uniformBuffersMemory;
 	
 	size_t currentFrame = 0;
 
@@ -98,6 +104,7 @@ public:
 	uint32_t transferQueueIndex;
 
 
+	
 	Renderer(std::shared_ptr<Window> & window);
 	~Renderer();
 	Renderer& operator=(const Renderer&) = delete;
@@ -150,6 +157,7 @@ public:
 	void createImageViews();
 
 	void createRenderPass();
+	void createDescriptorSetLayout();
 
 	void createGraphicsPipeline();
 
@@ -164,11 +172,15 @@ public:
 	void createIndexBuffer();
 
 	void createVertexBuffer();
+	void createUniformBuffers();
+	void createDescriptorPool();
+	void createDescriptorSets();
 	void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
 	void createCommandBuffers();
 
 	void createSyncObjects();
+	void updateUniformBuffer(uint32_t currentImage);
 
 	void drawFrame();
 

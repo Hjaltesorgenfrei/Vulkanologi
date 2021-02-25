@@ -900,7 +900,7 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 		.size = size,
 		.usage = usage,
 		.sharingMode = vk::SharingMode::eConcurrent,
-		.queueFamilyIndexCount = allowedQueueIndices.size(),
+		.queueFamilyIndexCount = static_cast<uint32_t>(allowedQueueIndices.size()),
 		.pQueueFamilyIndices = allowedQueueIndices.data()
 	};
 

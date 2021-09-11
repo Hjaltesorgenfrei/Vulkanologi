@@ -80,7 +80,7 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-Renderer::Renderer(std::shared_ptr<Window>& window) {
+Renderer::Renderer(std::shared_ptr<WindowWrapper>& window) {
 	this->window = window;
 	
 	createInstance();
@@ -116,7 +116,7 @@ void Renderer::createInstance() {
 		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
 		.pEngineName = "No Engine",
 		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
-		.apiVersion = VK_API_VERSION_1_0
+		.apiVersion = VK_API_VERSION_1_1
 	};
 
 
@@ -539,7 +539,7 @@ vk::PresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<enum vk::Pr
 }
 
 vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
-	std::cout << "owidth: " << capabilities.currentExtent.width << ", oheight: " << capabilities.currentExtent.height << "\n";
+	std::cout << "width: " << capabilities.currentExtent.width << ", height: " << capabilities.currentExtent.height << "\n";
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	}
@@ -666,20 +666,20 @@ void Renderer::createDescriptorSetLayout() {
 }
 
 void Renderer::createGraphicsPipeline() {
-	auto vertShaderCode = readFile("shaders/vert.spv");
-	auto fragShaderCode = readFile("shaders/frag.spv");
+	auto vertShaderCode = readFile("src/shaders/vert.spv");
+	auto fragShaderCode = readFile("src/shaders/frag.spv");
 
 	auto vertShaderModule = createShaderModule(vertShaderCode);
 	auto fragShaderModule = createShaderModule(fragShaderCode);
 
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
 		.stage = vk::ShaderStageFlagBits::eVertex,
-		.shaderModule = vertShaderModule,
+		.module = vertShaderModule,
 		.pName = "main"
 	};
 	vk::PipelineShaderStageCreateInfo fragShaderStageInfo {
 		.stage = vk::ShaderStageFlagBits::eFragment,
-		.shaderModule = fragShaderModule,
+		.module = fragShaderModule,
 		.pName = "main"
 	};
 	vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };

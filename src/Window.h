@@ -4,16 +4,16 @@
 
 class App;
 
-class Window {
+class WindowWrapper {
 private:
 	GLFWwindow* window;
 	
 
 public:	
-	Window(int width, int height, const char* title, App* app);
-	~Window();
-	Window& operator=(const Window&) = delete;
-	Window(const Window&) = delete;
+	WindowWrapper(int width, int height, const char* title, App* app);
+	~WindowWrapper();
+	WindowWrapper& operator=(const WindowWrapper&) = delete;
+	WindowWrapper(const WindowWrapper&) = delete;
 	
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
 	[[nodiscard]] GLFWwindow* getGLFWwindow() const;

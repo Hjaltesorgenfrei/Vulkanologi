@@ -3,7 +3,7 @@
 #include "Application.h"
 
 
-Window::Window(const int width, const int height, const char* title, App* app) {
+WindowWrapper::WindowWrapper(const int width, const int height, const char* title, App* app) {
 	glfwInit();
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -13,22 +13,22 @@ Window::Window(const int width, const int height, const char* title, App* app) {
 
 }
 
-Window::~Window() {
+WindowWrapper::~WindowWrapper() {
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
 }
 
-std::pair<int, int> Window::getFramebufferSize() const {
+std::pair<int, int> WindowWrapper::getFramebufferSize() const {
 	int width, height;
 	glfwGetFramebufferSize(window, &width, &height);
 	return std::pair<int, int>(width, height);
 }
 
-GLFWwindow* Window::getGLFWwindow() const {
+GLFWwindow* WindowWrapper::getGLFWwindow() const {
 	return window;
 }
 
-bool Window::windowShouldClose() const {
+bool WindowWrapper::windowShouldClose() const {
 	return glfwWindowShouldClose(window);
 }

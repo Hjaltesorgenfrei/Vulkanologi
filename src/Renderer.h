@@ -49,11 +49,11 @@ struct SwapChainSupportDetails {
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
-static std::vector<char> readFile(const std::string& filename);
+std::vector<char> readFile(const std::string& filename);
 
 class Renderer {
 public:
-	std::shared_ptr<Window> window;
+	std::shared_ptr<WindowWrapper> window;
 	
 	vk::UniqueInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -105,7 +105,7 @@ public:
 
 
 	
-	Renderer(std::shared_ptr<Window> & window);
+	Renderer(std::shared_ptr<WindowWrapper> & window);
 	~Renderer();
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const Renderer&) = delete;

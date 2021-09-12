@@ -1,5 +1,4 @@
 #!/bin/bash
-(cd src/shaders/ && ./compile_shaders.sh)
 if [ "$1" = "-r" ] 
 then
     echo "Building Release"

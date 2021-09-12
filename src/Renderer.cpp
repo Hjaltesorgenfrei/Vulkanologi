@@ -82,28 +82,33 @@ std::vector<char> readFile(const std::string& filename) {
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper>& window) {
 	this->window = window;
-	
-	createInstance();
-	setupDebugMessenger();
-	createSurface();
-	pickPhysicalDevice();
-	createLogicalDevice();
-	createSwapChain();
-	createImageViews();
-	createRenderPass();
-	createDescriptorSetLayout();
-	createGraphicsPipeline();
-	createFramebuffers();
-	createCommandPool();
-	createVertexBuffer();
-	createIndexBuffer();
-	createUniformBuffers();
-	createDescriptorPool();
-	createDescriptorSets();
-	createCommandBuffers();
-	createSyncObjects();
-	createResizeCallback();
-
+	try {
+		createInstance();
+		setupDebugMessenger();
+		createSurface();
+		pickPhysicalDevice();
+		createLogicalDevice();
+		createSwapChain();
+		createImageViews();
+		createRenderPass();
+		createDescriptorSetLayout();
+		createGraphicsPipeline();
+		createFramebuffers();
+		createCommandPool();
+		createVertexBuffer();
+		createIndexBuffer();
+		createUniformBuffers();
+		createDescriptorPool();
+		createDescriptorSets();
+		createCommandBuffers();
+		createSyncObjects();
+		createResizeCallback();
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Renderer failed to initialize!" << std::endl;
+		std::cerr << "Error: " << e.what() << std::endl;
+		throw e;
+	}
 }
 
 Renderer::~Renderer() {
@@ -539,13 +544,11 @@ vk::PresentModeKHR Renderer::chooseSwapPresentMode(const std::vector<enum vk::Pr
 }
 
 vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
-	std::cout << "width: " << capabilities.currentExtent.width << ", height: " << capabilities.currentExtent.height << "\n";
 	if (capabilities.currentExtent.width != UINT32_MAX) {
 		return capabilities.currentExtent;
 	}
 	else {
 		const auto [width, height] = window->getFramebufferSize();
-		std::cout << "width: " << width << ", height: " << height << "\n";
 		
 		vk::Extent2D actualExtent = {
 			static_cast<uint32_t>(width),

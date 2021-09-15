@@ -12,6 +12,7 @@
 
 
 #include "Window.h"
+#include "Model.h"
 
 
 
@@ -54,6 +55,7 @@ std::vector<char> readFile(const std::string& filename);
 class Renderer {
 public:
 	std::shared_ptr<WindowWrapper> window;
+	std::shared_ptr<Model> model;
 	
 	vk::UniqueInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -105,7 +107,7 @@ public:
 
 
 	
-	Renderer(std::shared_ptr<WindowWrapper> & window);
+	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model>& model);
 	~Renderer();
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const Renderer&) = delete;
@@ -178,6 +180,7 @@ public:
 	void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
 	void createCommandBuffers();
+	void recordCommandBuffer(int index);
 
 	void createSyncObjects();
 	void updateUniformBuffer(uint32_t currentImage);

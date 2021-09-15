@@ -27,8 +27,6 @@ function(add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${current-output-path})
 endfunction(add_shader)
 
-
-
 find_package(Vulkan REQUIRED)
 
 find_package(X11 REQUIRED)

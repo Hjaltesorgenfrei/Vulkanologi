@@ -80,8 +80,9 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
-Renderer::Renderer(std::shared_ptr<WindowWrapper>& window) {
+Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model>& model) {
 	this->window = window;
+	this->model = model;
 	try {
 		createInstance();
 		setupDebugMessenger();
@@ -926,7 +927,7 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 }
 
 void Renderer::createIndexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+	vk::DeviceSize bufferSize = sizeof(model->getIndices()[0]) * model->getIndices().size();
 
 	vk::Buffer stagingBuffer;
 	vk::DeviceMemory stagingBufferMemory;
@@ -939,7 +940,7 @@ void Renderer::createIndexBuffer() {
 	);
 
 	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
-	memcpy(data, indices.data(), static_cast<size_t>(bufferSize));
+	memcpy(data, model->getIndices().data(), static_cast<size_t>(bufferSize));
 	device->unmapMemory(stagingBufferMemory);
 
 	createBuffer(
@@ -956,7 +957,7 @@ void Renderer::createIndexBuffer() {
 }
 
 void Renderer::createVertexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	vk::DeviceSize bufferSize = sizeof(model->getVertices()[0]) * model->getVertices().size();
 
 	vk::Buffer stagingBuffer;
 	vk::DeviceMemory stagingBufferMemory;
@@ -970,7 +971,7 @@ void Renderer::createVertexBuffer() {
 	);
 	
 	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
-		memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
+		memcpy(data, model->getVertices().data(), static_cast<size_t>(bufferSize));
 	device->unmapMemory(stagingBufferMemory);
 
 	createBuffer(
@@ -1108,13 +1109,13 @@ void Renderer::createCommandBuffers() {
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to allocate command buffers") + err.what());
 	}
+}
 
-	// Record to command buffers
-	for (size_t i = 0; i < commandBuffers.size(); i++) {
-		vk::CommandBufferBeginInfo beginInfo {};
+void Renderer::recordCommandBuffer(int index) {
+	vk::CommandBufferBeginInfo beginInfo {};
 
 		try {
-			commandBuffers[i].begin(beginInfo);
+			commandBuffers[index].begin(beginInfo);
 		}
 		catch (vk::SystemError& err) {
 			throw std::runtime_error(std::string("failed to begin recording command buffer!") + err.what());
@@ -1122,7 +1123,7 @@ void Renderer::createCommandBuffers() {
 
 		vk::RenderPassBeginInfo renderPassInfo {
 			.renderPass = renderPass,
-			.framebuffer = swapChainFramebuffers[i],
+			.framebuffer = swapChainFramebuffers[index],
 			.renderArea = {
 				.offset = {0, 0},
 				.extent = swapChainExtent,
@@ -1132,30 +1133,29 @@ void Renderer::createCommandBuffers() {
 		vk::ClearValue clearColor = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } };
 		renderPassInfo.pClearValues = &clearColor;
 
-		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+		commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 		{
 			//Add commands to buffer
-			commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
 			vk::Buffer vertexBuffers[] = { vertexBuffer };
 			vk::DeviceSize offsets[] = { 0 };
-			commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+			commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-			commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+			commandBuffers[index].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
 
-			commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[i], 0, nullptr);
+			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 			
-			commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+			commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->getIndices().size()), 1, 0, 0, 0);
 		}
-		commandBuffers[i].endRenderPass();
+		commandBuffers[index].endRenderPass();
 
 		try {
-			commandBuffers[i].end();
+			commandBuffers[index].end();
 		}
 		catch (vk::SystemError& err) {
 			throw std::runtime_error(std::string("failed to record command buffer!") + err.what());
 		}
-	}
 }
 
 void Renderer::createSyncObjects() {
@@ -1181,19 +1181,7 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::updateUniformBuffer(uint32_t currentImage) {
-	static auto startTime = std::chrono::high_resolution_clock::now();
-
-	const auto currentTime = std::chrono::high_resolution_clock::now();
-	auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-	UniformBufferObject ubo {
-		.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-		.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
-		.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / static_cast<float>(swapChainExtent.height), 0.1f, 10.0f)
-	};
-
-	ubo.proj[1][1] *= -1; // GLM was originally designed for OpenGL, where the Y coordinate of the clip coordinates is inverted.
-
+	auto& ubo = model->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
 	void* data = device->mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
 	{
 		memcpy(data, &ubo, sizeof(ubo));
@@ -1255,6 +1243,8 @@ void Renderer::drawFrame() {
 
 	updateUniformBuffer(imageIndex);
 	
+	recordCommandBuffer(imageIndex);
+
 	vk::SubmitInfo submitInfo {
 
 		.waitSemaphoreCount = 1,

@@ -18,7 +18,8 @@ const uint32_t HEIGHT = 600;
 void App::run() {
 	window =
 		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial", this);
-	renderer = std::make_unique<Renderer>(window);
+	model = std::make_shared<Model>();
+	renderer = std::make_unique<Renderer>(window, model);
 	mainLoop();
 }
 

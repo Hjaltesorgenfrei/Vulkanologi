@@ -103,7 +103,6 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
-		createResizeCallback();
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Renderer failed to initialize!" << std::endl;
@@ -1332,17 +1331,4 @@ void Renderer::cleanup() {
 	}
 
 	instance->destroySurfaceKHR(surface);
-
-
 }
-
-void Renderer::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-	auto* const render = static_cast<Renderer*>(glfwGetWindowUserPointer(window));
-	render->framebufferResized = true;
-}
-
-void Renderer::createResizeCallback() {
-	glfwSetWindowUserPointer(window->getGLFWwindow(), this);
-	glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
-}
-

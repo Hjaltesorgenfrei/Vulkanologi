@@ -16,10 +16,23 @@ public:
     const std::vector<Vertex> getVertices();
     const std::vector<uint16_t> getIndices();
     const UniformBufferObject getCameraProject(float width, float height);
+    void moveCameraForward(float speed);
+    void moveCameraBackward(float speed);
+    void moveCameraLeft(float speed);
+    void moveCameraRight(float speed);
+    void resetCursorPos();
+    void newCursorPos(float xPos, float yPos);
     Model();
 
 private:
     std::vector<Vertex> vertices;
     std::vector<uint16_t> indices;
-    UniformBufferObject ubo;
+
+    glm::vec3 cameraPosition;
+    glm::vec3 cameraFront;
+    glm::vec3 cameraUp;
+    float cursorXPos, cursorYPos;
+    float cameraYaw = -90.0f;
+    float cameraPitch = 0.0f;
+    bool firstCursorCall = true;
 };

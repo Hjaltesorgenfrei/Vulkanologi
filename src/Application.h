@@ -12,5 +12,10 @@ private:
 	std::unique_ptr<Renderer> renderer;
 
 	void mainLoop();
+    void processInput(GLFWwindow *window);
+    void setupCallBacks();
 
+    static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
+    static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);
+    static void cursorEnterCallback(GLFWwindow *window, int enter);
 };

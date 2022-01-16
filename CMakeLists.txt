@@ -9,8 +9,11 @@ function(add_shader TARGET SHADER)
     find_program(GLSLC glslc)
 
     set(current-shader-path ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/${SHADER})
-    set(current-output-path ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
-
+    if(MSVC)
+        set(current-output-path ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE_INIT}/shaders/${SHADER}.spv)
+    else()
+        set(current-output-path ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
+    endif()
     # Add a custom command to compile GLSL to SPIR-V.
     get_filename_component(current-output-dir ${current-output-path} DIRECTORY)
     file(MAKE_DIRECTORY ${current-output-dir})
@@ -29,14 +32,22 @@ endfunction(add_shader)
 
 find_package(Vulkan REQUIRED)
 
-find_package(X11 REQUIRED)
-link_libraries(${X11_LIBRARIES})
-add_definitions(-DVK_USE_PLATFORM_XLIB_KHR)
+if (NOT WIN32)
+    find_package(X11 REQUIRED)
+    link_libraries(${X11_LIBRARIES})
+    add_definitions(-DVK_USE_PLATFORM_XLIB_KHR)
+endif()
 
-find_package(glfw3 3.3 REQUIRED)
+# Build GLFW
+set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only")
+set(GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only")
+add_subdirectory(glfw)
+
+# GLM
+add_subdirectory(glm)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_executable(vulkantut ${SOURCES})
-target_link_libraries(vulkantut glfw Vulkan::Vulkan)
+target_link_libraries(vulkantut glfw glm Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)

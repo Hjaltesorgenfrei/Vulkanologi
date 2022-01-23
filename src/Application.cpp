@@ -21,7 +21,6 @@ void App::run() {
 	model = std::make_shared<Model>();
 	renderer = std::make_unique<Renderer>(window, model);
     setupCallBacks();
-    glfwSetInputMode(window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     mainLoop();
 }
 
@@ -30,6 +29,8 @@ void App::setupCallBacks() {
     glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
+    glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
+    glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
 }
 
 void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -39,9 +40,11 @@ void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    auto xPos = static_cast<float>(xPosIn);
-    auto yPos = static_cast<float>(yPosIn);
-    app->model->newCursorPos(xPos, yPos);
+    if (app->mouseCaptured) {
+        auto xPos = static_cast<float>(xPosIn);
+        auto yPos = static_cast<float>(yPosIn);
+        app->model->newCursorPos(xPos, yPos);
+    }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
@@ -49,18 +52,40 @@ void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     app->model->resetCursorPos();
 }
 
+void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        if (!app->mouseCaptured) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            app->model->resetCursorPos();
+            app->mouseCaptured = true;
+        }
+    }
+}
+
+void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        if (app->mouseCaptured) {
+            app->mouseCaptured = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+        else {
+            glfwSetWindowShouldClose(window, true);
+        }
+    }
+}
+
 void App::mainLoop() {
 	while (!window->windowShouldClose()) {
 		glfwPollEvents();
-        processInput(window->getGLFWwindow());
+        processPressedKeys(window->getGLFWwindow());
 		renderer->drawFrame();
 	}
 }
 
-void App::processInput(GLFWwindow *window) {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
+void App::processPressedKeys(GLFWwindow* window) {
     const float cameraSpeed = 0.005f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         model->moveCameraForward(cameraSpeed);

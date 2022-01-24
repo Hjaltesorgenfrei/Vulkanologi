@@ -96,6 +96,9 @@ public:
 	vk::Buffer indexBuffer;
 	vk::DeviceMemory indexBufferMemory;
 
+    vk::Image textureImage;
+    vk::DeviceMemory textureImageMemory;
+
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
 	
@@ -173,7 +176,16 @@ public:
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 	void createIndexBuffer();
 
-	void createVertexBuffer();
+    void createTextureImage();
+    void createImage(int width, int height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
+                     vk::Image& image, vk::DeviceMemory& memory);
+
+    vk::CommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
+
+    void createVertexBuffer();
 	void createUniformBuffers();
 	void createDescriptorPool();
 	void createDescriptorSets();

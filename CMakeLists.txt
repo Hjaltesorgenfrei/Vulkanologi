@@ -46,6 +46,9 @@ add_subdirectory(ext/glfw)
 # GLM
 add_subdirectory(ext/glm)
 
+# STB
+include_directories(ext/stb)
+
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_executable(vulkantut ${SOURCES})
 target_link_libraries(vulkantut glfw glm Vulkan::Vulkan)

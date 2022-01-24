@@ -8,8 +8,13 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 
 ## TODO
 
-- [ ] Move Model Matrix into push constant, but leave proj and view in UBO
 - [ ] Finish chapters of Vulkan-Tutorial
+  - [ ] Texture Mapping
+    - [x] Images
+    - [ ] Image view and sampler
+    - [ ] Combined image sampler
+- [ ] Copy Textures to output folder automatically
+- [ ] Move Model Matrix into push constant, but leave proj and view in UBO
 - [ ] Load more objects
   - [ ] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex
 - [ ] Add wireframe mode which can be switched to.

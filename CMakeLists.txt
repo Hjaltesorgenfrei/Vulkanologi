@@ -5,15 +5,18 @@ project(vulkantut)
 
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
+if(MSVC)
+    set(build-output-path ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE_INIT})
+else()
+    set(build-output-path ${CMAKE_BINARY_DIR})
+endif()
+
 function(add_shader TARGET SHADER)
     find_program(GLSLC glslc)
 
     set(current-shader-path ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/${SHADER})
-    if(MSVC)
-        set(current-output-path ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE_INIT}/shaders/${SHADER}.spv)
-    else()
-        set(current-output-path ${CMAKE_BINARY_DIR}/shaders/${SHADER}.spv)
-    endif()
+    set(current-output-path ${build-output-path}/shaders/${SHADER}.spv)
+
     # Add a custom command to compile GLSL to SPIR-V.
     get_filename_component(current-output-dir ${current-output-path} DIRECTORY)
     file(MAKE_DIRECTORY ${current-output-dir})
@@ -54,3 +57,4 @@ add_executable(vulkantut ${SOURCES})
 target_link_libraries(vulkantut glfw glm Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)
+file(COPY src/textures DESTINATION ${build-output-path})

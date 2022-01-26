@@ -11,7 +11,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [ ] Finish chapters of Vulkan-Tutorial
   - [ ] Texture Mapping
     - [x] Images
-    - [ ] Image view and sampler
+    - [x] Image view and sampler
     - [ ] Combined image sampler
 - [ ] Copy Textures to output folder automatically
 - [ ] Move Model Matrix into push constant, but leave proj and view in UBO

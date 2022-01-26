@@ -100,6 +100,8 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createFramebuffers();
 		createCommandPool();
         createTextureImage();
+		createTextureImageView();
+		createTextureSampler();
 		createVertexBuffer();
 		createIndexBuffer();
 		createUniformBuffers();
@@ -342,6 +344,10 @@ int Renderer::rateDeviceSuitability(vk::PhysicalDevice device) {
 		return 0;
 	}
 
+	if (deviceFeatures.samplerAnisotropy == VK_FALSE) {
+		return 0;
+	}
+
 	return score;
 }
 
@@ -383,7 +389,9 @@ void Renderer::createLogicalDevice() {
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	vk::PhysicalDeviceFeatures deviceFeatures {};
+	vk::PhysicalDeviceFeatures deviceFeatures {
+		.samplerAnisotropy = VK_TRUE
+	};
 
 	vk::DeviceCreateInfo createInfo {
 		.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
@@ -569,34 +577,7 @@ vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabi
 void Renderer::createImageViews() {
 	swapChainImageViews.resize(swapChainImages.size());
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
-		vk::ImageViewCreateInfo createInfo {
-			.image = swapChainImages[i],
-
-			.viewType = vk::ImageViewType::e2D,
-			.format = swapChainImageFormat,
-
-			.components = {
-				.r = vk::ComponentSwizzle::eIdentity,
-				.g = vk::ComponentSwizzle::eIdentity,
-				.b = vk::ComponentSwizzle::eIdentity,
-				.a = vk::ComponentSwizzle::eIdentity
-			},
-
-			.subresourceRange = {
-				.aspectMask = vk::ImageAspectFlagBits::eColor,
-				.baseMipLevel = 0,
-				.levelCount = 1,
-				.baseArrayLayer = 0,
-				.layerCount = 1
-			}
-		};
-
-		try {
-			swapChainImageViews[i] = device->createImageView(createInfo);
-		}
-		catch (vk::SystemError& err) {
-			throw std::runtime_error(std::string("failed to create image views!") + err.what());
-		}
+		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat);
 	}
 }
 
@@ -1055,6 +1036,58 @@ void Renderer::createImage(int width, int height, vk::Format format, vk::ImageTi
     device->bindImageMemory(image, imageMemory, 0);
 }
 
+void Renderer::createTextureImageView() {
+	textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb);
+}
+
+vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format) {
+	vk::ImageViewCreateInfo viewInfo{
+		.image = image,
+		.viewType = vk::ImageViewType::e2D,
+		.format = format,
+		.subresourceRange = vk::ImageSubresourceRange {
+			.aspectMask = vk::ImageAspectFlagBits::eColor,
+			.baseMipLevel = 0,
+			.levelCount = 1,
+			.baseArrayLayer = 0,
+			.layerCount = 1
+		}
+	};
+
+	vk::ImageView imageView;
+	if (device->createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+        throw std::runtime_error("failed to create image view!");
+    }
+
+	return imageView;
+}
+
+void Renderer::createTextureSampler() {
+	auto properties = physicalDevice.getProperties();
+
+	vk::SamplerCreateInfo samplerInfo{
+		.magFilter = vk::Filter::eLinear,
+		.minFilter = vk::Filter::eLinear,
+		.mipmapMode = vk::SamplerMipmapMode::eLinear,
+		.addressModeU = vk::SamplerAddressMode::eRepeat,
+		.addressModeV = vk::SamplerAddressMode::eRepeat,
+		.addressModeW = vk::SamplerAddressMode::eRepeat,
+		.mipLodBias = 0.0f,
+		.anisotropyEnable = VK_TRUE,
+		.maxAnisotropy = properties.limits.maxSamplerAnisotropy,
+		.compareEnable = VK_FALSE,
+		.compareOp = vk::CompareOp::eAlways,
+		.minLod = 0.0f,
+		.maxLod = 0.0f,
+		.borderColor = vk::BorderColor::eIntOpaqueBlack,
+		.unnormalizedCoordinates = VK_FALSE,
+	};
+
+	if (device->createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to create texture sampler!");
+	}
+}
+
 void Renderer::createVertexBuffer() {
 	vk::DeviceSize bufferSize = sizeof(model->getVertices()[0]) * model->getVertices().size();
 
@@ -1388,16 +1421,19 @@ void Renderer::cleanup() {
 
 	cleanupSwapChain();
 
+	device->destroySampler(textureSampler);
+	device->destroyImageView(textureImageView);
+
 	device->destroyImage(textureImage);
 	device->freeMemory(textureImageMemory);
 
-	device->destroyDescriptorSetLayout(descriptorSeyLayout, nullptr);
+	device->destroyDescriptorSetLayout(descriptorSeyLayout);
 
-	device->destroyBuffer(indexBuffer, nullptr);
-	device->freeMemory(indexBufferMemory, nullptr);
+	device->destroyBuffer(indexBuffer);
+	device->freeMemory(indexBufferMemory);
 	
-	device->destroyBuffer(vertexBuffer, nullptr);
-	device->freeMemory(vertexBufferMemory, nullptr);
+	device->destroyBuffer(vertexBuffer);
+	device->freeMemory(vertexBufferMemory);
 	
 	device->destroyCommandPool(commandPool);
 	device->destroyCommandPool(transferCommandPool);

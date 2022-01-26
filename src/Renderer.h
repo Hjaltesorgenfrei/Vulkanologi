@@ -98,6 +98,8 @@ public:
 
     vk::Image textureImage;
     vk::DeviceMemory textureImageMemory;
+	vk::ImageView textureImageView;
+	vk::Sampler textureSampler;
 
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
@@ -160,6 +162,7 @@ public:
 	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
+	vk::ImageView createImageView(vk::Image image, vk::Format format);
 
 	void createRenderPass();
 	void createDescriptorSetLayout();
@@ -179,6 +182,8 @@ public:
     void createTextureImage();
     void createImage(int width, int height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);
+	void createTextureImageView();
+	void createTextureSampler();
 
     vk::CommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(vk::CommandBuffer commandBuffer);

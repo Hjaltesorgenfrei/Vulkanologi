@@ -16,6 +16,9 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
       - [x] Fix gamma problem
       - [x] Fix flipped problem
   - [ ] Depth buffering
+  - [ ] Loading Models
+  - [ ] Generating Mipmaps
+  - [ ] Multisampling
 - [x] Copy Textures to output folder automatically
 - [ ] Move Model Matrix into push constant, but leave proj and view in UBO
 - [ ] Load more objects
@@ -26,3 +29,5 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - <https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/>
     - <https://github.com/KhronosGroup/Vulkan-Samples/tree/master/samples/performance/command_buffer_usage>
     - <https://vkguide.dev/docs/extra-chapter/multithreading/>
+- [ ] Stop blocking when uploading textures, there is currently a wait on idle which is unnecessary.
+  - Should probably also use the transfer queue.

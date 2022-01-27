@@ -2,22 +2,39 @@
 #include <chrono>
 
 #define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 Model::Model() {
     vertices = {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
+        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
     };
 
-    indices = {0, 1, 2, 2, 3, 0};
+    indices = {
+        0, 1, 2, 2, 3, 0,
+        4, 5, 6, 6, 7, 4
+    };
 
-    cameraPosition = glm::vec3(0.0f, 0.0f, 2.0f);
-    cameraFront    = glm::vec3(0.0f, 0.0f, -1.0f);
-    cameraUp       = glm::vec3(0.0f, 1.0f, 0.0f);
+    cameraPosition = glm::vec3(-2.0f, 0.0f, 2.0f);
+    cameraUp       = glm::vec3(0.0f, -1.0f, 0.0f);
+
+    cameraYaw   = -45.0f;
+    cameraPitch = 0.0f;
+
+    glm::vec3 front;
+    front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    front.y = sin(glm::radians(cameraPitch));
+    front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    cameraFront = glm::normalize(front);
 }
 
 const std::vector<Vertex> Model::getVertices() {
@@ -62,14 +79,15 @@ void Model::newCursorPos(float xPos, float yPos) {
         cursorXPos = xPos;
         cursorYPos = yPos;
         firstCursorCall = false;
+        return;
     }
 
-    float xOffset = xPos - cursorXPos;
-    float yOffset = cursorYPos - yPos; // reversed since y-coordinates go from bottom to top
+    float xOffset = cursorXPos - xPos;
+    float yOffset = yPos - cursorYPos; // reversed since y-coordinates go from bottom to top
     cursorXPos = xPos;
     cursorYPos = yPos;
 
-    float sensitivity = 0.2f; // change this value to your liking
+    float sensitivity = 0.2f;
     xOffset *= sensitivity;
     yOffset *= sensitivity;
 

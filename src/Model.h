@@ -32,7 +32,7 @@ private:
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;
     float cursorXPos, cursorYPos;
-    float cameraYaw = -90.0f;
-    float cameraPitch = 0.0f;
+    float cameraYaw;
+    float cameraPitch;
     bool firstCursorCall = true;
 };

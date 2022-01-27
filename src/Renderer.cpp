@@ -640,9 +640,19 @@ void Renderer::createDescriptorSetLayout() {
 		.pImmutableSamplers = nullptr
 	};
 
+	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
+		.binding = 1,
+		.descriptorType = vk::DescriptorType::eSampler,
+		.descriptorCount = 1,
+		.stageFlags = vk::ShaderStageFlagBits::eFragment,
+		.pImmutableSamplers = nullptr
+	};
+
+	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+
 	vk::DescriptorSetLayoutCreateInfo layoutInfo {
-		.bindingCount = 1,
-		.pBindings = &uboLayoutBinding
+		.bindingCount = static_cast<uint32_t>(bindings.size()),
+		.pBindings = bindings.data()
 	};
 
 	if(device->createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSeyLayout) != vk::Result::eSuccess) {
@@ -1137,14 +1147,21 @@ void Renderer::createUniformBuffers() {
 }
 
 void Renderer::createDescriptorPool() {
-	vk::DescriptorPoolSize poolSize {
-		.descriptorCount = static_cast<uint32_t>(swapChainImages.size())
+	std::array<vk::DescriptorPoolSize, 2> poolSizes	{
+		vk::DescriptorPoolSize {
+			.type = vk::DescriptorType::eUniformBuffer,
+			.descriptorCount = static_cast<uint32_t>(swapChainImages.size())
+		},
+		vk::DescriptorPoolSize {
+			.type = vk::DescriptorType::eCombinedImageSampler,
+			.descriptorCount = static_cast<uint32_t>(swapChainImages.size())
+		}
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo {
 		.maxSets = static_cast<uint32_t>(swapChainImages.size()),
-		.poolSizeCount = 1,
-		.pPoolSizes = &poolSize,
+		.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
+		.pPoolSizes = poolSizes.data(),
 	};
 
 	if(device->createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
@@ -1172,18 +1189,32 @@ void Renderer::createDescriptorSets() {
 			.range = sizeof(UniformBufferObject)
 		};
 
-		vk::WriteDescriptorSet descriptorWrite {
-			.dstSet = descriptorSets[i],
-			.dstBinding = 0,
-			.dstArrayElement = 0,
-			.descriptorCount = 1,
-			.descriptorType = vk::DescriptorType::eUniformBuffer,
-			.pImageInfo = nullptr,
-			.pBufferInfo = &bufferInfo,
-			.pTexelBufferView = nullptr
+		vk::DescriptorImageInfo imageInfo {
+			.sampler = textureSampler,
+			.imageView = textureImageView,
+			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
 		};
 
-		device->updateDescriptorSets(1, &descriptorWrite, 0, nullptr);
+		std::array<vk::WriteDescriptorSet, 2> descriptorWrites {
+			vk::WriteDescriptorSet {
+				.dstSet = descriptorSets[i],
+				.dstBinding = 0,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = vk::DescriptorType::eUniformBuffer,
+				.pBufferInfo = &bufferInfo,
+			},
+			vk::WriteDescriptorSet {
+				.dstSet = descriptorSets[i],
+				.dstBinding = 1,
+				.dstArrayElement = 0,
+				.descriptorCount = 1,
+				.descriptorType = vk::DescriptorType::eCombinedImageSampler,
+				.pImageInfo = &imageInfo,
+			}
+		};
+
+		device->updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 

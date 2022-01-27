@@ -15,7 +15,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - [x] Combined image sampler
       - [x] Fix gamma problem
       - [x] Fix flipped problem
-  - [ ] Depth buffering
+  - [x] Depth buffering
     - [ ] Fix the problems present in the chapter: <https://stackoverflow.com/questions/62371266/why-is-a-single-depth-buffer-sufficient-for-this-vulkan-swapchain-render-loop>
   - [ ] Loading Models
   - [ ] Generating Mipmaps

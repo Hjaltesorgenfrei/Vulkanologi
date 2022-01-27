@@ -101,9 +101,13 @@ public:
 	vk::ImageView textureImageView;
 	vk::Sampler textureSampler;
 
+	vk::Image depthImage;
+	vk::DeviceMemory depthImageMemory;
+	vk::ImageView depthImageView;
+
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
-	
+
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
@@ -162,7 +166,7 @@ public:
 	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
-	vk::ImageView createImageView(vk::Image image, vk::Format format);
+	vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
 
 	void createRenderPass();
 	void createDescriptorSetLayout();
@@ -175,6 +179,12 @@ public:
 
 	void createCommandPool();
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
+
+	void createDepthResources();
+	vk::Format findDepthFormat();
+	bool hasStencilComponent(vk::Format format);
+	vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
+
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 	void createIndexBuffer();

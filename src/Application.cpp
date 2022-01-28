@@ -75,6 +75,9 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
             glfwSetWindowShouldClose(window, true);
         }
     }
+    if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
+        app->window->fullscreenWindow();
+    }
 }
 
 void App::mainLoop() {

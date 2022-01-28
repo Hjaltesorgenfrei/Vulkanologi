@@ -5,6 +5,7 @@
 class WindowWrapper {
 private:
 	GLFWwindow* window;
+	GLFWmonitor* getCurrentMonitor(GLFWwindow *window);
 
 public:	
 	WindowWrapper(int width, int height, const char* title);
@@ -15,4 +16,6 @@ public:
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
 	[[nodiscard]] GLFWwindow* getGLFWwindow() const;
 	[[nodiscard]] bool windowShouldClose() const;
+	void fullscreenWindow();
+	[[nodiscard]] bool isFullScreen();
 };

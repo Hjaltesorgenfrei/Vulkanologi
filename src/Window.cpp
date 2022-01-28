@@ -28,3 +28,64 @@ GLFWwindow* WindowWrapper::getGLFWwindow() const {
 bool WindowWrapper::windowShouldClose() const {
 	return glfwWindowShouldClose(window);
 }
+
+void WindowWrapper::fullscreenWindow() {
+	auto monitor = getCurrentMonitor(window);
+	const auto mode = glfwGetVideoMode(monitor);
+	if (isFullScreen()) {
+		glfwSetWindowMonitor(window, NULL, 30, 30, 1024, 640, mode->refreshRate);
+	}
+	else {
+		glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+	}
+}
+
+bool WindowWrapper::isFullScreen() {
+	return glfwGetWindowMonitor(window) != nullptr;
+}
+
+static int mini(int x, int y)
+{
+    return x < y ? x : y;
+}
+
+static int maxi(int x, int y)
+{
+    return x > y ? x : y;
+}
+
+GLFWmonitor* WindowWrapper::getCurrentMonitor(GLFWwindow *window)
+{
+    int nMonitors, i;
+    int wx, wy, ww, wh;
+    int mx, my, mw, mh;
+    int overlap, bestoverlap;
+    GLFWmonitor *bestmonitor;
+    GLFWmonitor **monitors;
+    const GLFWvidmode *mode;
+
+    bestoverlap = 0;
+    bestmonitor = NULL;
+
+    glfwGetWindowPos(window, &wx, &wy);
+    glfwGetWindowSize(window, &ww, &wh);
+    monitors = glfwGetMonitors(&nMonitors);
+
+    for (i = 0; i < nMonitors; i++) {
+        mode = glfwGetVideoMode(monitors[i]);
+        glfwGetMonitorPos(monitors[i], &mx, &my);
+        mw = mode->width;
+        mh = mode->height;
+
+        overlap =
+            maxi(0, mini(wx + ww, mx + mw) - maxi(wx, mx)) *
+            maxi(0, mini(wy + wh, my + mh) - maxi(wy, my));
+
+        if (bestoverlap < overlap) {
+            bestoverlap = overlap;
+            bestmonitor = monitors[i];
+        }
+    }
+
+    return bestmonitor;
+}

@@ -667,7 +667,7 @@ void Renderer::createDescriptorSetLayout() {
 
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
 		.binding = 1,
-		.descriptorType = vk::DescriptorType::eSampler,
+		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
 		.descriptorCount = 1,
 		.stageFlags = vk::ShaderStageFlagBits::eFragment,
 		.pImmutableSamplers = nullptr

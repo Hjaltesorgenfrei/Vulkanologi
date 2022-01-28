@@ -1,31 +1,36 @@
 #include "Model.h"
 #include <chrono>
+#include <unordered_map>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
+const std::string MODEL_PATH = "resources/viking_room.obj";
+
+
+
+namespace std {
+	template<> struct hash<Vertex> {
+		size_t operator()(Vertex const& vertex) const {
+            return ((hash<glm::vec3>()(vertex.pos) ^
+                   (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
+                   (hash<glm::vec2>()(vertex.texCoord) << 1);
+        }
+	};
+}
 
 Model::Model() {
-    vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
-
-    indices = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
+    loadModel();
 
     cameraPosition = glm::vec3(-2.0f, 0.0f, 2.0f);
-    cameraUp       = glm::vec3(0.0f, -1.0f, 0.0f);
+    cameraUp       = glm::vec3(0.0f, 1.0f, 0.0f);
 
     cameraYaw   = -45.0f;
     cameraPitch = 0.0f;
@@ -37,10 +42,47 @@ Model::Model() {
     cameraFront = glm::normalize(front);
 }
 
+void Model::loadModel() {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+        throw std::runtime_error("Model failed to load!\n" + warn + err);
+    }
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+    for (const auto& shape : shapes) {
+        for (const auto& index : shape.mesh.indices) {
+            Vertex vertex{
+                .pos = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2]
+                },
+                .color = {1.0f, 1.0f, 1.0f},
+                .texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                }
+            };
+
+            if(uniqueVertices.count(vertex) == 0) {
+                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+                vertices.push_back(vertex);
+            }
+            
+            indices.push_back(uniqueVertices[vertex]);
+        }
+    }
+}
+
 const std::vector<Vertex> Model::getVertices() {
     return vertices;
 }
-const std::vector<uint16_t> Model::getIndices() {
+const std::vector<uint32_t> Model::getIndices() {
     return indices;
 }
 
@@ -82,8 +124,8 @@ void Model::newCursorPos(float xPos, float yPos) {
         return;
     }
 
-    float xOffset = cursorXPos - xPos;
-    float yOffset = yPos - cursorYPos; // reversed since y-coordinates go from bottom to top
+    float xOffset = xPos - cursorXPos;
+    float yOffset = cursorYPos -yPos; // reversed since y-coordinates go from bottom to top
     cursorXPos = xPos;
     cursorYPos = yPos;
 

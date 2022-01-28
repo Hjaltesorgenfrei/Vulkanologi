@@ -14,7 +14,7 @@ class Model
 {
 public:
     const std::vector<Vertex> getVertices();
-    const std::vector<uint16_t> getIndices();
+    const std::vector<uint32_t> getIndices();
     const UniformBufferObject getCameraProject(float width, float height);
     void moveCameraForward(float speed);
     void moveCameraBackward(float speed);
@@ -26,7 +26,7 @@ public:
 
 private:
     std::vector<Vertex> vertices;
-    std::vector<uint16_t> indices;
+    std::vector<uint32_t> indices;
 
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;
@@ -35,4 +35,6 @@ private:
     float cameraYaw;
     float cameraPitch;
     bool firstCursorCall = true;
+
+    void loadModel();
 };

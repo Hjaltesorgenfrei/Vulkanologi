@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <iostream>
 
+const std::string TEXTURE_PATH = "resources/viking_room.png";
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 	QueueFamilyIndices indices;
@@ -1028,7 +1029,7 @@ void Renderer::createIndexBuffer() {
 
 void Renderer::createTextureImage() {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("resources/statue.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     vk::DeviceSize imageSize = texWidth * texHeight * 4;
 
@@ -1357,7 +1358,7 @@ void Renderer::recordCommandBuffer(int index) {
 			vk::DeviceSize offsets[] = { 0 };
 			commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-			commandBuffers[index].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16);
+			commandBuffers[index].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
 
 			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 			

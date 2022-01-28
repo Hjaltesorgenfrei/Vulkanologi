@@ -7,3 +7,6 @@
 [submodule "ext/stb"]
 	path = ext/stb
 	url = https://github.com/nothings/stb
+[submodule "ext/tinyobjloader"]
+	path = ext/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader

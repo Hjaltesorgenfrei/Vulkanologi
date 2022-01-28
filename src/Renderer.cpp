@@ -1028,7 +1028,7 @@ void Renderer::createIndexBuffer() {
 
 void Renderer::createTextureImage() {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load("textures/statue.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load("resources/statue.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
     vk::DeviceSize imageSize = texWidth * texHeight * 4;
 

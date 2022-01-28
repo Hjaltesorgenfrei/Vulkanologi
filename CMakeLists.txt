@@ -52,9 +52,12 @@ add_subdirectory(ext/glm)
 # STB
 include_directories(ext/stb)
 
+# tinyobjloader
+add_subdirectory(ext/tinyobjloader)
+
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_executable(vulkantut ${SOURCES})
-target_link_libraries(vulkantut glfw glm Vulkan::Vulkan)
+target_link_libraries(vulkantut glfw glm tinyobjloader Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)
-file(COPY src/textures DESTINATION ${build-output-path})
+file(COPY src/resources DESTINATION ${build-output-path})

@@ -18,7 +18,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
   - [x] Depth buffering
     - [ ] Fix the problems present in the chapter: <https://stackoverflow.com/questions/62371266/why-is-a-single-depth-buffer-sufficient-for-this-vulkan-swapchain-render-loop>
   - [x] Loading Models
-  - [ ] Generating Mipmaps
+  - [x] Generating Mipmaps
   - [ ] Multisampling
 - [x] Copy Textures to output folder automatically
 - [ ] Move Model Matrix into push constant, but leave proj and view in UBO
@@ -32,3 +32,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - <https://vkguide.dev/docs/extra-chapter/multithreading/>
 - [ ] Stop blocking when uploading textures, there is currently a wait on idle which is unnecessary.
   - Should probably also use the transfer queue.
+- [ ] Create a Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
+  - [ ] Meshes
+  - [ ] Textures
+    - [ ] MipMaps

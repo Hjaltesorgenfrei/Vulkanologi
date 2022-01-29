@@ -96,6 +96,7 @@ public:
 	vk::Buffer indexBuffer;
 	vk::DeviceMemory indexBufferMemory;
 
+	uint32_t mipLevels;
     vk::Image textureImage;
     vk::DeviceMemory textureImageMemory;
 	vk::ImageView textureImageView;
@@ -166,7 +167,8 @@ public:
 	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
-	vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags);
+	vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
+	void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	void createRenderPass();
 	void createDescriptorSetLayout();
@@ -190,14 +192,14 @@ public:
 	void createIndexBuffer();
 
     void createTextureImage();
-    void createImage(int width, int height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
+    void createImage(int width, int height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);
 	void createTextureImageView();
 	void createTextureSampler();
 
     vk::CommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
-	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 
     void createVertexBuffer();

@@ -137,10 +137,13 @@ void Renderer::createInstance() {
 
 	// Enable validation of best practices
 	if (enableValidationLayers) {
-		vk::ValidationFeatureEnableEXT enables[] = { vk::ValidationFeatureEnableEXT::eBestPractices };
+		vk::ValidationFeatureEnableEXT enables[] = { 
+			vk::ValidationFeatureEnableEXT::eBestPractices, 
+			vk::ValidationFeatureEnableEXT::eSynchronizationValidation
+		};
 		vk::ValidationFeaturesEXT features = {
 			.sType = vk::StructureType::eValidationFeaturesEXT,
-			.enabledValidationFeatureCount = 1,
+			.enabledValidationFeatureCount = 2,
 			.pEnabledValidationFeatures = enables
 		};
 		createInfo.pNext = &features;

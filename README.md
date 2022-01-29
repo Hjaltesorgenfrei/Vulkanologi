@@ -17,7 +17,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
       - [x] Fix flipped problem
   - [x] Depth buffering
     - [ ] Fix the problems present in the chapter: <https://stackoverflow.com/questions/62371266/why-is-a-single-depth-buffer-sufficient-for-this-vulkan-swapchain-render-loop>
-  - [ ] Loading Models
+  - [x] Loading Models
   - [ ] Generating Mipmaps
   - [ ] Multisampling
 - [x] Copy Textures to output folder automatically

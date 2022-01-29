@@ -37,4 +37,5 @@ private:
     bool firstCursorCall = true;
 
     void loadModel();
+    void setCameraFront();
 };

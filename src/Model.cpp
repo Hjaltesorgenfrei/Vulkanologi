@@ -29,17 +29,11 @@ namespace std {
 Model::Model() {
     loadModel();
 
-    cameraPosition = glm::vec3(-2.0f, 0.0f, 2.0f);
-    cameraUp       = glm::vec3(0.0f, 1.0f, 0.0f);
-
-    cameraYaw   = -45.0f;
-    cameraPitch = 0.0f;
-
-    glm::vec3 front;
-    front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    front.y = sin(glm::radians(cameraPitch));
-    front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    cameraFront = glm::normalize(front);
+    cameraYaw   = -135.0f;
+    cameraPitch = -35.0f;
+    cameraPosition = glm::vec3(2.0f, 2.0f, 2.0f);
+    cameraUp       = glm::vec3(0.0f, 0.0f, 1.0f);
+    setCameraFront();
 }
 
 void Model::loadModel() {
@@ -124,8 +118,8 @@ void Model::newCursorPos(float xPos, float yPos) {
         return;
     }
 
-    float xOffset = xPos - cursorXPos;
-    float yOffset = cursorYPos -yPos; // reversed since y-coordinates go from bottom to top
+    float xOffset = cursorXPos - xPos;
+    float yOffset = cursorYPos - yPos; // reversed since y-coordinates go from bottom to top
     cursorXPos = xPos;
     cursorYPos = yPos;
 
@@ -141,11 +135,15 @@ void Model::newCursorPos(float xPos, float yPos) {
         cameraPitch = 89.0f;
     if (cameraPitch < -89.0f)
         cameraPitch = -89.0f;
+        
+    setCameraFront();
+}
 
+void Model::setCameraFront() {
     glm::vec3 front;
     front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    front.y = sin(glm::radians(cameraPitch));
-    front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    front.y = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
+    front.z = sin(glm::radians(cameraPitch));
     cameraFront = glm::normalize(front);
 }
 

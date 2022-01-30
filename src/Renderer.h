@@ -109,6 +109,11 @@ public:
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
 
+	vk::SampleCountFlagBits msaaSamples = vk::SampleCountFlagBits::e1;
+	vk::Image colorImage;
+	vk::DeviceMemory colorImageMemory;
+	vk::ImageView colorImageView;
+
 	size_t currentFrame = 0;
 
 	bool framebufferResized = false;
@@ -182,6 +187,7 @@ public:
 	void createCommandPool();
 	uint32_t findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags properties) const;
 
+	void createColorResources();
 	void createDepthResources();
 	vk::Format findDepthFormat();
 	bool hasStencilComponent(vk::Format format);
@@ -192,7 +198,7 @@ public:
 	void createIndexBuffer();
 
     void createTextureImage();
-    void createImage(int width, int height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
+    void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);
 	void createTextureImageView();
 	void createTextureSampler();

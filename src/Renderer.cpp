@@ -80,6 +80,20 @@ std::vector<char> readFile(const std::string& filename) {
 	return buffer;
 }
 
+vk::SampleCountFlagBits getMaxUsableSampleCount(vk::PhysicalDevice physicalDevice) {
+    auto physicalDeviceProperties = physicalDevice.getProperties();
+
+    auto counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; }
+    if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; }
+    if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; }
+    if (counts & vk::SampleCountFlagBits::e8) { return vk::SampleCountFlagBits::e8; }
+    if (counts & vk::SampleCountFlagBits::e4) { return vk::SampleCountFlagBits::e4; }
+    if (counts & vk::SampleCountFlagBits::e2) { return vk::SampleCountFlagBits::e2; }
+
+    return vk::SampleCountFlagBits::e1;
+}
+
 Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model>& model) {
 	this->window = window;
 	this->model = model;
@@ -95,6 +109,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createDescriptorSetLayout();
 		createGraphicsPipeline();
 		createCommandPool();
+		createColorResources();
 		createDepthResources();
 		createFramebuffers();
         createTextureImage();
@@ -127,8 +142,6 @@ void Renderer::createInstance() {
 		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
 		.apiVersion = VK_API_VERSION_1_1
 	};
-
-
 
 	vk::InstanceCreateInfo createInfo {
 
@@ -306,6 +319,7 @@ void Renderer::pickPhysicalDevice() {
 	//Check if any suitable candidate was found
 	if (candidates.rbegin()->first > 0) {
 		physicalDevice = candidates.rbegin()->second;
+		msaaSamples = getMaxUsableSampleCount(physicalDevice);
 	}
 	else {
 		throw std::runtime_error("Failed to find suitable GPU!");
@@ -391,6 +405,7 @@ void Renderer::createLogicalDevice() {
 	}
 
 	vk::PhysicalDeviceFeatures deviceFeatures {
+		.sampleRateShading = VK_TRUE,
 		.samplerAnisotropy = VK_TRUE
 	};
 
@@ -482,6 +497,10 @@ void Renderer::createSwapChain() {
 }
 
 void Renderer::cleanupSwapChain() {
+	device->destroyImageView(colorImageView);
+	device->destroyImage(colorImage);
+	device->freeMemory(colorImageMemory);
+
 	device->destroyImageView(depthImageView);
 	device->destroyImage(depthImage);
 	device->freeMemory(depthImageMemory);
@@ -527,6 +546,7 @@ void Renderer::recreateSwapchain() {
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
+	createColorResources();
 	createDepthResources();
 	createFramebuffers();
 	createUniformBuffers();
@@ -590,13 +610,13 @@ void Renderer::createImageViews() {
 void Renderer::createRenderPass() {
 	vk::AttachmentDescription colorAttachment {
 		.format = swapChainImageFormat,
-		.samples = vk::SampleCountFlagBits::e1,
+		.samples = msaaSamples,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eStore,
 		.stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
 		.stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
 		.initialLayout = vk::ImageLayout::eUndefined,
-		.finalLayout = vk::ImageLayout::ePresentSrcKHR
+		.finalLayout = vk::ImageLayout::eColorAttachmentOptimal
 	};
 
 	vk::AttachmentReference colorAttachmentRef {
@@ -606,7 +626,7 @@ void Renderer::createRenderPass() {
 
 	vk::AttachmentDescription depthAttachment {
 		.format = findDepthFormat(),
-		.samples = vk::SampleCountFlagBits::e1,
+		.samples = msaaSamples,
 		.loadOp = vk::AttachmentLoadOp::eClear,
 		.storeOp = vk::AttachmentStoreOp::eDontCare,
 		.stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
@@ -620,10 +640,27 @@ void Renderer::createRenderPass() {
 		.layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
 	};
 
+	vk::AttachmentDescription colorAttachmentResolve { 
+		.format = swapChainImageFormat,
+		.samples = vk::SampleCountFlagBits::e1,
+		.loadOp = vk::AttachmentLoadOp::eDontCare,
+		.storeOp = vk::AttachmentStoreOp::eDontCare,
+		.stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+		.stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+		.initialLayout = vk::ImageLayout::eUndefined,
+		.finalLayout = vk::ImageLayout::ePresentSrcKHR
+	};
+
+	vk::AttachmentReference colorAttachmentResolveRef{
+		.attachment = 2,
+		.layout = vk::ImageLayout::eColorAttachmentOptimal
+	};
+
 	vk::SubpassDescription subpass {
 		.pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
 		.colorAttachmentCount = 1,
 		.pColorAttachments = &colorAttachmentRef,
+		.pResolveAttachments = &colorAttachmentResolveRef,
 		.pDepthStencilAttachment = &depthAttachmentRef
 	};
 
@@ -635,7 +672,7 @@ void Renderer::createRenderPass() {
 		.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite
 	};
 
-	std::array<vk::AttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
+	std::array<vk::AttachmentDescription, 3> attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
 
 	const vk::RenderPassCreateInfo renderPassInfo {
 		.attachmentCount = static_cast<uint32_t>(attachments.size()),
@@ -756,9 +793,9 @@ void Renderer::createGraphicsPipeline() {
 
 
 	vk::PipelineMultisampleStateCreateInfo multisampling {
-		.rasterizationSamples = vk::SampleCountFlagBits::e1,
-		.sampleShadingEnable = VK_FALSE,
-		.minSampleShading = 1.0f,
+		.rasterizationSamples = msaaSamples,
+		.sampleShadingEnable = VK_TRUE,
+		.minSampleShading = 0.2f,
 		.pSampleMask = nullptr,
 		.alphaToCoverageEnable = VK_FALSE,
 		.alphaToOneEnable = VK_FALSE,
@@ -860,9 +897,10 @@ vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
 void Renderer::createFramebuffers() {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 	for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-		std::array<vk::ImageView, 2> attachments = {
-			swapChainImageViews[i],
-			depthImageView
+		std::array<vk::ImageView, 3> attachments = {
+			colorImageView,
+			depthImageView,
+			swapChainImageViews[i]
 		};
 
 		vk::FramebufferCreateInfo framebufferInfo {
@@ -908,12 +946,30 @@ void Renderer::createCommandPool() {
 	}
 }
 
+void Renderer::createColorResources() {
+	auto colorFormat = swapChainImageFormat;
+
+	createImage(
+		swapChainExtent.width, 
+		swapChainExtent.height, 
+		1, 
+		msaaSamples, 
+		colorFormat, 
+		vk::ImageTiling::eOptimal,
+		vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment,
+		colorImage,
+		colorImageMemory
+	);
+	colorImageView = createImageView(colorImage, colorFormat, vk::ImageAspectFlagBits::eColor, 1);
+}
+
 void Renderer::createDepthResources() {
 	auto depthFormat = findDepthFormat();
 	createImage(
 		swapChainExtent.width, 
 		swapChainExtent.height, 
 		1,
+		msaaSamples,
 		depthFormat,
 		vk::ImageTiling::eOptimal,
 		vk::ImageUsageFlagBits::eDepthStencilAttachment,
@@ -1058,6 +1114,7 @@ void Renderer::createTextureImage() {
         texWidth,
         texHeight,
 		mipLevels,
+		vk::SampleCountFlagBits::e1,
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageTiling::eOptimal,
         vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
@@ -1079,7 +1136,7 @@ void Renderer::createTextureImage() {
 	generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, mipLevels);
 }
 
-void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
+void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                            vk::Image& image, vk::DeviceMemory& imageMemory) {
     vk::ImageCreateInfo imageInfo {
         .imageType = vk::ImageType::e2D,
@@ -1091,7 +1148,7 @@ void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Format
         },
         .mipLevels = mipLevels,
         .arrayLayers = 1,
-        .samples = vk::SampleCountFlagBits::e1,
+        .samples = numSamples,
         .tiling = tiling,
         .usage = flags,
         .sharingMode = vk::SharingMode::eExclusive,

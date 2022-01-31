@@ -80,10 +80,15 @@ const std::vector<uint32_t> Model::getIndices() {
     return indices;
 }
 
+const MeshPushConstants Model::getPushConstants() {
+    return {
+            .model = {0.0f, 0.0f, 0.0f, 1.0f}
+    };
+}
+
 const UniformBufferObject Model::getCameraProject(float width, float height) {
     glm::vec3 cameraDirection = glm::normalize(cameraPosition - glm::vec3(0.0f, 0.0f, 0.0f));
 	UniformBufferObject ubo {
-		.model = glm::mat4(1.0f),
 		.view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp),
 		.proj = glm::perspective(glm::radians(45.0f), width / height, 0.1f, 1000.0f)
 	};

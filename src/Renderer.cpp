@@ -820,11 +820,17 @@ void Renderer::createGraphicsPipeline() {
 		.blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
 	};
 
+    vk::PushConstantRange pushConstantRange {
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .offset = 0,
+        .size = sizeof(MeshPushConstants)
+    };
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
 		.setLayoutCount = 1,
 		.pSetLayouts = &descriptorSeyLayout,
-		.pushConstantRangeCount = 0,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &pushConstantRange
 	};
 
 
@@ -1515,7 +1521,10 @@ void Renderer::recordCommandBuffer(int index) {
 			commandBuffers[index].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
 
 			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
-			
+
+            MeshPushConstants constants = model->getPushConstants();
+            commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
+
 			commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->getIndices().size()), 1, 0, 0, 0);
 		}
 		commandBuffers[index].endRenderPass();

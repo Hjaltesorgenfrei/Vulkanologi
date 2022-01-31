@@ -19,8 +19,9 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - [ ] Fix the problems present in the chapter: <https://stackoverflow.com/questions/62371266/why-is-a-single-depth-buffer-sufficient-for-this-vulkan-swapchain-render-loop>
   - [x] Loading Models
   - [x] Generating Mipmaps
-  - [ ] Multisampling
-- [x] Copy Textures to output folder automatically
+  - [x] Multisampling
+- [ ] Copy Textures to output folder automatically
+  - [ ] Add it as custom command so it is done on build
 - [ ] Move Model Matrix into push constant, but leave proj and view in UBO
 - [ ] Load more objects
   - [ ] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex

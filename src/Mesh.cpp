@@ -54,7 +54,7 @@ Mesh Mesh::LoadFromObj(const char* filename) {
     std::vector<tinyobj::material_t> materials;
     std::string warn, err;
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename)) {
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, "./resources")) {
         throw std::runtime_error("Model failed to load!\n" + warn + err);
     }
 

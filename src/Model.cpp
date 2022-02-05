@@ -7,15 +7,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-const std::string MODEL_PATH = "resources/viking_room.obj";
-
 Model::Model() {
     loadModel();
 
-    cameraYaw   = -135.0f;
+    cameraYaw   = 135.0f;
     cameraPitch = -35.0f;
-    cameraPosition = glm::vec3(2.0f, 2.0f, 2.0f);
-    cameraUp       = glm::vec3(0.0f, 0.0f, 1.0f);
+    cameraPosition = glm::vec3(2.0f, 2.0f, -2.0f);
+    cameraUp       = glm::vec3(0.0f, 1.0f, 0.0f);
     setCameraFront();
 }
 
@@ -24,7 +22,7 @@ std::vector<Mesh*> Model::getMeshes() {
 }
 
 void Model::loadModel() {
-    mesh = Mesh::LoadFromObj(MODEL_PATH.c_str());
+    mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
 }
 
 const MeshPushConstants Model::getPushConstants() {
@@ -70,7 +68,7 @@ void Model::newCursorPos(float xPos, float yPos) {
         return;
     }
 
-    float xOffset = cursorXPos - xPos;
+    float xOffset = xPos - cursorXPos;
     float yOffset = cursorYPos - yPos; // reversed since y-coordinates go from bottom to top
     cursorXPos = xPos;
     cursorYPos = yPos;
@@ -94,8 +92,8 @@ void Model::newCursorPos(float xPos, float yPos) {
 void Model::setCameraFront() {
     glm::vec3 front;
     front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    front.y = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
-    front.z = sin(glm::radians(cameraPitch));
+    front.y = sin(glm::radians(cameraPitch));
+    front.z = sin(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
     cameraFront = glm::normalize(front);
 }
 

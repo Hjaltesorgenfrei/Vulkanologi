@@ -33,6 +33,9 @@ function(add_shader TARGET SHADER)
     target_sources(${TARGET} PRIVATE ${current-output-path})
 endfunction(add_shader)
 
+add_custom_target(copy-runtime-files ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/resources ${build-output-path}/resources)
+
 find_package(Vulkan REQUIRED)
 
 if (NOT WIN32)

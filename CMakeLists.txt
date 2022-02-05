@@ -58,9 +58,12 @@ include_directories(ext/stb)
 # tinyobjloader
 add_subdirectory(ext/tinyobjloader)
 
+# VMA
+add_subdirectory(ext/VulkanMemoryAllocator)
+
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_executable(vulkantut ${SOURCES})
-target_link_libraries(vulkantut glfw glm tinyobjloader Vulkan::Vulkan)
+target_link_libraries(vulkantut glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)
 file(COPY src/resources DESTINATION ${build-output-path})

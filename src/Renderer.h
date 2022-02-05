@@ -10,10 +10,9 @@
 #include <string>
 #include <vector>
 
-
 #include "Window.h"
 #include "Model.h"
-
+#include "VkTypes.h"
 
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -57,12 +56,14 @@ public:
 	std::shared_ptr<WindowWrapper> window;
 	std::shared_ptr<Model> model;
 	
-	vk::UniqueInstance instance;
+	vk::Instance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	vk::SurfaceKHR surface;
 
 	vk::PhysicalDevice physicalDevice;
-	vk::UniqueDevice device;
+	vk::Device device;
+
+	VmaAllocator allocator;
 
 	vk::Queue presentQueue;
 	vk::Queue graphicsQueue;
@@ -144,7 +145,7 @@ public:
 
 	void setupDebugMessenger();
 
-	void DestroyDebugUtilsMessengerEXT(vk::UniqueInstance instance, vk::DebugUtilsMessengerEXT debugMessenger,
+	void DestroyDebugUtilsMessengerEXT(vk::Instance instance, vk::DebugUtilsMessengerEXT debugMessenger,
 	                                   const vk::AllocationCallbacks* pAllocator);
 
 	void createSurface();
@@ -158,6 +159,8 @@ public:
 	SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
 
 	void createLogicalDevice();
+
+	void createAllocator();
 
 	void createSwapChain();
 

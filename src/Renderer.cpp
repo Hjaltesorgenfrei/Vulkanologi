@@ -12,6 +12,9 @@
 #include <stdexcept>
 #include <iostream>
 
+#define VMA_IMPLEMENTATION
+#include "vk_mem_alloc.h"
+
 const std::string TEXTURE_PATH = "resources/viking_room.png";
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
@@ -103,6 +106,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createAllocator();
 		createSwapChain();
 		createImageViews();
 		createRenderPass();
@@ -200,7 +204,7 @@ void Renderer::createInstance() {
 	}
 
 	try {
-		instance = vk::createInstanceUnique(createInfo, nullptr);
+		instance = vk::createInstance(createInfo, nullptr);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create Vulkan Instance!") + err.what());
@@ -286,7 +290,7 @@ void Renderer::setupDebugMessenger() {
 		.pfnUserCallback = debugCallback // I don't know if this works, it needs to be tested, as the types are not the same anymore
 	};
 
-	if (createDebugUtilsMessengerEXT(*instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr, &debugMessenger) != VK_SUCCESS) {
+	if (createDebugUtilsMessengerEXT(instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr, &debugMessenger) != VK_SUCCESS) {
 		throw std::runtime_error("failed to set up debug callback!");
 	}
 }
@@ -294,7 +298,7 @@ void Renderer::setupDebugMessenger() {
 void Renderer::createSurface() {
 	VkSurfaceKHR rawSurface;
 
-	if (glfwCreateWindowSurface(*instance, window->getGLFWwindow(), nullptr, &rawSurface) != VK_SUCCESS) { // Ugly c :(
+	if (glfwCreateWindowSurface(instance, window->getGLFWwindow(), nullptr, &rawSurface) != VK_SUCCESS) { // Ugly c :(
 		throw std::runtime_error("Failed to create window surface!");
 	}
 
@@ -302,7 +306,7 @@ void Renderer::createSurface() {
 }
 
 void Renderer::pickPhysicalDevice() {
-	auto devices = instance->enumeratePhysicalDevices();
+	auto devices = instance.enumeratePhysicalDevices();
 
 	if (devices.empty()) {
 		throw std::runtime_error("Failed to find GPUs with Vulkan Support!");
@@ -426,16 +430,25 @@ void Renderer::createLogicalDevice() {
 	}
 
 	try {
-		device = physicalDevice.createDeviceUnique(createInfo);
+		device = physicalDevice.createDevice(createInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
 	}
 	graphicsQueueIndex = indices.graphicsFamily.value();
 	transferQueueIndex = indices.transferFamily.value();
-	device->getQueue(indices.graphicsFamily.value(), 0, &graphicsQueue);
-	device->getQueue(indices.presentFamily.value(), 0, &presentQueue);
-	device->getQueue(indices.transferFamily.value(), 0, &transferQueue);
+	device.getQueue(indices.graphicsFamily.value(), 0, &graphicsQueue);
+	device.getQueue(indices.presentFamily.value(), 0, &presentQueue);
+	device.getQueue(indices.transferFamily.value(), 0, &transferQueue);
+}
+
+void Renderer::createAllocator() {
+	VmaAllocatorCreateInfo allocatorInfo {
+		.physicalDevice = physicalDevice,
+		.device = device,
+		.instance = instance
+	};
+	vmaCreateAllocator(&allocatorInfo, &allocator);
 }
 
 void Renderer::createSwapChain() {
@@ -484,49 +497,49 @@ void Renderer::createSwapChain() {
 	createInfo.oldSwapchain = nullptr;
 
 	try {
-		swapChain = device->createSwapchainKHR(createInfo);
+		swapChain = device.createSwapchainKHR(createInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create swap chain!") + err.what());
 	}
 
-	swapChainImages = device->getSwapchainImagesKHR(swapChain);
+	swapChainImages = device.getSwapchainImagesKHR(swapChain);
 
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
 }
 
 void Renderer::cleanupSwapChain() {
-	device->destroyImageView(colorImageView);
-	device->destroyImage(colorImage);
-	device->freeMemory(colorImageMemory);
+	device.destroyImageView(colorImageView);
+	device.destroyImage(colorImage);
+	device.freeMemory(colorImageMemory);
 
-	device->destroyImageView(depthImageView);
-	device->destroyImage(depthImage);
-	device->freeMemory(depthImageMemory);
+	device.destroyImageView(depthImageView);
+	device.destroyImage(depthImage);
+	device.freeMemory(depthImageMemory);
 
 	for (const auto& framebuffer : swapChainFramebuffers) {
-		device->destroyFramebuffer(framebuffer);
+		device.destroyFramebuffer(framebuffer);
 	}
 
-	device->freeCommandBuffers(commandPool, commandBuffers);
+	device.freeCommandBuffers(commandPool, commandBuffers);
 
-	device->destroyPipeline(graphicsPipeline);
-	device->destroyPipelineLayout(pipelineLayout);
-	device->destroyRenderPass(renderPass);
+	device.destroyPipeline(graphicsPipeline);
+	device.destroyPipelineLayout(pipelineLayout);
+	device.destroyRenderPass(renderPass);
 
 	for (const auto& imageView : swapChainImageViews) {
-		device->destroyImageView(imageView);
+		device.destroyImageView(imageView);
 	}
 
-	device->destroySwapchainKHR(swapChain);
+	device.destroySwapchainKHR(swapChain);
 
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
-		device->destroyBuffer(uniformBuffers[i], nullptr);
-		device->freeMemory(uniformBuffersMemory[i], nullptr);
+		device.destroyBuffer(uniformBuffers[i], nullptr);
+		device.freeMemory(uniformBuffersMemory[i], nullptr);
 	}
 
-	device->destroyDescriptorPool(descriptorPool, nullptr);
+	device.destroyDescriptorPool(descriptorPool, nullptr);
 }
 
 void Renderer::recreateSwapchain() {
@@ -538,7 +551,7 @@ void Renderer::recreateSwapchain() {
 		glfwWaitEvents();
 	}
 	
-	device->waitIdle(); // Has to wait for rendering to finish before creating new swapchain. Better solutions exists.
+	device.waitIdle(); // Has to wait for rendering to finish before creating new swapchain. Better solutions exists.
 	
 	cleanupSwapChain();
 
@@ -684,7 +697,7 @@ void Renderer::createRenderPass() {
 	};
 
 	try {
-		renderPass = device->createRenderPass(renderPassInfo);
+		renderPass = device.createRenderPass(renderPassInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create render pass!") + err.what());
@@ -716,7 +729,7 @@ void Renderer::createDescriptorSetLayout() {
 		.pBindings = bindings.data()
 	};
 
-	if(device->createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSeyLayout) != vk::Result::eSuccess) {
+	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSeyLayout) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
 	
@@ -835,7 +848,7 @@ void Renderer::createGraphicsPipeline() {
 
 
 	try {
-		pipelineLayout = device->createPipelineLayout(pipelineLayoutInfo);
+		pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create pipeline layout!") + err.what());
@@ -873,14 +886,14 @@ void Renderer::createGraphicsPipeline() {
 		.basePipelineIndex = -1,
 	};
 
-	auto result = device->createGraphicsPipeline(nullptr, pipelineInfo);
+	auto result = device.createGraphicsPipeline(nullptr, pipelineInfo);
 	if (result.result != vk::Result::eSuccess) {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 	graphicsPipeline = result.value;
 
-	device->destroyShaderModule(vertShaderModule);
-	device->destroyShaderModule(fragShaderModule);
+	device.destroyShaderModule(vertShaderModule);
+	device.destroyShaderModule(fragShaderModule);
 }
 
 vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
@@ -891,7 +904,7 @@ vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
 
 	vk::ShaderModule shaderModule;
 	try {
-		shaderModule = device->createShaderModule(createInfo);
+		shaderModule = device.createShaderModule(createInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create shader module!") + err.what());
@@ -919,7 +932,7 @@ void Renderer::createFramebuffers() {
 		};
 
 		try {
-			swapChainFramebuffers[i] = device->createFramebuffer(framebufferInfo);
+			swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo);
 		}
 		catch (vk::SystemError& err) {
 			throw std::runtime_error(std::string("Failed to create framebuffer") + err.what());
@@ -934,7 +947,7 @@ void Renderer::createCommandPool() {
 	};
 
 	try {
-		commandPool = device->createCommandPool(poolInfo);
+		commandPool = device.createCommandPool(poolInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
@@ -945,7 +958,7 @@ void Renderer::createCommandPool() {
 	};
 
 	try {
-		transferCommandPool = device->createCommandPool(transferPoolInfo);
+		transferCommandPool = device.createCommandPool(transferPoolInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
@@ -1038,24 +1051,24 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 		.pQueueFamilyIndices = allowedQueueIndices.data()
 	};
 
-	if (device->createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
+	if (device.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create vertex buffer!");
 	}
 
 	vk::MemoryRequirements memoryRequirements;
-	device->getBufferMemoryRequirements(buffer, &memoryRequirements);
+	device.getBufferMemoryRequirements(buffer, &memoryRequirements);
 
 	vk::MemoryAllocateInfo allocateInfo {
 		.allocationSize = memoryRequirements.size,
 		.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties)
 	};
 
-	if (device->allocateMemory(&allocateInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
+	if (device.allocateMemory(&allocateInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to allocate vertex buffer memory!");
 	}
 
 	// If memory allocation was successful we can bind it to the buffer
-	device->bindBufferMemory(buffer, bufferMemory, 0);
+	device.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
 void Renderer::createIndexBuffer() {
@@ -1071,9 +1084,9 @@ void Renderer::createIndexBuffer() {
 		stagingBufferMemory
 	);
 
-	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
+	void* data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
 	memcpy(data, model->getIndices().data(), static_cast<size_t>(bufferSize));
-	device->unmapMemory(stagingBufferMemory);
+	device.unmapMemory(stagingBufferMemory);
 
 	createBuffer(
 		bufferSize,
@@ -1084,8 +1097,8 @@ void Renderer::createIndexBuffer() {
 	);
 
 	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-	device->destroyBuffer(stagingBuffer, nullptr);
-	device->freeMemory(stagingBufferMemory, nullptr);
+	device.destroyBuffer(stagingBuffer, nullptr);
+	device.freeMemory(stagingBufferMemory, nullptr);
 }
 
 void Renderer::createTextureImage() {
@@ -1110,9 +1123,9 @@ void Renderer::createTextureImage() {
     );
 
 
-    void* data = device->mapMemory(stagingBufferMemory, 0, imageSize);
+    void* data = device.mapMemory(stagingBufferMemory, 0, imageSize);
         memcpy(data, pixels, static_cast<size_t>(imageSize));
-    device->unmapMemory(stagingBufferMemory);
+    device.unmapMemory(stagingBufferMemory);
 
     stbi_image_free(pixels);
 
@@ -1136,8 +1149,8 @@ void Renderer::createTextureImage() {
 	);
 	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	device->destroyBuffer(stagingBuffer);
-	device->freeMemory(stagingBufferMemory);
+	device.destroyBuffer(stagingBuffer);
+	device.freeMemory(stagingBufferMemory);
 
 	generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, mipLevels);
 }
@@ -1162,26 +1175,26 @@ void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Sample
     };
 
     try {
-        image = device->createImage(imageInfo);
+        image = device.createImage(imageInfo);
     }
     catch (vk::SystemError& err) {
         throw std::runtime_error(std::string("failed to create image! ") + err.what());
     }
 
-    auto memRequirements = device->getImageMemoryRequirements(image);
+    auto memRequirements = device.getImageMemoryRequirements(image);
     vk::MemoryAllocateInfo allocInfo {
         .allocationSize = memRequirements.size,
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)
     };
 
     try {
-        imageMemory = device->allocateMemory(allocInfo);
+        imageMemory = device.allocateMemory(allocInfo);
     }
     catch (vk::SystemError& err) {
         throw std::runtime_error(std::string("failed to create image memory! ") + err.what());
     }
 
-    device->bindImageMemory(image, imageMemory, 0);
+    device.bindImageMemory(image, imageMemory, 0);
 }
 
 void Renderer::createTextureImageView() {
@@ -1302,7 +1315,7 @@ vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::
 	};
 
 	vk::ImageView imageView;
-	if (device->createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
+	if (device.createImageView(&viewInfo, nullptr, &imageView) != vk::Result::eSuccess) {
         throw std::runtime_error("failed to create image view!");
     }
 
@@ -1330,7 +1343,7 @@ void Renderer::createTextureSampler() {
 		.unnormalizedCoordinates = VK_FALSE,
 	};
 
-	if (device->createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
+	if (device.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create texture sampler!");
 	}
 }
@@ -1349,9 +1362,9 @@ void Renderer::createVertexBuffer() {
 		stagingBufferMemory
 	);
 	
-	void* data = device->mapMemory(stagingBufferMemory, 0, bufferSize);
+	void* data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
 		memcpy(data, model->getVertices().data(), static_cast<size_t>(bufferSize));
-	device->unmapMemory(stagingBufferMemory);
+	device.unmapMemory(stagingBufferMemory);
 
 	createBuffer(
 		bufferSize,
@@ -1362,8 +1375,8 @@ void Renderer::createVertexBuffer() {
 	);
 
 	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-	device->destroyBuffer(stagingBuffer, nullptr);
-	device->freeMemory(stagingBufferMemory, nullptr);
+	device.destroyBuffer(stagingBuffer, nullptr);
+	device.freeMemory(stagingBufferMemory, nullptr);
 }
 
 void Renderer::createUniformBuffers() {
@@ -1401,7 +1414,7 @@ void Renderer::createDescriptorPool() {
 		.pPoolSizes = poolSizes.data(),
 	};
 
-	if(device->createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
+	if(device.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
 		throw std::runtime_error("failed to create descriptor pool");
 	}
 }
@@ -1415,7 +1428,7 @@ void Renderer::createDescriptorSets() {
 	};
 
 	descriptorSets.resize(swapChainImages.size());
-	if(device->allocateDescriptorSets(&allocInfo, descriptorSets.data()) != vk::Result::eSuccess) {
+	if(device.allocateDescriptorSets(&allocInfo, descriptorSets.data()) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create Descriptor sets!");
 	}
 
@@ -1451,7 +1464,7 @@ void Renderer::createDescriptorSets() {
 			}
 		};
 
-		device->updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+		device.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
 }
 
@@ -1477,7 +1490,7 @@ void Renderer::createCommandBuffers() {
 	};
 
 	try {
-		commandBuffers = device->allocateCommandBuffers(allocateInfo);
+		commandBuffers = device.allocateCommandBuffers(allocateInfo);
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to allocate command buffers") + err.what());
@@ -1549,9 +1562,9 @@ void Renderer::createSyncObjects() {
 
 	try {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			imageAvailableSemaphores[i] = device->createSemaphore(semaphoreInfo);
-			renderFinishedSemaphores[i] = device->createSemaphore(semaphoreInfo);
-			inFlightFences[i] = device->createFence(fenceInfo);
+			imageAvailableSemaphores[i] = device.createSemaphore(semaphoreInfo);
+			renderFinishedSemaphores[i] = device.createSemaphore(semaphoreInfo);
+			inFlightFences[i] = device.createFence(fenceInfo);
 		}
 	}
 	catch (vk::SystemError& err) {
@@ -1561,16 +1574,16 @@ void Renderer::createSyncObjects() {
 
 void Renderer::updateUniformBuffer(uint32_t currentImage) {
 	auto& ubo = model->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
-	void* data = device->mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
+	void* data = device.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
 	{
 		memcpy(data, &ubo, sizeof(ubo));
 	}
-	device->unmapMemory(uniformBuffersMemory[currentImage]);
+	device.unmapMemory(uniformBuffersMemory[currentImage]);
 }
 
 void Renderer::drawFrame() {
 
-	while (device->waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
+	while (device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
 		== vk::Result::eTimeout) {
 		// Wait
 	}
@@ -1578,7 +1591,7 @@ void Renderer::drawFrame() {
 	uint32_t imageIndex;
 	try {
 		const auto acquired = 
-			device->acquireNextImageKHR(swapChain, 
+			device.acquireNextImageKHR(swapChain, 
 			std::numeric_limits<uint64_t>::max(), 
 				imageAvailableSemaphores[currentFrame], 
 				nullptr);
@@ -1607,7 +1620,7 @@ void Renderer::drawFrame() {
 	}
 
 	if (imagesInFlight[imageIndex]) {
-		while (device->waitForFences(imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max())
+		while (device.waitForFences(imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max())
 			== vk::Result::eTimeout) {
 			// Wait
 		}
@@ -1638,7 +1651,7 @@ void Renderer::drawFrame() {
 
 	};
 
-	device->resetFences(inFlightFences[currentFrame]);
+	device.resetFences(inFlightFences[currentFrame]);
 
 	try {
 		graphicsQueue.submit(submitInfo, inFlightFences[currentFrame]);
@@ -1685,38 +1698,42 @@ void Renderer::drawFrame() {
 void Renderer::cleanup() {
 	// Destruction of device and instance is handled by unique
 
-	device->waitIdle();
+	device.waitIdle();
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		device->destroySemaphore(renderFinishedSemaphores[i]);
-		device->destroySemaphore(imageAvailableSemaphores[i]);
-		device->destroyFence(inFlightFences[i]);
+		device.destroySemaphore(renderFinishedSemaphores[i]);
+		device.destroySemaphore(imageAvailableSemaphores[i]);
+		device.destroyFence(inFlightFences[i]);
 	}
 
 	cleanupSwapChain();
 
-	device->destroySampler(textureSampler);
-	device->destroyImageView(textureImageView);
+	device.destroySampler(textureSampler);
+	device.destroyImageView(textureImageView);
 
-	device->destroyImage(textureImage);
-	device->freeMemory(textureImageMemory);
+	device.destroyImage(textureImage);
+	device.freeMemory(textureImageMemory);
 
-	device->destroyDescriptorSetLayout(descriptorSeyLayout);
+	device.destroyDescriptorSetLayout(descriptorSeyLayout);
 
-	device->destroyBuffer(indexBuffer);
-	device->freeMemory(indexBufferMemory);
+	device.destroyBuffer(indexBuffer);
+	device.freeMemory(indexBufferMemory);
 	
-	device->destroyBuffer(vertexBuffer);
-	device->freeMemory(vertexBufferMemory);
+	device.destroyBuffer(vertexBuffer);
+	device.freeMemory(vertexBufferMemory);
 	
-	device->destroyCommandPool(commandPool);
-	device->destroyCommandPool(transferCommandPool);
+	device.destroyCommandPool(commandPool);
+	device.destroyCommandPool(transferCommandPool);
+
+	instance.destroySurfaceKHR(surface);
+
+	device.destroy();
 
 	if (enableValidationLayers) {
-		destroyDebugUtilsMessengerEXT(instance.get(), debugMessenger, nullptr);
+		destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
 	}
 
-	instance->destroySurfaceKHR(surface);
+	instance.destroy();
 }
 
 vk::CommandBuffer Renderer::beginSingleTimeCommands() {
@@ -1727,7 +1744,7 @@ vk::CommandBuffer Renderer::beginSingleTimeCommands() {
     };
 
     vk::CommandBuffer commandBuffer;
-    if (device->allocateCommandBuffers(&allocInfo, &commandBuffer) != vk::Result::eSuccess) {
+    if (device.allocateCommandBuffers(&allocInfo, &commandBuffer) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to begin single time command!");
 	}
 
@@ -1753,7 +1770,7 @@ void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
 	}
 	graphicsQueue.waitIdle();
 
-	device->freeCommandBuffers(commandPool, 1, &commandBuffer);
+	device.freeCommandBuffers(commandPool, 1, &commandBuffer);
 }
 
 void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels) {

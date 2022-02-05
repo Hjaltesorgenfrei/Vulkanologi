@@ -37,3 +37,4 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
   - [ ] Meshes
   - [ ] Textures
     - [ ] MipMaps
+- [ ] Add a deletion queue instead of cleanup.

@@ -1,5 +1,5 @@
 ﻿#include "Renderer.h"
-#include "Vertice.h"
+#include "Mesh.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -119,8 +119,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
         createTextureImage();
 		createTextureImageView();
 		createTextureSampler();
-		createVertexBuffer();
-		createIndexBuffer();
+		uploadMeshes();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
@@ -1071,36 +1070,6 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 	device.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
-void Renderer::createIndexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(model->getIndices()[0]) * model->getIndices().size();
-
-	vk::Buffer stagingBuffer;
-	vk::DeviceMemory stagingBufferMemory;
-	createBuffer(
-		bufferSize,
-		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		stagingBuffer,
-		stagingBufferMemory
-	);
-
-	void* data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
-	memcpy(data, model->getIndices().data(), static_cast<size_t>(bufferSize));
-	device.unmapMemory(stagingBufferMemory);
-
-	createBuffer(
-		bufferSize,
-		vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		indexBuffer,
-		indexBufferMemory
-	);
-
-	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-	device.destroyBuffer(stagingBuffer, nullptr);
-	device.freeMemory(stagingBufferMemory, nullptr);
-}
-
 void Renderer::createTextureImage() {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -1348,35 +1317,101 @@ void Renderer::createTextureSampler() {
 	}
 }
 
-void Renderer::createVertexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(model->getVertices()[0]) * model->getVertices().size();
+void Renderer::uploadMeshes() {
+	for (auto mesh : model->getMeshes()) {
+		uploadVertices(mesh);
+		uploadIndices(mesh);
+	}
+}
 
-	vk::Buffer stagingBuffer;
-	vk::DeviceMemory stagingBufferMemory;
+void Renderer::uploadVertices(Mesh* mesh) {
+	VkBufferCreateInfo stagingCreate {
+		.size = mesh->_vertices.size() * sizeof(Vertex),
+		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+	};
 
-	createBuffer(
-		bufferSize,
-		vk::BufferUsageFlagBits::eTransferSrc,
-		vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-		stagingBuffer,
-		stagingBufferMemory
-	);
+	VmaAllocationCreateInfo stagingAlloc {
+		.usage = VMA_MEMORY_USAGE_CPU_ONLY
+	};
+
+	VkBuffer stagingBuffer;
+	VmaAllocation stagingAllocation;
+
+	if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to upload mesh vertices!");
+	}
+
+	void *data;
+	vmaMapMemory(allocator, stagingAllocation, &data);
+	{
+		memcpy(data, mesh->_vertices.data(), mesh->_vertices.size() * sizeof(Vertex));
+	}
+	vmaUnmapMemory(allocator, stagingAllocation);
 	
-	void* data = device.mapMemory(stagingBufferMemory, 0, bufferSize);
-		memcpy(data, model->getVertices().data(), static_cast<size_t>(bufferSize));
-	device.unmapMemory(stagingBufferMemory);
+	VkBufferCreateInfo vertexBufferCreate {
+		.size = mesh->_vertices.size() * sizeof(Vertex),
+		.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+	};
 
-	createBuffer(
-		bufferSize,
-		vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-		vk::MemoryPropertyFlagBits::eDeviceLocal,
-		vertexBuffer,
-		vertexBufferMemory
-	);
+	VmaAllocationCreateInfo vmaallocInfo {
+		.usage = VMA_MEMORY_USAGE_GPU_ONLY
+	};
 
-	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-	device.destroyBuffer(stagingBuffer, nullptr);
-	device.freeMemory(stagingBufferMemory, nullptr);
+	VkBuffer vertexBuffer;
+
+	if (vmaCreateBuffer(allocator, &vertexBufferCreate, &vmaallocInfo, &vertexBuffer, &mesh->_vertexBuffer._allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to upload mesh vertices!");
+	}
+	mesh->_vertexBuffer._buffer = vertexBuffer;
+
+	copyBuffer(stagingBuffer, vertexBuffer, mesh->_vertices.size() * sizeof(Vertex));
+
+	vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+}
+
+void Renderer::uploadIndices(Mesh* mesh) {
+	VkBufferCreateInfo stagingCreate {
+		.size = mesh->_indices.size() * sizeof(uint32_t),
+		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+	};
+
+	VmaAllocationCreateInfo stagingAlloc {
+		.usage = VMA_MEMORY_USAGE_CPU_ONLY
+	};
+
+	VkBuffer stagingBuffer;
+	VmaAllocation stagingAllocation;
+
+	if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to upload mesh vertices!");
+	}
+
+	void *data;
+	vmaMapMemory(allocator, stagingAllocation, &data);
+	{
+		memcpy(data, mesh->_indices.data(), mesh->_indices.size() * sizeof(uint32_t));
+	}
+	vmaUnmapMemory(allocator, stagingAllocation);
+	
+	VkBufferCreateInfo indexBufferCreate {
+		.size = mesh->_vertices.size() * sizeof(uint32_t),
+		.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+	};
+
+	VmaAllocationCreateInfo vmaallocInfo {
+		.usage = VMA_MEMORY_USAGE_GPU_ONLY
+	};
+
+	VkBuffer indexBuffer;
+
+	if (vmaCreateBuffer(allocator, &indexBufferCreate, &vmaallocInfo, &indexBuffer, &mesh->_indexBuffer._allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to upload mesh vertices!");
+	}
+	mesh->_indexBuffer._buffer = indexBuffer;
+
+	copyBuffer(stagingBuffer, indexBuffer, mesh->_indices.size() * sizeof(uint32_t));
+
+	vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
 }
 
 void Renderer::createUniformBuffers() {
@@ -1527,18 +1562,20 @@ void Renderer::recordCommandBuffer(int index) {
 			//Add commands to buffer
 			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-			vk::Buffer vertexBuffers[] = { vertexBuffer };
-			vk::DeviceSize offsets[] = { 0 };
-			commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+			for (auto mesh : model->getMeshes()) {
+				vk::Buffer vertexBuffers[] = { mesh->_vertexBuffer._buffer };
+				vk::DeviceSize offsets[] = { 0 };
+				commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-			commandBuffers[index].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint32);
+				commandBuffers[index].bindIndexBuffer(mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
-			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
-            MeshPushConstants constants = model->getPushConstants();
-            commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
-
-			commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->getIndices().size()), 1, 0, 0, 0);
+				MeshPushConstants constants = model->getPushConstants();
+				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
+				
+				commandBuffers[index].drawIndexed(static_cast<uint32_t>(mesh->_indices.size()), 1, 0, 0, 0);
+			}
 		}
 		commandBuffers[index].endRenderPass();
 
@@ -1716,14 +1753,15 @@ void Renderer::cleanup() {
 
 	device.destroyDescriptorSetLayout(descriptorSeyLayout);
 
-	device.destroyBuffer(indexBuffer);
-	device.freeMemory(indexBufferMemory);
-	
-	device.destroyBuffer(vertexBuffer);
-	device.freeMemory(vertexBufferMemory);
+	for (auto& mesh : model->getMeshes()) {
+		vmaDestroyBuffer(allocator, mesh->_vertexBuffer._buffer, mesh->_vertexBuffer._allocation);
+		vmaDestroyBuffer(allocator, mesh->_indexBuffer._buffer, mesh->_indexBuffer._allocation);
+	}
 	
 	device.destroyCommandPool(commandPool);
 	device.destroyCommandPool(transferCommandPool);
+
+	vmaDestroyAllocator(allocator);
 
 	instance.destroySurfaceKHR(surface);
 

@@ -6,25 +6,8 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/hash.hpp>
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
 
 const std::string MODEL_PATH = "resources/viking_room.obj";
-
-
-
-namespace std {
-	template<> struct hash<Vertex> {
-		size_t operator()(Vertex const& vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^
-                   (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^
-                   (hash<glm::vec2>()(vertex.texCoord) << 1);
-        }
-	};
-}
 
 Model::Model() {
     loadModel();
@@ -36,48 +19,12 @@ Model::Model() {
     setCameraFront();
 }
 
+std::vector<Mesh*> Model::getMeshes() {
+    return std::vector<Mesh*>{&mesh};
+}
+
 void Model::loadModel() {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
-
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-        throw std::runtime_error("Model failed to load!\n" + warn + err);
-    }
-
-    std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-    for (const auto& shape : shapes) {
-        for (const auto& index : shape.mesh.indices) {
-            Vertex vertex{
-                .pos = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2]
-                },
-                .color = {1.0f, 1.0f, 1.0f},
-                .texCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
-                }
-            };
-
-            if(uniqueVertices.count(vertex) == 0) {
-                uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
-                vertices.push_back(vertex);
-            }
-            
-            indices.push_back(uniqueVertices[vertex]);
-        }
-    }
-}
-
-const std::vector<Vertex> Model::getVertices() {
-    return vertices;
-}
-const std::vector<uint32_t> Model::getIndices() {
-    return indices;
+    mesh = Mesh::LoadFromObj(MODEL_PATH.c_str());
 }
 
 const MeshPushConstants Model::getPushConstants() {

@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <glm/glm.hpp>
-#include "Vertice.h"
+#include "Mesh.h"
 
 struct MeshPushConstants {
     glm::vec4 model;
@@ -16,10 +16,9 @@ struct UniformBufferObject
 class Model
 {
 public:
-    const std::vector<Vertex> getVertices();
-    const std::vector<uint32_t> getIndices();
     const MeshPushConstants getPushConstants();
     const UniformBufferObject getCameraProject(float width, float height);
+    std::vector<Mesh*> getMeshes();
     void moveCameraForward(float speed);
     void moveCameraBackward(float speed);
     void moveCameraLeft(float speed);
@@ -29,8 +28,7 @@ public:
     Model();
 
 private:
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
+    Mesh mesh;
 
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;

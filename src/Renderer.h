@@ -92,11 +92,6 @@ public:
 	std::vector<vk::Fence> inFlightFences;
 	std::vector<vk::Fence> imagesInFlight;
 
-	vk::Buffer vertexBuffer;
-	vk::DeviceMemory vertexBufferMemory;
-	vk::Buffer indexBuffer;
-	vk::DeviceMemory indexBufferMemory;
-
 	uint32_t mipLevels;
     vk::Image textureImage;
     vk::DeviceMemory textureImageMemory;
@@ -196,9 +191,11 @@ public:
 	bool hasStencilComponent(vk::Format format);
 	vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
+	void uploadMeshes();
+	void uploadVertices(Mesh* mesh);
+	void uploadIndices(Mesh* mesh);
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
-	void createIndexBuffer();
 
     void createTextureImage();
     void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
@@ -211,7 +208,7 @@ public:
 	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 
-    void createVertexBuffer();
+   
 	void createUniformBuffers();
 	void createDescriptorPool();
 	void createDescriptorSets();

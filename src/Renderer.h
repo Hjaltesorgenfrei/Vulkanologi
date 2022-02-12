@@ -65,6 +65,8 @@ public:
 
 	VmaAllocator allocator;
 
+	vk::DescriptorPool imguiPool;
+
 	vk::Queue presentQueue;
 	vk::Queue graphicsQueue;
 	vk::Queue transferQueue;
@@ -156,6 +158,8 @@ public:
 	void createLogicalDevice();
 
 	void createAllocator();
+
+	void initImgui();
 
 	void createSwapChain();
 

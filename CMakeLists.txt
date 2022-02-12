@@ -61,8 +61,22 @@ add_subdirectory(ext/tinyobjloader)
 # VMA
 add_subdirectory(ext/VulkanMemoryAllocator)
 
+# Imgui
+include_directories(ext/imgui)
+
 file(GLOB_RECURSE SOURCES src/*.cpp)
-add_executable(vulkantut ${SOURCES})
+
+add_executable(vulkantut 
+    ${SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_tables.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_demo.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_draw.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_widgets.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_vulkan.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
+)
 target_link_libraries(vulkantut glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)

@@ -15,6 +15,9 @@
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+
 const std::string TEXTURE_PATH = "resources/viking_room.png";
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
@@ -113,6 +116,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createDescriptorSetLayout();
 		createGraphicsPipeline();
 		createCommandPool();
+		initImgui();
 		createColorResources();
 		createDepthResources();
 		createFramebuffers();
@@ -610,6 +614,64 @@ vk::Extent2D Renderer::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabi
 
 		return actualExtent;
 	}
+}
+
+void Renderer::initImgui() {
+	//1: create descriptor pool for IMGUI
+	// the size of the pool is very oversize, but it's copied from imgui demo itself.
+	vk::DescriptorPoolSize pool_sizes[] =
+	{
+		{ vk::DescriptorType::eSampler, 1000 },
+		{ vk::DescriptorType::eCombinedImageSampler, 1000 },
+		{ vk::DescriptorType::eSampledImage, 1000 },
+		{ vk::DescriptorType::eStorageImage, 1000 },
+		{ vk::DescriptorType::eUniformTexelBuffer, 1000 },
+		{ vk::DescriptorType::eStorageTexelBuffer, 1000 },
+		{ vk::DescriptorType::eUniformBuffer, 1000 },
+		{ vk::DescriptorType::eStorageBuffer, 1000 },
+		{ vk::DescriptorType::eUniformBufferDynamic, 1000 },
+		{ vk::DescriptorType::eStorageBufferDynamic, 1000 },
+		{ vk::DescriptorType::eInputAttachment, 1000 }
+	};
+
+	vk::DescriptorPoolCreateInfo pool_info {
+		.flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
+		.maxSets = 1000,
+		.poolSizeCount = static_cast<uint32_t>(std::size(pool_sizes)),
+		.pPoolSizes = pool_sizes
+	};
+
+	imguiPool = device.createDescriptorPool(pool_info);
+
+
+	// 2: initialize imgui library
+
+	//this initializes the core structures of imgui
+	ImGui::CreateContext();
+
+	//this initializes imgui for Glfw
+	ImGui_ImplGlfw_InitForVulkan(window->getGLFWwindow(), true);
+
+	//this initializes imgui for Vulkan
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = instance;
+	init_info.PhysicalDevice = physicalDevice;
+	init_info.Device = device;
+	init_info.Queue = graphicsQueue;
+	init_info.DescriptorPool = imguiPool;
+	init_info.MinImageCount = 3;
+	init_info.ImageCount = 3;
+	init_info.MSAASamples = static_cast<VkSampleCountFlagBits>(msaaSamples);
+
+	ImGui_ImplVulkan_Init(&init_info, renderPass);
+
+	//execute a gpu command to upload imgui font textures
+	auto commandBuffer = beginSingleTimeCommands();
+	ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+	endSingleTimeCommands(commandBuffer);
+
+	//clear font textures from cpu data
+	ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 void Renderer::createImageViews() {
@@ -1577,6 +1639,9 @@ void Renderer::recordCommandBuffer(int index) {
 				commandBuffers[index].drawIndexed(static_cast<uint32_t>(mesh->_indices.size()), 1, 0, 0, 0);
 			}
 		}
+
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);
+		
 		commandBuffers[index].endRenderPass();
 
 		try {
@@ -1662,9 +1727,10 @@ void Renderer::drawFrame() {
 			// Wait
 		}
 	}
-
+	
 	imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
+	
+	ImGui::Render();
 
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
@@ -1760,6 +1826,9 @@ void Renderer::cleanup() {
 	
 	device.destroyCommandPool(commandPool);
 	device.destroyCommandPool(transferCommandPool);
+
+	device.destroyDescriptorPool(imguiPool);
+	ImGui_ImplVulkan_Shutdown();
 
 	vmaDestroyAllocator(allocator);
 

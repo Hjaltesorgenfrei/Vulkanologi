@@ -10,17 +10,19 @@
 #include "Window.h"
 #include "Application.h"
 
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
 
 
 void App::run() {
-	window =
-		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
+	window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	model = std::make_shared<Model>();
-	renderer = std::make_unique<Renderer>(window, model);
     setupCallBacks();
+	renderer = std::make_unique<Renderer>(window, model);
     mainLoop();
 }
 
@@ -29,7 +31,7 @@ void App::setupCallBacks() {
     glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
-    glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
+    // glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
     glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
 }
 
@@ -55,13 +57,6 @@ void App::cursorEnterCallback(GLFWwindow* window, int enter) {
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
-        if (!app->mouseCaptured) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            app->model->resetCursorPos();
-            app->mouseCaptured = true;
-        }
-    }
 }
 
 void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -78,12 +73,23 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
         app->window->fullscreenWindow();
     }
+    if (key == GLFW_KEY_F10 && action == GLFW_PRESS) {
+        if (!app->mouseCaptured) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            app->model->resetCursorPos();
+            app->mouseCaptured = true;
+        }
+    }
 }
 
 void App::mainLoop() {
 	while (!window->windowShouldClose()) {
 		glfwPollEvents();
         processPressedKeys(window->getGLFWwindow());
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        ImGui::ShowDemoWindow();
 		renderer->drawFrame();
 	}
 }

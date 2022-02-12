@@ -21,7 +21,7 @@ const uint32_t HEIGHT = 600;
 void App::run() {
 	window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	model = std::make_shared<Model>();
-    setupCallBacks();
+    setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
 	renderer = std::make_unique<Renderer>(window, model);
     mainLoop();
 }
@@ -31,7 +31,7 @@ void App::setupCallBacks() {
     glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
-    // glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
+    glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
     glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
 }
 
@@ -56,29 +56,34 @@ void App::cursorEnterCallback(GLFWwindow* window, int enter) {
 
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
-    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-}
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse) {
+        return;
+    }
 
-void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        if (app->mouseCaptured) {
-            app->mouseCaptured = false;
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        }
-        else {
-            glfwSetWindowShouldClose(window, true);
-        }
-    }
-    if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
-        app->window->fullscreenWindow();
-    }
-    if (key == GLFW_KEY_F10 && action == GLFW_PRESS) {
+    if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
         if (!app->mouseCaptured) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             app->model->resetCursorPos();
             app->mouseCaptured = true;
         }
+    }
+    if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
+        if (app->mouseCaptured) {
+            app->mouseCaptured = false;
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
+    }
+}
+
+void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
+    if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
+        app->window->fullscreenWindow();
     }
 }
 

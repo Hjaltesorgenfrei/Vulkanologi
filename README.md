@@ -44,5 +44,5 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [ ] Incorporate changes found by Charles
   - <https://github.com/Overv/VulkanTutorial/issues/202>
   - <https://github.com/Overv/VulkanTutorial/pull/255>
-- [ ] Fix controls after adding Imgui
-  - [ ] Only capture mouse clicks if not over ui.
+- [x] Fix controls after adding Imgui
+  - [x] Only capture mouse clicks if not over ui.

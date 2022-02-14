@@ -275,7 +275,7 @@ VkBool32 Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageS
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData) {
 
-	//std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+	std::cerr << "Error from validation layer: " << pCallbackData->pMessage << std::endl;
 
 	return VK_FALSE;
 }
@@ -1004,7 +1004,8 @@ void Renderer::createFramebuffers() {
 void Renderer::createCommandPool() {
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
 	const vk::CommandPoolCreateInfo poolInfo {
-		.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value(),
+		.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+		.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
 	};
 
 	try {
@@ -1286,7 +1287,7 @@ void Renderer::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t 
 			}
 		};
 		blit.srcOffsets[0] = vk::Offset3D {0, 0, 0};
-		blit.srcOffsets[1] = vk::Offset3D {mipWidth, mipHeight, 0};
+		blit.srcOffsets[1] = vk::Offset3D {mipWidth, mipHeight, 1};
 		blit.dstOffsets[0] = vk::Offset3D {0, 0, 0};
 		blit.dstOffsets[1] = vk::Offset3D {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
 		
@@ -1388,6 +1389,7 @@ void Renderer::uploadMeshes() {
 
 void Renderer::uploadVertices(Mesh* mesh) {
 	VkBufferCreateInfo stagingCreate {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = mesh->_vertices.size() * sizeof(Vertex),
 		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 	};
@@ -1411,6 +1413,7 @@ void Renderer::uploadVertices(Mesh* mesh) {
 	vmaUnmapMemory(allocator, stagingAllocation);
 	
 	VkBufferCreateInfo vertexBufferCreate {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = mesh->_vertices.size() * sizeof(Vertex),
 		.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 	};
@@ -1433,6 +1436,7 @@ void Renderer::uploadVertices(Mesh* mesh) {
 
 void Renderer::uploadIndices(Mesh* mesh) {
 	VkBufferCreateInfo stagingCreate {
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = mesh->_indices.size() * sizeof(uint32_t),
 		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 	};
@@ -1456,7 +1460,8 @@ void Renderer::uploadIndices(Mesh* mesh) {
 	vmaUnmapMemory(allocator, stagingAllocation);
 	
 	VkBufferCreateInfo indexBufferCreate {
-		.size = mesh->_vertices.size() * sizeof(uint32_t),
+		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+		.size = mesh->_indices.size() * sizeof(uint32_t),
 		.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 	};
 

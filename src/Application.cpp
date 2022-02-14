@@ -5,6 +5,7 @@
 #include <functional>
 #include <cstdlib>
 #include <fstream>
+#include <chrono>
 
 #include "Renderer.h"
 #include "Window.h"
@@ -88,9 +89,13 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 }
 
 void App::mainLoop() {
+    auto timeStart = std::chrono::high_resolution_clock::now();
 	while (!window->windowShouldClose()) {
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> delta = now - timeStart;
+        timeStart = now;
 		glfwPollEvents();
-        processPressedKeys(window->getGLFWwindow());
+        processPressedKeys(delta.count());
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -99,15 +104,16 @@ void App::mainLoop() {
 	}
 }
 
-void App::processPressedKeys(GLFWwindow* window) {
-    const float cameraSpeed = 0.005f;
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+void App::processPressedKeys(double delta) {
+    auto glfw_window = window->getGLFWwindow();
+    const float cameraSpeed = 0.005f * delta;
+    if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         model->moveCameraForward(cameraSpeed);
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+    if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
         model->moveCameraBackward(cameraSpeed);
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+    if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
         model->moveCameraLeft(cameraSpeed);
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+    if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         model->moveCameraRight(cameraSpeed);
 }
 

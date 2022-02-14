@@ -13,7 +13,7 @@ private:
     bool mouseCaptured = false;
 
 	void mainLoop();
-    void processPressedKeys(GLFWwindow *window);
+    void processPressedKeys(double delta);
     void setupCallBacks();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);

@@ -106,7 +106,7 @@ void App::mainLoop() {
 
 void App::processPressedKeys(double delta) {
     auto glfw_window = window->getGLFWwindow();
-    const float cameraSpeed = 0.005f * delta;
+    const float cameraSpeed = 0.005f * static_cast<float>(delta);
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         model->moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)

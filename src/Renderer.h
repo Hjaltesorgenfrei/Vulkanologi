@@ -196,8 +196,9 @@ public:
 	vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
 	void uploadMeshes();
-	void uploadVertices(Mesh* mesh);
-	void uploadIndices(Mesh* mesh);
+
+    template<typename T>
+    AllocatedBuffer uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage);
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 

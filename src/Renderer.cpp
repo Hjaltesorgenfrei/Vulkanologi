@@ -1382,103 +1382,60 @@ void Renderer::createTextureSampler() {
 
 void Renderer::uploadMeshes() {
 	for (auto mesh : model->getMeshes()) {
-		uploadVertices(mesh);
-		uploadIndices(mesh);
+        mesh->_vertexBuffer = uploadBuffer(mesh->_vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        mesh->_indexBuffer = uploadBuffer(mesh->_indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 	}
 }
 
-void Renderer::uploadVertices(Mesh* mesh) {
-	VkBufferCreateInfo stagingCreate {
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = mesh->_vertices.size() * sizeof(Vertex),
-		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-	};
+template<typename T>
+AllocatedBuffer Renderer::uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage) {
+    VkBufferCreateInfo stagingCreate {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = meshData.size() * sizeof(T),
+            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    };
 
-	VmaAllocationCreateInfo stagingAlloc {
-		.usage = VMA_MEMORY_USAGE_CPU_ONLY
-	};
+    VmaAllocationCreateInfo stagingAlloc {
+            .usage = VMA_MEMORY_USAGE_CPU_ONLY
+    };
 
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
+    VkBuffer stagingBuffer;
+    VmaAllocation stagingAllocation;
 
-	if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to upload mesh vertices!");
-	}
+    if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to uploadBuffer mesh vertices!");
+    }
 
-	void *data;
-	vmaMapMemory(allocator, stagingAllocation, &data);
-	{
-		memcpy(data, mesh->_vertices.data(), mesh->_vertices.size() * sizeof(Vertex));
-	}
-	vmaUnmapMemory(allocator, stagingAllocation);
-	
-	VkBufferCreateInfo vertexBufferCreate {
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = mesh->_vertices.size() * sizeof(Vertex),
-		.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-	};
+    void *data;
+    vmaMapMemory(allocator, stagingAllocation, &data);
+    {
+        memcpy(data, meshData.data(), meshData.size() * sizeof(T));
+    }
+    vmaUnmapMemory(allocator, stagingAllocation);
 
-	VmaAllocationCreateInfo vmaallocInfo {
-		.usage = VMA_MEMORY_USAGE_GPU_ONLY
-	};
+    VkBufferCreateInfo bufferCreateInfo {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = meshData.size() * sizeof(T),
+            .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT
+    };
 
-	VkBuffer vertexBuffer;
+    VmaAllocationCreateInfo vmaallocInfo {
+            .usage = VMA_MEMORY_USAGE_GPU_ONLY
+    };
 
-	if (vmaCreateBuffer(allocator, &vertexBufferCreate, &vmaallocInfo, &vertexBuffer, &mesh->_vertexBuffer._allocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to upload mesh vertices!");
-	}
-	mesh->_vertexBuffer._buffer = vertexBuffer;
+    VkBuffer buffer;
 
-	copyBuffer(stagingBuffer, vertexBuffer, mesh->_vertices.size() * sizeof(Vertex));
+    AllocatedBuffer allocatedBuffer{};
 
-	vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
-}
+    if (vmaCreateBuffer(allocator, &bufferCreateInfo, &vmaallocInfo, &buffer, &allocatedBuffer._allocation, nullptr) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to upload buffer!");
+    }
+    allocatedBuffer._buffer = buffer;
 
-void Renderer::uploadIndices(Mesh* mesh) {
-	VkBufferCreateInfo stagingCreate {
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = mesh->_indices.size() * sizeof(uint32_t),
-		.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-	};
+    copyBuffer(stagingBuffer, buffer, meshData.size() * sizeof(T));
 
-	VmaAllocationCreateInfo stagingAlloc {
-		.usage = VMA_MEMORY_USAGE_CPU_ONLY
-	};
-
-	VkBuffer stagingBuffer;
-	VmaAllocation stagingAllocation;
-
-	if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to upload mesh vertices!");
-	}
-
-	void *data;
-	vmaMapMemory(allocator, stagingAllocation, &data);
-	{
-		memcpy(data, mesh->_indices.data(), mesh->_indices.size() * sizeof(uint32_t));
-	}
-	vmaUnmapMemory(allocator, stagingAllocation);
-	
-	VkBufferCreateInfo indexBufferCreate {
-		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-		.size = mesh->_indices.size() * sizeof(uint32_t),
-		.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-	};
-
-	VmaAllocationCreateInfo vmaallocInfo {
-		.usage = VMA_MEMORY_USAGE_GPU_ONLY
-	};
-
-	VkBuffer indexBuffer;
-
-	if (vmaCreateBuffer(allocator, &indexBufferCreate, &vmaallocInfo, &indexBuffer, &mesh->_indexBuffer._allocation, nullptr) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to upload mesh vertices!");
-	}
-	mesh->_indexBuffer._buffer = indexBuffer;
-
-	copyBuffer(stagingBuffer, indexBuffer, mesh->_indices.size() * sizeof(uint32_t));
-
-	vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+    vmaDestroyBuffer(allocator, stagingBuffer, stagingAllocation);
+    return allocatedBuffer;
 }
 
 void Renderer::createUniformBuffers() {

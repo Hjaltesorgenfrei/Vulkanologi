@@ -40,6 +40,8 @@ const UniformBufferObject Model::getCameraProject(float width, float height) {
 
 	ubo.proj[1][1] *= -1; // GLM was originally designed for OpenGL, where the Y coordinate of the clip coordinates is inverted.
 
+    ubo.projView = ubo.proj * ubo.view;
+
     return ubo;
 }
 

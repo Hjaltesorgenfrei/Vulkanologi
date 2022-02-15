@@ -13,6 +13,7 @@
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "ImGuizmo.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -99,7 +100,17 @@ void App::mainLoop() {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        ImGui::ShowDemoWindow();
+
+        ImGuizmo::BeginFrame();
+        ImGuizmo::Enable(true);
+        auto [width, height] = window->getFramebufferSize();
+        auto ubo = model->getCameraProject(static_cast<float>(width), static_cast<float>(height));
+        ubo.proj[1][1] *= -1; // ImGuizmo Expects the opposite
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], ImGuizmo::SCALE, ImGuizmo::WORLD, &(model->modelMatrix)[0][0]);
+
+        //ImGui::ShowDemoWindow();
 		renderer->drawFrame();
 	}
 }

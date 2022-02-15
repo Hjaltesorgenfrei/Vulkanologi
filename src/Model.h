@@ -17,7 +17,7 @@ struct UniformBufferObject
 class Model
 {
 public:
-    const MeshPushConstants getPushConstants();
+    MeshPushConstants getPushConstants();
     const UniformBufferObject getCameraProject(float width, float height);
     std::vector<Mesh*> getMeshes();
     void moveCameraForward(float speed);
@@ -27,6 +27,8 @@ public:
     void resetCursorPos();
     void newCursorPos(float xPos, float yPos);
     Model();
+    glm::mat4 modelMatrix;
+
 
 private:
     Mesh mesh;

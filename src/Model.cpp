@@ -9,6 +9,7 @@
 
 Model::Model() {
     loadModel();
+    modelMatrix = glm::mat4(1.0f);
 
     cameraYaw   = 135.0f;
     cameraPitch = -35.0f;
@@ -25,9 +26,9 @@ void Model::loadModel() {
     mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
 }
 
-const MeshPushConstants Model::getPushConstants() {
+MeshPushConstants Model::getPushConstants() {
     return {
-            .model = glm::mat4(1.0f)
+            .model = modelMatrix
     };
 }
 

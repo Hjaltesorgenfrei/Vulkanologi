@@ -16,3 +16,6 @@
 [submodule "ext/imgui"]
 	path = ext/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "ext/ImGuizmo"]
+	path = ext/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo

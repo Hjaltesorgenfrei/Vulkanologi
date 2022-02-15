@@ -64,6 +64,8 @@ add_subdirectory(ext/VulkanMemoryAllocator)
 # Imgui
 include_directories(ext/imgui)
 
+include_directories(ext/ImGuizmo)
+
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 add_executable(vulkantut 
@@ -76,6 +78,8 @@ add_executable(vulkantut
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_widgets.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_vulkan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.cpp
 )
 target_link_libraries(vulkantut glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)

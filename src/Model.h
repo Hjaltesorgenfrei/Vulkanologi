@@ -4,7 +4,7 @@
 #include "Mesh.h"
 
 struct MeshPushConstants {
-    glm::vec4 model;
+    glm::mat4 model;
 };
 
 struct UniformBufferObject

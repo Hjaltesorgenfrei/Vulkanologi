@@ -27,7 +27,7 @@ void Model::loadModel() {
 
 const MeshPushConstants Model::getPushConstants() {
     return {
-            .model = {0.0f, 0.0f, 0.0f, 1.0f}
+            .model = glm::mat4(1.0f)
     };
 }
 

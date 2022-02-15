@@ -25,7 +25,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [x] Move Model Matrix into push constant, but leave proj and view in UBO
 - [ ] Load more objects
   - [x] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex
-    - [ ] uploadIndices and uploadVertices can be generalized and simplified.
+    - [x] uploadIndices and uploadVertices can be generalized and simplified.
     - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers

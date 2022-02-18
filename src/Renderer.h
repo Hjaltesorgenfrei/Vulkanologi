@@ -111,8 +111,7 @@ public:
 	vk::DeviceMemory depthImageMemory;
 	vk::ImageView depthImageView;
 
-	std::vector<vk::Buffer> uniformBuffers;
-	std::vector<vk::DeviceMemory> uniformBuffersMemory;
+	std::vector<AllocatedBuffer> uniformBuffers;
 
 	vk::SampleCountFlagBits msaaSamples = vk::SampleCountFlagBits::e1;
 	vk::Image colorImage;

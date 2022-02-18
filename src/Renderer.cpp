@@ -543,8 +543,7 @@ void Renderer::cleanupSwapChain() {
 	device.destroySwapchainKHR(swapChain);
 
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
-		device.destroyBuffer(uniformBuffers[i], nullptr);
-		device.freeMemory(uniformBuffersMemory[i], nullptr);
+        vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
 	}
 
 	device.destroyDescriptorPool(descriptorPool, nullptr);
@@ -1439,19 +1438,27 @@ AllocatedBuffer Renderer::uploadBuffer(std::vector<T>& meshData, VkBufferUsageFl
 }
 
 void Renderer::createUniformBuffers() {
-	vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+    VkBufferCreateInfo create {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .size = sizeof(UniformBufferObject),
+            .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+    };
 
-	uniformBuffers.resize(swapChainImages.size());
-	uniformBuffersMemory.resize(swapChainImages.size());
+    VmaAllocationCreateInfo allocCreate {
+            .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
+    };
 
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
-		createBuffer(
-			bufferSize, 
-			vk::BufferUsageFlagBits::eUniformBuffer, 
-			vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible, 
-			uniformBuffers[i], 
-			uniformBuffersMemory[i]
-		);
+        VkBuffer buffer;
+        VmaAllocation allocation{};
+        if (vmaCreateBuffer(allocator, &create, &allocCreate, &buffer, &allocation, nullptr) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to upload buffer!");
+        }
+        AllocatedBuffer allocatedBuffer {
+            ._buffer = buffer,
+            ._allocation = allocation
+        };
+        uniformBuffers.push_back(allocatedBuffer);
 	}
 }
 
@@ -1493,7 +1500,7 @@ void Renderer::createDescriptorSets() {
 
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
 		vk::DescriptorBufferInfo bufferInfo {
-			.buffer = uniformBuffers[i],
+			.buffer = uniformBuffers[i]._buffer,
 			.offset = 0,
 			.range = sizeof(UniformBufferObject)
 		};
@@ -1638,11 +1645,12 @@ void Renderer::createSyncObjects() {
 
 void Renderer::updateUniformBuffer(uint32_t currentImage) {
 	auto& ubo = model->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
-	void* data = device.mapMemory(uniformBuffersMemory[currentImage], 0, sizeof(ubo));
+    void* data;
+    vmaMapMemory(allocator, uniformBuffers[currentImage]._allocation, &data);
 	{
 		memcpy(data, &ubo, sizeof(ubo));
 	}
-	device.unmapMemory(uniformBuffersMemory[currentImage]);
+    vmaUnmapMemory(allocator, uniformBuffers[currentImage]._allocation);
 }
 
 void Renderer::drawFrame() {

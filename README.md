@@ -35,6 +35,9 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - <https://vkguide.dev/docs/extra-chapter/multithreading/>
 - [ ] Stop blocking when uploading textures, there is currently a wait on idle which is unnecessary.
   - Should probably also use the transfer queue.
+  - Usage of transfer queue is only possible for some commands. 
+    - Therefore, a dedicated upload command is needed, which is separate from the mip map calculation.
+    - Through another possibility is using multiple graphics queues. But the transfer queue might be faster so I need to look in to that.
 - [ ] Create a Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
   - [ ] Meshes
   - [ ] Textures

@@ -116,6 +116,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model
 		createDescriptorSetLayout();
 		createGraphicsPipeline();
 		createCommandPool();
+        createUploadContext();
 		initImgui();
 		createColorResources();
 		createDepthResources();
@@ -1013,22 +1014,16 @@ void Renderer::createCommandPool() {
 		.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
 	};
 
+    const vk::CommandPoolCreateInfo transferPoolInfo {
+            .queueFamilyIndex = queueFamilyIndices.transferFamily.value(),
+    };
+
 	try {
 		commandPool = device.createCommandPool(poolInfo);
-	}
+        transferCommandPool = device.createCommandPool(transferPoolInfo);
+    }
 	catch (vk::SystemError& err) {
-		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
-	}
-
-	const vk::CommandPoolCreateInfo transferPoolInfo {
-		.queueFamilyIndex = queueFamilyIndices.transferFamily.value(),
-	};
-
-	try {
-		transferCommandPool = device.createCommandPool(transferPoolInfo);
-	}
-	catch (vk::SystemError& err) {
-		throw std::runtime_error(std::string("Failed to create graphics command pool!") + err.what());
+		throw std::runtime_error(std::string("Failed to create graphics command pools!") + err.what());
 	}
 }
 
@@ -1757,7 +1752,7 @@ void Renderer::drawFrame() {
 		default:
 			throw std::runtime_error("failed to present swap chain image!");  // an unexpected result is returned!
 		}
-	} catch (vk::OutOfDateKHRError err) {
+	} catch (vk::OutOfDateKHRError& err) {
 		recreateSwapchain();		
 	}
 	
@@ -1776,6 +1771,8 @@ void Renderer::cleanup() {
 		device.destroyFence(inFlightFences[i]);
 	}
 
+    device.destroyFence(_uploadContext._uploadFence);
+
 	cleanupSwapChain();
 
 	device.destroySampler(textureSampler);
@@ -1792,7 +1789,8 @@ void Renderer::cleanup() {
 	}
 	
 	device.destroyCommandPool(commandPool);
-	device.destroyCommandPool(transferCommandPool);
+    device.destroyCommandPool(transferCommandPool);
+    device.destroyCommandPool(_uploadContext._commandPool);
 
 	device.destroyDescriptorPool(imguiPool);
 	ImGui_ImplVulkan_Shutdown();
@@ -1810,20 +1808,36 @@ void Renderer::cleanup() {
 	instance.destroy();
 }
 
-vk::CommandBuffer Renderer::beginSingleTimeCommands() {
-    vk::CommandBufferAllocateInfo allocInfo {
-        .commandPool = commandPool,
-        .level = vk::CommandBufferLevel::ePrimary,
-        .commandBufferCount = 1
+void Renderer::createUploadContext() {
+    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+
+    const vk::CommandPoolCreateInfo uploadPoolInfo {
+            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
     };
 
-    vk::CommandBuffer commandBuffer;
-    if (device.allocateCommandBuffers(&allocInfo, &commandBuffer) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to begin single time command!");
-	}
+    try {
+        _uploadContext._commandPool = device.createCommandPool(uploadPoolInfo);
 
+        vk::CommandBufferAllocateInfo uploadAllocateInfo {
+                .commandPool = _uploadContext._commandPool,
+                .level = vk::CommandBufferLevel::ePrimary,
+                .commandBufferCount = static_cast<uint32_t>(1),
+        };
+
+        _uploadContext._commandBuffer = device.allocateCommandBuffers(uploadAllocateInfo)[0];
+
+        vk::FenceCreateInfo uploadFenceInfo { };
+        _uploadContext._uploadFence = device.createFence(uploadFenceInfo);
+    }
+    catch (vk::SystemError& err) {
+        throw std::runtime_error(std::string("Failed in creating upload context") + err.what());
+    }
+}
+
+vk::CommandBuffer Renderer::beginSingleTimeCommands() {
+    auto& commandBuffer = _uploadContext._commandBuffer;
     vk::CommandBufferBeginInfo beginInfo {
-        .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
+            .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
     };
 
     commandBuffer.begin(beginInfo);
@@ -1832,19 +1846,23 @@ vk::CommandBuffer Renderer::beginSingleTimeCommands() {
 }
 
 void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
-	commandBuffer.end();
+    commandBuffer.end();
 
-	vk::SubmitInfo submitInfo {
-		.commandBufferCount = 1,
-		.pCommandBuffers = &commandBuffer
-	};
-
-	if (graphicsQueue.submit(1, &submitInfo, nullptr) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to end single time command!");
-	}
-	graphicsQueue.waitIdle();
-
-	device.freeCommandBuffers(commandPool, 1, &commandBuffer);
+    vk::SubmitInfo submitInfo {
+            .commandBufferCount = 1,
+            .pCommandBuffers = &commandBuffer
+    };
+    auto& fence = _uploadContext._uploadFence;
+    if (graphicsQueue.submit(1, &submitInfo, fence) != vk::Result::eSuccess) {
+        throw std::runtime_error("Immediate submit failed!");
+    }
+    if (device.waitForFences(1, &fence, true, 999999) != vk::Result::eSuccess) {
+        throw std::runtime_error("Immediate submit failed!");
+    }
+    if (device.resetFences(1, &fence) != vk::Result::eSuccess) {
+        throw std::runtime_error("Immediate submit failed!");
+    }
+    device.resetCommandPool(_uploadContext._commandPool);
 }
 
 void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels) {

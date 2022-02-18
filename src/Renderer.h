@@ -9,6 +9,7 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "Window.h"
 #include "Model.h"
@@ -45,6 +46,12 @@ struct SwapChainSupportDetails {
 	vk::SurfaceCapabilitiesKHR capabilities;
 	std::vector<vk::SurfaceFormatKHR> formats;
 	std::vector<vk::PresentModeKHR> presentModes;
+};
+
+struct UploadContext {
+    vk::Fence _uploadFence;
+    vk::CommandPool _commandPool;
+    vk::CommandBuffer _commandBuffer;
 };
 
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
@@ -111,6 +118,8 @@ public:
 	vk::Image colorImage;
 	vk::DeviceMemory colorImageMemory;
 	vk::ImageView colorImageView;
+
+    UploadContext _uploadContext;
 
 	size_t currentFrame = 0;
 
@@ -208,8 +217,10 @@ public:
 	void createTextureImageView();
 	void createTextureSampler();
 
+    void createUploadContext();
     vk::CommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+
 	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 

@@ -1,7 +1,14 @@
 ﻿#include "Window.h"
+#include <iostream>
+
+void glfwErrorCallback(int code, const char* description)
+{
+	std::cerr << "GLFW Error " << code << ": " << description << std::endl;
+}
 
 WindowWrapper::WindowWrapper(const int width, const int height, const char* title) {
 	glfwInit();
+	glfwSetErrorCallback(glfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);

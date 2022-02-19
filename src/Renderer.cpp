@@ -1865,7 +1865,7 @@ void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
     if (graphicsQueue.submit(1, &submitInfo, fence) != vk::Result::eSuccess) {
         throw std::runtime_error("Immediate submit failed!");
     }
-    if (device.waitForFences(1, &fence, true, 999999) != vk::Result::eSuccess) {
+    if (device.waitForFences(1, &fence, true, 99999999) != vk::Result::eSuccess) {
         throw std::runtime_error("Immediate submit failed!");
     }
     if (device.resetFences(1, &fence) != vk::Result::eSuccess) {

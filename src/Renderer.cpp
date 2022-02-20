@@ -1439,6 +1439,7 @@ AllocatedBuffer Renderer::uploadBuffer(std::vector<T>& meshData, VkBufferUsageFl
 }
 
 void Renderer::createUniformBuffers() {
+	uniformBuffers.resize(swapChainImages.size());
     VkBufferCreateInfo create {
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = sizeof(UniformBufferObject),
@@ -1455,11 +1456,8 @@ void Renderer::createUniformBuffers() {
         if (vmaCreateBuffer(allocator, &create, &allocCreate, &buffer, &allocation, nullptr) != VK_SUCCESS) {
             throw std::runtime_error("Failed to upload buffer!");
         }
-        AllocatedBuffer allocatedBuffer {
-            ._buffer = buffer,
-            ._allocation = allocation
-        };
-        uniformBuffers.push_back(allocatedBuffer);
+        uniformBuffers[i]._buffer = buffer;
+		uniformBuffers[i]._allocation = allocation;
 	}
 }
 

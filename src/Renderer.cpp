@@ -100,9 +100,9 @@ vk::SampleCountFlagBits getMaxUsableSampleCount(vk::PhysicalDevice physicalDevic
     return vk::SampleCountFlagBits::e1;
 }
 
-Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model) {
+Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& renderData) {
 	this->window = window;
-	this->model = model;
+	this->renderData = renderData;
 	try {
 		createInstance();
 		setupDebugMessenger();
@@ -1380,9 +1380,9 @@ void Renderer::createTextureSampler() {
 }
 
 void Renderer::uploadMeshes() {
-	for (auto mesh : model->getMeshes()) {
-        mesh->_vertexBuffer = uploadBuffer(mesh->_vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        mesh->_indexBuffer = uploadBuffer(mesh->_indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+	for (auto model : renderData->getModels()) {
+        model->mesh._vertexBuffer = uploadBuffer(model->mesh._vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        model->mesh._indexBuffer = uploadBuffer(model->mesh._indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 	}
 }
 
@@ -1592,19 +1592,19 @@ void Renderer::recordCommandBuffer(int index) {
 			//Add commands to buffer
 			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
 
-			for (auto mesh : model->getMeshes()) {
-				vk::Buffer vertexBuffers[] = { mesh->_vertexBuffer._buffer };
+			for (auto model : renderData->getModels()) {
+				vk::Buffer vertexBuffers[] = { model->mesh._vertexBuffer._buffer };
 				vk::DeviceSize offsets[] = { 0 };
 				commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-				commandBuffers[index].bindIndexBuffer(mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
+				commandBuffers[index].bindIndexBuffer(model->mesh._indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
 				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
-				MeshPushConstants constants = model->getPushConstants();
+				MeshPushConstants constants = renderData->getPushConstants();
 				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
 				
-				commandBuffers[index].drawIndexed(static_cast<uint32_t>(mesh->_indices.size()), 1, 0, 0, 0);
+				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh._indices.size()), 1, 0, 0, 0);
 			}
 		}
 
@@ -1643,7 +1643,7 @@ void Renderer::createSyncObjects() {
 }
 
 void Renderer::updateUniformBuffer(uint32_t currentImage) {
-	auto& ubo = model->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
+	auto& ubo = renderData->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
     void* data;
     vmaMapMemory(allocator, uniformBuffers[currentImage]._allocation, &data);
 	{
@@ -1790,9 +1790,9 @@ void Renderer::cleanup() {
 
 	device.destroyDescriptorSetLayout(descriptorSeyLayout);
 
-	for (auto& mesh : model->getMeshes()) {
-		vmaDestroyBuffer(allocator, mesh->_vertexBuffer._buffer, mesh->_vertexBuffer._allocation);
-		vmaDestroyBuffer(allocator, mesh->_indexBuffer._buffer, mesh->_indexBuffer._allocation);
+	for (auto model : renderData->getModels()) {
+		vmaDestroyBuffer(allocator, model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
+		vmaDestroyBuffer(allocator, model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
 	}
 	
 	device.destroyCommandPool(commandPool);

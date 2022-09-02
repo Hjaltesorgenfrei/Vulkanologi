@@ -1,6 +1,8 @@
 #include "RenderData.h"
 #include <chrono>
 #include <unordered_map>
+#include "Mesh.h"
+#include "Material.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -18,12 +20,15 @@ RenderData::RenderData() {
     setCameraFront();
 }
 
-std::vector<Mesh*> RenderData::getMeshes() {
-    return std::vector<Mesh*>{&mesh};
+std::vector<std::shared_ptr<Model>> RenderData::getModels() {
+    return models;
 }
 
 void RenderData::loadModel() {
-    mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
+    auto mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
+    auto texture = Material::LoadFromPng("resources/viking_room.png");
+    std::shared_ptr<Model> model = std::make_shared<Model>(mesh, texture);
+    models.push_back(model);
 }
 
 MeshPushConstants RenderData::getPushConstants() {

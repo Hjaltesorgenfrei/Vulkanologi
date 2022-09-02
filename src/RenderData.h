@@ -1,7 +1,8 @@
 #pragma once
 #include <vector>
+#include <memory>
 #include <glm/glm.hpp>
-#include "Mesh.h"
+#include "Model.h"
 
 struct MeshPushConstants {
     glm::mat4 model;
@@ -19,7 +20,7 @@ class RenderData
 public:
     MeshPushConstants getPushConstants();
     const UniformBufferObject getCameraProject(float width, float height);
-    std::vector<Mesh*> getMeshes();
+    std::vector<std::shared_ptr<Model>> getModels();
     void moveCameraForward(float speed);
     void moveCameraBackward(float speed);
     void moveCameraLeft(float speed);
@@ -31,8 +32,7 @@ public:
 
 
 private:
-    Mesh mesh;
-
+    std::vector<std::shared_ptr<Model>> models;
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;

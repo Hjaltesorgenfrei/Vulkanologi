@@ -61,7 +61,7 @@ std::vector<char> readFile(const std::string& filename);
 class Renderer {
 public:
 	std::shared_ptr<WindowWrapper> window;
-	std::shared_ptr<RenderData> model;
+	std::shared_ptr<RenderData> renderData;
 	
 	vk::Instance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;

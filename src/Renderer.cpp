@@ -100,7 +100,7 @@ vk::SampleCountFlagBits getMaxUsableSampleCount(vk::PhysicalDevice physicalDevic
     return vk::SampleCountFlagBits::e1;
 }
 
-Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model>& model) {
+Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model) {
 	this->window = window;
 	this->model = model;
 	try {

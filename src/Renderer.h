@@ -12,7 +12,7 @@
 #include <functional>
 
 #include "Window.h"
-#include "Model.h"
+#include "RenderData.h"
 #include "VkTypes.h"
 
 
@@ -61,7 +61,7 @@ std::vector<char> readFile(const std::string& filename);
 class Renderer {
 public:
 	std::shared_ptr<WindowWrapper> window;
-	std::shared_ptr<Model> model;
+	std::shared_ptr<RenderData> model;
 	
 	vk::Instance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -128,7 +128,7 @@ public:
 
 
 	
-	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Model>& model);
+	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model);
 	~Renderer();
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const Renderer&) = delete;

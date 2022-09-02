@@ -14,7 +14,7 @@ struct UniformBufferObject
     glm::mat4 projView;
 };
 
-class Model
+class RenderData
 {
 public:
     MeshPushConstants getPushConstants();
@@ -26,7 +26,7 @@ public:
     void moveCameraRight(float speed);
     void resetCursorPos();
     void newCursorPos(float xPos, float yPos);
-    Model();
+    RenderData();
     glm::mat4 modelMatrix;
 
 

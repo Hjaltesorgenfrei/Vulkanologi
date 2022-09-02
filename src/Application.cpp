@@ -22,7 +22,7 @@ const uint32_t HEIGHT = 600;
 
 void App::run() {
 	window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
-	model = std::make_shared<Model>();
+	model = std::make_shared<RenderData>();
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
 	renderer = std::make_unique<Renderer>(window, model);
     mainLoop();

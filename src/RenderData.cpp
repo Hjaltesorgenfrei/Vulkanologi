@@ -1,4 +1,4 @@
-#include "Model.h"
+#include "RenderData.h"
 #include <chrono>
 #include <unordered_map>
 
@@ -7,7 +7,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-Model::Model() {
+RenderData::RenderData() {
     loadModel();
     modelMatrix = glm::mat4(1.0f);
 
@@ -18,21 +18,21 @@ Model::Model() {
     setCameraFront();
 }
 
-std::vector<Mesh*> Model::getMeshes() {
+std::vector<Mesh*> RenderData::getMeshes() {
     return std::vector<Mesh*>{&mesh};
 }
 
-void Model::loadModel() {
+void RenderData::loadModel() {
     mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
 }
 
-MeshPushConstants Model::getPushConstants() {
+MeshPushConstants RenderData::getPushConstants() {
     return {
             .model = modelMatrix
     };
 }
 
-const UniformBufferObject Model::getCameraProject(float width, float height) {
+const UniformBufferObject RenderData::getCameraProject(float width, float height) {
     glm::vec3 cameraDirection = glm::normalize(cameraPosition - glm::vec3(0.0f, 0.0f, 0.0f));
 	UniformBufferObject ubo {
 		.view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp),
@@ -46,23 +46,23 @@ const UniformBufferObject Model::getCameraProject(float width, float height) {
     return ubo;
 }
 
-void Model::moveCameraForward(float speed) {
+void RenderData::moveCameraForward(float speed) {
     cameraPosition += speed * cameraFront;
 }
 
-void Model::moveCameraBackward(float speed) {
+void RenderData::moveCameraBackward(float speed) {
     cameraPosition -= speed * cameraFront;
 }
 
-void Model::moveCameraLeft(float speed) {
+void RenderData::moveCameraLeft(float speed) {
     cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
 }
 
-void Model::moveCameraRight(float speed) {
+void RenderData::moveCameraRight(float speed) {
     cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * speed;
 }
 
-void Model::newCursorPos(float xPos, float yPos) {
+void RenderData::newCursorPos(float xPos, float yPos) {
     if (firstCursorCall)
     {
         cursorXPos = xPos;
@@ -92,7 +92,7 @@ void Model::newCursorPos(float xPos, float yPos) {
     setCameraFront();
 }
 
-void Model::setCameraFront() {
+void RenderData::setCameraFront() {
     glm::vec3 front;
     front.x = cos(glm::radians(cameraYaw)) * cos(glm::radians(cameraPitch));
     front.y = sin(glm::radians(cameraPitch));
@@ -100,7 +100,7 @@ void Model::setCameraFront() {
     cameraFront = glm::normalize(front);
 }
 
-void Model::resetCursorPos() {
+void RenderData::resetCursorPos() {
     firstCursorCall = true;
 }
 

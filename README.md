@@ -39,6 +39,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - Therefore, a dedicated upload command is needed, which is separate from the mip map calculation.
     - Through another possibility is using multiple graphics queues. But the transfer queue might be faster so I need to look in to that.
 - [ ] Create a Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
+  - <https://vkguide.dev/docs/extra-chapter/asset_system/>
   - [ ] Meshes
   - [ ] Textures
     - [ ] MipMaps

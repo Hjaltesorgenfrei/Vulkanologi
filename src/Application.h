@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer.h"
-#include "Model.h"
+#include "RenderData.h"
 
 class App {
 public:
@@ -8,7 +8,7 @@ public:
 
 private:
 	std::shared_ptr<WindowWrapper> window;
-	std::shared_ptr<Model> model;
+	std::shared_ptr<RenderData> model;
 	std::unique_ptr<Renderer> renderer;
     bool mouseCaptured = false;
 

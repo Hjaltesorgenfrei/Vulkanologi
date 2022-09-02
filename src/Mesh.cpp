@@ -55,7 +55,7 @@ Mesh Mesh::LoadFromObj(const char* filename) {
     std::string warn, err;
 
     if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, "./resources")) {
-        throw std::runtime_error("Model failed to load!\n" + warn + err);
+        throw std::runtime_error("RenderData failed to load!\n" + warn + err);
     }
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};

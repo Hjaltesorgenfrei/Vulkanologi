@@ -84,4 +84,5 @@ add_executable(vulkantut
 target_link_libraries(vulkantut glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkantut shader.frag)
 add_shader(vulkantut shader.vert)
-file(COPY src/resources DESTINATION ${build-output-path})
+
+add_dependencies(vulkantut copy-runtime-files)

@@ -51,6 +51,10 @@ bool WindowWrapper::isFullScreen() {
 	return glfwGetWindowMonitor(window) != nullptr;
 }
 
+void WindowWrapper::setTitle(const char* title) {
+    glfwSetWindowTitle(window, title);
+}
+
 static int mini(int x, int y)
 {
     return x < y ? x : y;

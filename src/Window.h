@@ -18,4 +18,5 @@ public:
 	[[nodiscard]] bool windowShouldClose() const;
 	void fullscreenWindow();
 	[[nodiscard]] bool isFullScreen();
+	void setTitle(const char* title);
 };

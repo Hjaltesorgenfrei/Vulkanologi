@@ -506,6 +506,9 @@ void Renderer::createSwapChain() {
 
 	try {
 		swapChain = device.createSwapchainKHR(createInfo);
+		swapChainDeletionQueue.push_function([&]() {
+			device.destroySwapchainKHR(swapChain);
+		});
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create swap chain!") + err.what());
@@ -515,38 +518,6 @@ void Renderer::createSwapChain() {
 
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
-}
-
-void Renderer::cleanupSwapChain() {
-	device.destroyImageView(colorImageView);
-	device.destroyImage(colorImage);
-	device.freeMemory(colorImageMemory);
-
-	device.destroyImageView(depthImageView);
-	device.destroyImage(depthImage);
-	device.freeMemory(depthImageMemory);
-
-	for (const auto& framebuffer : swapChainFramebuffers) {
-		device.destroyFramebuffer(framebuffer);
-	}
-
-	device.freeCommandBuffers(commandPool, commandBuffers);
-
-	device.destroyPipeline(graphicsPipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-	device.destroyRenderPass(renderPass);
-
-	for (const auto& imageView : swapChainImageViews) {
-		device.destroyImageView(imageView);
-	}
-
-	device.destroySwapchainKHR(swapChain);
-
-	for(size_t i = 0; i < swapChainImages.size(); i++) {
-        vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
-	}
-
-	device.destroyDescriptorPool(descriptorPool, nullptr);
 }
 
 void Renderer::recreateSwapchain() {
@@ -560,7 +531,7 @@ void Renderer::recreateSwapchain() {
 	
 	device.waitIdle(); // Has to wait for rendering to finish before creating new swapchain. Better solutions exists.
 	
-	cleanupSwapChain();
+	swapChainDeletionQueue.flush();
 
 	createSwapChain();
 	createImageViews();
@@ -682,6 +653,9 @@ void Renderer::createImageViews() {
 	swapChainImageViews.resize(swapChainImages.size());
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
 		swapChainImageViews[i] = createImageView(swapChainImages[i], swapChainImageFormat, vk::ImageAspectFlagBits::eColor, 1);
+		swapChainDeletionQueue.push_function([&, i]() {
+			device.destroyImageView(swapChainImageViews[i]);
+		});
 	}
 }
 
@@ -764,6 +738,9 @@ void Renderer::createRenderPass() {
 
 	try {
 		renderPass = device.createRenderPass(renderPassInfo);
+		swapChainDeletionQueue.push_function([&]() {
+			device.destroyRenderPass(renderPass);
+		});
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create render pass!") + err.what());
@@ -915,6 +892,9 @@ void Renderer::createGraphicsPipeline() {
 
 	try {
 		pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
+		swapChainDeletionQueue.push_function([&]() {
+			device.destroyPipelineLayout(pipelineLayout);
+		});
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to create pipeline layout!") + err.what());
@@ -957,6 +937,9 @@ void Renderer::createGraphicsPipeline() {
 		throw std::runtime_error("failed to create graphics pipeline!");
 	}
 	graphicsPipeline = result.value;
+	swapChainDeletionQueue.push_function([&]() {
+		device.destroyPipeline(graphicsPipeline);
+	});
 
 	device.destroyShaderModule(vertShaderModule);
 	device.destroyShaderModule(fragShaderModule);
@@ -999,6 +982,9 @@ void Renderer::createFramebuffers() {
 
 		try {
 			swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo);
+			swapChainDeletionQueue.push_function([&, i]() {
+				device.destroyFramebuffer(swapChainFramebuffers[i]);
+			});
 		}
 		catch (vk::SystemError& err) {
 			throw std::runtime_error(std::string("Failed to create framebuffer") + err.what());
@@ -1041,6 +1027,11 @@ void Renderer::createColorResources() {
 		colorImageMemory
 	);
 	colorImageView = createImageView(colorImage, colorFormat, vk::ImageAspectFlagBits::eColor, 1);
+	swapChainDeletionQueue.push_function([&]() {
+		device.destroyImageView(colorImageView);
+		device.destroyImage(colorImage);
+		device.freeMemory(colorImageMemory);
+	});
 }
 
 void Renderer::createDepthResources() {
@@ -1059,6 +1050,11 @@ void Renderer::createDepthResources() {
 	depthImageView = createImageView(depthImage, depthFormat, vk::ImageAspectFlagBits::eDepth, 1);
 
 	transitionImageLayout(depthImage, depthFormat, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthStencilAttachmentOptimal, 1);
+	swapChainDeletionQueue.push_function([&]() {
+		device.destroyImageView(depthImageView);
+		device.destroyImage(depthImage);
+		device.freeMemory(depthImageMemory);
+	});
 }
 
 vk::Format Renderer::findDepthFormat() {
@@ -1458,6 +1454,9 @@ void Renderer::createUniformBuffers() {
         }
         uniformBuffers[i]._buffer = buffer;
 		uniformBuffers[i]._allocation = allocation;
+		swapChainDeletionQueue.push_function([&, i]() {
+			vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
+		});
 	}
 }
 
@@ -1482,6 +1481,9 @@ void Renderer::createDescriptorPool() {
 	if(device.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
 		throw std::runtime_error("failed to create descriptor pool");
 	}
+	swapChainDeletionQueue.push_function([&]() {
+		device.destroyDescriptorPool(descriptorPool, nullptr);
+	});
 }
 
 void Renderer::createDescriptorSets() {
@@ -1556,6 +1558,9 @@ void Renderer::createCommandBuffers() {
 
 	try {
 		commandBuffers = device.allocateCommandBuffers(allocateInfo);
+		swapChainDeletionQueue.push_function([&]() {
+			device.freeCommandBuffers(commandPool, commandBuffers);
+		});
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("failed to allocate command buffers") + err.what());
@@ -1781,7 +1786,7 @@ void Renderer::cleanup() {
 
     device.destroyFence(_uploadContext._uploadFence);
 
-	cleanupSwapChain();
+	swapChainDeletionQueue.flush();
 
 	device.destroySampler(textureSampler);
 	device.destroyImageView(textureImageView);

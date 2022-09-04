@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include <deque>
+#include <functional>
 
 #include "Window.h"
 #include "RenderData.h"
@@ -58,11 +60,31 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 std::vector<char> readFile(const std::string& filename);
 
+struct DeletionQueue
+{
+    std::deque<std::function<void()>> deletors;
+
+    void push_function(std::function<void()>&& function) {
+        deletors.push_back(function);
+    }
+
+    void flush() {
+        // reverse iterate the deletion queue to execute all the functions
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+            (*it)(); //call functors
+        }
+
+        deletors.clear();
+    }
+};
+
 class Renderer {
 public:
 	std::shared_ptr<WindowWrapper> window;
 	std::shared_ptr<RenderData> renderData;
-	
+	DeletionQueue mainDeletionQueue;
+	DeletionQueue swapChainDeletionQueue;
+
 	vk::Instance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
 	vk::SurfaceKHR surface;
@@ -171,8 +193,6 @@ public:
 	void initImgui();
 
 	void createSwapChain();
-
-	void cleanupSwapChain();
 
 	void recreateSwapchain();
 

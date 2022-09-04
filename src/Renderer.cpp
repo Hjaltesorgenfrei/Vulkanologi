@@ -1760,6 +1760,7 @@ void Renderer::drawFrame() {
 			throw std::runtime_error("failed to present swap chain image!");  // an unexpected result is returned!
 		}
 	} catch (vk::OutOfDateKHRError& err) {
+		std::cerr << "Recreating Swapchain: " << err.what() << "\n";
 		recreateSwapchain();		
 	}
 	

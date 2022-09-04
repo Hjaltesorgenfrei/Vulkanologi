@@ -88,8 +88,9 @@ public:
 	vk::DescriptorSetLayout descriptorSeyLayout;
 	std::vector<vk::DescriptorSet> descriptorSets;
 	vk::DescriptorPool descriptorPool;
-	vk::PipelineLayout pipelineLayout;
 	vk::RenderPass renderPass;
+
+	vk::PipelineLayout pipelineLayout;
 	vk::Pipeline graphicsPipeline;
 
 	vk::CommandPool commandPool;

@@ -12,3 +12,7 @@ struct AllocatedImage {
     vk::Image _image;
     VmaAllocation _allocation;
 };
+
+struct MeshPushConstants {
+    glm::mat4 model;
+};

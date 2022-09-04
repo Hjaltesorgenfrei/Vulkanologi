@@ -4,10 +4,6 @@
 #include <glm/glm.hpp>
 #include "Model.h"
 
-struct MeshPushConstants {
-    glm::mat4 model;
-};
-
 struct UniformBufferObject
 {
     glm::mat4 view;

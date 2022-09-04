@@ -209,6 +209,9 @@ void Renderer::createInstance() {
 
 	try {
 		instance = vk::createInstance(createInfo, nullptr);
+		mainDeletionQueue.push_function([&]() {
+			instance.destroy();
+        });
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create Vulkan Instance!") + err.what());
@@ -301,6 +304,9 @@ void Renderer::setupDebugMessenger() {
 	if (createDebugUtilsMessengerEXT(instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr, &debugMessenger) != VK_SUCCESS) {
 		throw std::runtime_error("failed to set up debug callback!");
 	}
+	mainDeletionQueue.push_function([&]() {
+		destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
+	});
 }
 
 void Renderer::createSurface() {
@@ -311,6 +317,9 @@ void Renderer::createSurface() {
 	}
 
 	surface = rawSurface;
+	mainDeletionQueue.push_function([&]() {
+		instance.destroySurfaceKHR(surface);
+	});
 }
 
 void Renderer::pickPhysicalDevice() {
@@ -439,6 +448,9 @@ void Renderer::createLogicalDevice() {
 
 	try {
 		device = physicalDevice.createDevice(createInfo);
+		mainDeletionQueue.push_function([&]() {
+			device.destroy();
+        });
 	}
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
@@ -457,6 +469,9 @@ void Renderer::createAllocator() {
 		.instance = instance
 	};
 	vmaCreateAllocator(&allocatorInfo, &allocator);
+	mainDeletionQueue.push_function([&]() {
+		vmaDestroyAllocator(allocator);
+	});
 }
 
 void Renderer::createSwapChain() {
@@ -647,6 +662,10 @@ void Renderer::initImgui() {
 
 	//clear font textures from cpu data
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
+	mainDeletionQueue.push_function([&]() {
+		device.destroyDescriptorPool(imguiPool);
+		ImGui_ImplVulkan_Shutdown();
+	});
 }
 
 void Renderer::createImageViews() {
@@ -775,7 +794,9 @@ void Renderer::createDescriptorSetLayout() {
 	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSeyLayout) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
-	
+	mainDeletionQueue.push_function([&]() {
+		device.destroyDescriptorSetLayout(descriptorSeyLayout);
+	});
 }
 
 void Renderer::createGraphicsPipeline() {
@@ -1006,6 +1027,10 @@ void Renderer::createCommandPool() {
 	try {
 		commandPool = device.createCommandPool(poolInfo);
         transferCommandPool = device.createCommandPool(transferPoolInfo);
+		mainDeletionQueue.push_function([&]() {
+			device.destroyCommandPool(commandPool);
+			device.destroyCommandPool(transferCommandPool);
+        });
     }
 	catch (vk::SystemError& err) {
 		throw std::runtime_error(std::string("Failed to create graphics command pools!") + err.what());
@@ -1180,6 +1205,10 @@ void Renderer::createTextureImage() {
 	device.freeMemory(stagingBufferMemory);
 
 	generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, mipLevels);
+	mainDeletionQueue.push_function([&]() {
+		device.destroyImage(textureImage);
+		device.freeMemory(textureImageMemory);
+	});
 }
 
 void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
@@ -1226,6 +1255,9 @@ void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Sample
 
 void Renderer::createTextureImageView() {
 	textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevels);
+	mainDeletionQueue.push_function([&]() {
+		device.destroyImageView(textureImageView);
+	});
 }
 
 void Renderer::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels) {
@@ -1373,12 +1405,19 @@ void Renderer::createTextureSampler() {
 	if (device.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create texture sampler!");
 	}
+	mainDeletionQueue.push_function([&]() {
+		device.destroySampler(textureSampler);
+	});
 }
 
 void Renderer::uploadMeshes() {
 	for (auto model : renderData->getModels()) {
         model->mesh._vertexBuffer = uploadBuffer(model->mesh._vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         model->mesh._indexBuffer = uploadBuffer(model->mesh._indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+		mainDeletionQueue.push_function([&, model]() {
+			vmaDestroyBuffer(allocator, model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
+			vmaDestroyBuffer(allocator, model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
+        });
 	}
 }
 
@@ -1640,6 +1679,11 @@ void Renderer::createSyncObjects() {
 			imageAvailableSemaphores[i] = device.createSemaphore(semaphoreInfo);
 			renderFinishedSemaphores[i] = device.createSemaphore(semaphoreInfo);
 			inFlightFences[i] = device.createFence(fenceInfo);
+			mainDeletionQueue.push_function([&, i]() {
+				device.destroySemaphore(renderFinishedSemaphores[i]);
+				device.destroySemaphore(imageAvailableSemaphores[i]);
+				device.destroyFence(inFlightFences[i]);
+			});
 		}
 	}
 	catch (vk::SystemError& err) {
@@ -1774,51 +1818,9 @@ void Renderer::drawFrame() {
 }
 
 void Renderer::cleanup() {
-	// Destruction of device and instance is handled by unique
-
 	device.waitIdle();
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		device.destroySemaphore(renderFinishedSemaphores[i]);
-		device.destroySemaphore(imageAvailableSemaphores[i]);
-		device.destroyFence(inFlightFences[i]);
-	}
-
-    device.destroyFence(_uploadContext._uploadFence);
-
 	swapChainDeletionQueue.flush();
-
-	device.destroySampler(textureSampler);
-	device.destroyImageView(textureImageView);
-
-	device.destroyImage(textureImage);
-	device.freeMemory(textureImageMemory);
-
-	device.destroyDescriptorSetLayout(descriptorSeyLayout);
-
-	for (auto model : renderData->getModels()) {
-		vmaDestroyBuffer(allocator, model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
-		vmaDestroyBuffer(allocator, model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
-	}
-	
-	device.destroyCommandPool(commandPool);
-    device.destroyCommandPool(transferCommandPool);
-    device.destroyCommandPool(_uploadContext._commandPool);
-
-	device.destroyDescriptorPool(imguiPool);
-	ImGui_ImplVulkan_Shutdown();
-
-	vmaDestroyAllocator(allocator);
-
-	instance.destroySurfaceKHR(surface);
-
-	device.destroy();
-
-	if (enableValidationLayers) {
-		destroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
-	}
-
-	instance.destroy();
+	mainDeletionQueue.flush();
 }
 
 void Renderer::createUploadContext() {
@@ -1841,6 +1843,10 @@ void Renderer::createUploadContext() {
 
         vk::FenceCreateInfo uploadFenceInfo { };
         _uploadContext._uploadFence = device.createFence(uploadFenceInfo);
+		mainDeletionQueue.push_function([&]() {
+    		device.destroyFence(_uploadContext._uploadFence);
+    		device.destroyCommandPool(_uploadContext._commandPool);
+        });
     }
     catch (vk::SystemError& err) {
         throw std::runtime_error(std::string("Failed in creating upload context") + err.what());

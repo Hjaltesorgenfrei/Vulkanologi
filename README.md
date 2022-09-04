@@ -43,7 +43,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
   - [ ] Meshes
   - [ ] Textures
     - [ ] MipMaps
-- [ ] Add a deletion queue instead of cleanup.
+- [x] Add a deletion queue instead of cleanup.
 - [ ] Update to use Synchro2. <https://www.khronos.org/blog/vulkan-timeline-semaphores>
 - [ ] Incorporate changes found by Charles
   - <https://github.com/Overv/VulkanTutorial/issues/202>

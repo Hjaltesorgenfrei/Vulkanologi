@@ -14,21 +14,24 @@ struct UniformBufferObject
 class RenderData
 {
 public:
+    RenderData();
+    ~RenderData();
+	RenderData& operator=(const RenderData&) = delete;
+	RenderData(const RenderData&) = delete;
     MeshPushConstants getPushConstants();
     const UniformBufferObject getCameraProject(float width, float height);
-    std::vector<std::shared_ptr<RenderObject>> getModels();
+    std::vector<RenderObject*> getModels();
     void moveCameraForward(float speed);
     void moveCameraBackward(float speed);
     void moveCameraLeft(float speed);
     void moveCameraRight(float speed);
     void resetCursorPos();
     void newCursorPos(float xPos, float yPos);
-    RenderData();
     glm::mat4 modelMatrix;
 
 
 private:
-    std::vector<std::shared_ptr<RenderObject>> models;
+    std::vector<RenderObject*> models;
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;

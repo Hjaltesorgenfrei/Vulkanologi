@@ -8,7 +8,7 @@
 #include <chrono>
 
 #include "Renderer.h"
-#include "Window.h"
+#include "WindowWrapper.h"
 #include "Application.h"
 
 #include "backends/imgui_impl_glfw.h"

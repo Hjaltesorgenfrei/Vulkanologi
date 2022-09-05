@@ -13,7 +13,7 @@
 #include <deque>
 #include <functional>
 
-#include "Window.h"
+#include "WindowWrapper.h"
 #include "RenderData.h"
 #include "VkTypes.h"
 

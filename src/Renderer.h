@@ -238,8 +238,8 @@ public:
 	void createTextureSampler();
 
     void createUploadContext();
-    vk::CommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(vk::CommandBuffer commandBuffer);
+
+	void immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function);
 
 	void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 	void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);

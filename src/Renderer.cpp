@@ -656,9 +656,9 @@ void Renderer::initImgui() {
 	ImGui_ImplVulkan_Init(&init_info, renderPass);
 
 	//execute a gpu command to upload imgui font textures
-	auto commandBuffer = beginSingleTimeCommands();
-	ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-	endSingleTimeCommands(commandBuffer);
+	immediateSubmit([&](auto cmd){
+		ImGui_ImplVulkan_CreateFontsTexture(cmd);
+	});
 
 	//clear font textures from cpu data
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -1267,65 +1267,82 @@ void Renderer::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t 
 		throw std::runtime_error("Texture image format does not support linear blitting!");
 	}
 
-	auto commandBuffer = beginSingleTimeCommands();
-
-	vk::ImageMemoryBarrier barrier {
-		.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-		.image = image,
-		.subresourceRange = {
-			.aspectMask = vk::ImageAspectFlagBits::eColor,
-			.levelCount = 1,
-			.baseArrayLayer = 0,
-			.layerCount = 1,
-		}
-	};
-
-	int32_t mipWidth = texWidth;
-	int32_t mipHeight = texHeight;
-
-	for(uint32_t i = 1; i < mipLevels; i++) {
-		barrier.subresourceRange.baseMipLevel = i - 1;
-		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-		barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-		barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-		barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
-
-		commandBuffer.pipelineBarrier(
-			vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, 
-			vk::DependencyFlags(),
-			0, nullptr,
-			0, nullptr,
-			1, &barrier
-		);
-
-		vk::ImageBlit blit{
-			.srcSubresource = {
+	immediateSubmit([&](auto commandBuffer){
+		vk::ImageMemoryBarrier barrier {
+			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+			.image = image,
+			.subresourceRange = {
 				.aspectMask = vk::ImageAspectFlagBits::eColor,
-				.mipLevel = i - 1,
+				.levelCount = 1,
 				.baseArrayLayer = 0,
-				.layerCount = 1
-			},
-			.dstSubresource = {
-				.aspectMask = vk::ImageAspectFlagBits::eColor,
-				.mipLevel = i,
-				.baseArrayLayer = 0,
-				.layerCount = 1
+				.layerCount = 1,
 			}
 		};
-		blit.srcOffsets[0] = vk::Offset3D {0, 0, 0};
-		blit.srcOffsets[1] = vk::Offset3D {mipWidth, mipHeight, 1};
-		blit.dstOffsets[0] = vk::Offset3D {0, 0, 0};
-		blit.dstOffsets[1] = vk::Offset3D {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
-		
-		commandBuffer.blitImage(
-			image, vk::ImageLayout::eTransferSrcOptimal,
-			image, vk::ImageLayout::eTransferDstOptimal,
-			1, &blit,
-			vk::Filter::eLinear
-		);
 
-		barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+		int32_t mipWidth = texWidth;
+		int32_t mipHeight = texHeight;
+
+		for(uint32_t i = 1; i < mipLevels; i++) {
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
+			barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+			barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, 
+				vk::DependencyFlags(),
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+
+			vk::ImageBlit blit{
+				.srcSubresource = {
+					.aspectMask = vk::ImageAspectFlagBits::eColor,
+					.mipLevel = i - 1,
+					.baseArrayLayer = 0,
+					.layerCount = 1
+				},
+				.dstSubresource = {
+					.aspectMask = vk::ImageAspectFlagBits::eColor,
+					.mipLevel = i,
+					.baseArrayLayer = 0,
+					.layerCount = 1
+				}
+			};
+			blit.srcOffsets[0] = vk::Offset3D {0, 0, 0};
+			blit.srcOffsets[1] = vk::Offset3D {mipWidth, mipHeight, 1};
+			blit.dstOffsets[0] = vk::Offset3D {0, 0, 0};
+			blit.dstOffsets[1] = vk::Offset3D {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
+			
+			commandBuffer.blitImage(
+				image, vk::ImageLayout::eTransferSrcOptimal,
+				image, vk::ImageLayout::eTransferDstOptimal,
+				1, &blit,
+				vk::Filter::eLinear
+			);
+
+			barrier.oldLayout = vk::ImageLayout::eTransferSrcOptimal;
+			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+			barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+			barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+
+			commandBuffer.pipelineBarrier(
+				vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, 
+				vk::DependencyFlags(),
+				0, nullptr,
+				0, nullptr,
+				1, &barrier
+			);
+
+			if(mipWidth > 1) mipWidth /= 2;
+			if(mipHeight > 1) mipHeight /= 2;
+		}
+
+		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
 		barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
@@ -1337,26 +1354,7 @@ void Renderer::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t 
 			0, nullptr,
 			1, &barrier
 		);
-
-		if(mipWidth > 1) mipWidth /= 2;
-		if(mipHeight > 1) mipHeight /= 2;
-	}
-
-	barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-	barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
-	barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-	barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-	barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-	commandBuffer.pipelineBarrier(
-		vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, 
-		vk::DependencyFlags(),
-		0, nullptr,
-		0, nullptr,
-		1, &barrier
-	);
-
-	endSingleTimeCommands(commandBuffer);
+	});
 }
 
 vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels) {
@@ -1575,15 +1573,12 @@ void Renderer::createDescriptorSets() {
 }
 
 void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
-	auto commandBuffer = beginSingleTimeCommands();
-	{
+	immediateSubmit([&](vk::CommandBuffer cmd){
 		vk::BufferCopy copyRegion{
 			.size = size
 		};
-		commandBuffer.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
-	} 
-
-	endSingleTimeCommands(commandBuffer);
+		cmd.copyBuffer(srcBuffer, dstBuffer, 1, &copyRegion);
+	});
 }
 
 void Renderer::createCommandBuffers() {
@@ -1853,19 +1848,15 @@ void Renderer::createUploadContext() {
     }
 }
 
-vk::CommandBuffer Renderer::beginSingleTimeCommands() {
-    auto& commandBuffer = _uploadContext._commandBuffer;
+void Renderer::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function) {
+	auto& commandBuffer = _uploadContext._commandBuffer;
     vk::CommandBufferBeginInfo beginInfo {
             .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
     };
 
     commandBuffer.begin(beginInfo);
-
-	return commandBuffer;
-}
-
-void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
-    commandBuffer.end();
+	function(commandBuffer);
+	commandBuffer.end();
 
     vk::SubmitInfo submitInfo {
             .commandBufferCount = 1,
@@ -1885,8 +1876,6 @@ void Renderer::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
 }
 
 void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels) {
-	auto commandBuffer = beginSingleTimeCommands();
-
 	vk::ImageMemoryBarrier barrier {
 		.oldLayout = oldLayout,
 		.newLayout = newLayout,
@@ -1937,22 +1926,18 @@ void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::Ima
 		throw std::invalid_argument("Unsupported layout transistion!");
 	}
 
-
-
-	commandBuffer.pipelineBarrier(
-		sourceStage, destinationStage, 
-		vk::DependencyFlags(), 
-		0, nullptr, 
-		0, nullptr, 
-		1, &barrier
-	);
-
-	endSingleTimeCommands(commandBuffer);
+	immediateSubmit([&](auto cmd){
+		cmd.pipelineBarrier(
+			sourceStage, destinationStage, 
+			vk::DependencyFlags(), 
+			0, nullptr, 
+			0, nullptr, 
+			1, &barrier
+		);
+	});
 }
 
-void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {
-	auto commandBuffer = beginSingleTimeCommands();
-	
+void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {	
 	vk::BufferImageCopy region {
 		.bufferOffset = 0,
 		.bufferRowLength = 0,
@@ -1967,7 +1952,7 @@ void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t wi
 		.imageExtent = {width, height, 1}
 	};
 
-	commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
-
-	endSingleTimeCommands(commandBuffer);
+	immediateSubmit([&](auto cmd){
+		cmd.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
+	});
 }

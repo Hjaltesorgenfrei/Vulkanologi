@@ -1,13 +1,13 @@
-#include "Model.h"
+#include "RenderObject.h"
 #include "RenderData.h"
 
-Model::Model(Mesh mesh, Material material) {
+RenderObject::RenderObject(Mesh mesh, Material material) {
     this->material = material;
     this->mesh = mesh;
     transformMatrix.model = glm::mat4(1.0f);
 }
 
-void Model::Draw(vk::CommandBuffer commandBuffer) {
+void RenderObject::Draw(vk::CommandBuffer commandBuffer) {
     vk::Buffer vertexBuffers[] = { mesh._vertexBuffer._buffer };
     vk::DeviceSize offsets[] = { 0 };
     commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);

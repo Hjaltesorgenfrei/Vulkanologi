@@ -20,14 +20,14 @@ RenderData::RenderData() {
     setCameraFront();
 }
 
-std::vector<std::shared_ptr<Model>> RenderData::getModels() {
+std::vector<std::shared_ptr<RenderObject>> RenderData::getModels() {
     return models;
 }
 
 void RenderData::loadModel() {
     auto mesh = Mesh::LoadFromObj("resources/viking_room_fixed.obj");
     auto texture = Material::LoadFromPng("resources/viking_room.png");
-    std::shared_ptr<Model> model = std::make_shared<Model>(mesh, texture);
+    std::shared_ptr<RenderObject> model = std::make_shared<RenderObject>(mesh, texture);
     models.push_back(model);
 }
 

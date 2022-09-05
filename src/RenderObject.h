@@ -5,11 +5,11 @@
 #include <vulkan/vulkan.hpp>
 
 
-class Model{
+class RenderObject {
 public: 
     Mesh mesh;
     Material material;
     MeshPushConstants transformMatrix;
-    Model(Mesh mesh, Material material);
+    RenderObject(Mesh mesh, Material material);
     void Draw(vk::CommandBuffer commandBuffer);
 };

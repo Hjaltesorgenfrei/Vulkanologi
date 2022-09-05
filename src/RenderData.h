@@ -2,7 +2,7 @@
 #include <vector>
 #include <memory>
 #include <glm/glm.hpp>
-#include "Model.h"
+#include "RenderObject.h"
 
 struct UniformBufferObject
 {
@@ -16,7 +16,7 @@ class RenderData
 public:
     MeshPushConstants getPushConstants();
     const UniformBufferObject getCameraProject(float width, float height);
-    std::vector<std::shared_ptr<Model>> getModels();
+    std::vector<std::shared_ptr<RenderObject>> getModels();
     void moveCameraForward(float speed);
     void moveCameraBackward(float speed);
     void moveCameraLeft(float speed);
@@ -28,7 +28,7 @@ public:
 
 
 private:
-    std::vector<std::shared_ptr<Model>> models;
+    std::vector<std::shared_ptr<RenderObject>> models;
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;

@@ -283,7 +283,7 @@ VkBool32 Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageS
         return VK_TRUE; // Don't spam with loaded layers
     }
 
-	std::cerr << "Error from validation layer: " << pCallbackData->pMessage << std::endl;
+	std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
 
 	return VK_FALSE;
 }

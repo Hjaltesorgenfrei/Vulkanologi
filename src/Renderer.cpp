@@ -220,6 +220,10 @@ void Renderer::createInstance() {
 
 }
 
+void Renderer::frameBufferResized() {
+	frameBufferResizePending = true;
+}
+
 std::vector<const char*> Renderer::getRequiredExtensions() {
 	uint32_t glfwExtensionCount = 0;
 	const char** glfwExtensions;
@@ -1794,9 +1798,9 @@ void Renderer::drawFrame() {
 	try {
 		switch (presentQueue.presentKHR(presentInfo)) {
 		case vk::Result::eSuccess:
-			if (framebufferResized) {
+			if (frameBufferResizePending) {
 				recreateSwapchain();
-				framebufferResized = false;
+				frameBufferResizePending = false;
 			}
 			break;
 		case vk::Result::eSuboptimalKHR:

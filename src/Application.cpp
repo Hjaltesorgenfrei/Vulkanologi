@@ -39,7 +39,7 @@ void App::setupCallBacks() {
 
 void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    app->renderer->framebufferResized = true;
+    app->renderer->frameBufferResized();
 }
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {

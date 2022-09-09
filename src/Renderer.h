@@ -80,6 +80,12 @@ struct DeletionQueue
 
 class Renderer {
 public:
+	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model);
+	~Renderer();
+	void drawFrame();
+	void frameBufferResized();
+
+private:
 	std::shared_ptr<WindowWrapper> window;
 	std::shared_ptr<RenderData> renderData;
 	DeletionQueue mainDeletionQueue;
@@ -145,14 +151,13 @@ public:
 
 	size_t currentFrame = 0;
 
-	bool framebufferResized = false;
+	bool frameBufferResizePending = false;
 	uint32_t graphicsQueueIndex;
 	uint32_t transferQueueIndex;
 
 
 	
-	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model);
-	~Renderer();
+
 	Renderer& operator=(const Renderer&) = delete;
 	Renderer(const Renderer&) = delete;
 
@@ -256,8 +261,6 @@ public:
 
 	void createSyncObjects();
 	void updateUniformBuffer(uint32_t currentImage);
-
-	void drawFrame();
 
 	void cleanup();
 };

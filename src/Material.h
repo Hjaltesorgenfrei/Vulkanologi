@@ -7,6 +7,4 @@ struct Material {
 
 	vk::DescriptorSet textureSet {};
 	vk::PipelineLayout pipelineLayout;
-
-	static Material LoadFromPng(const char* filename);
 };

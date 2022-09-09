@@ -114,6 +114,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Rende
 		createImageViews();
 		createRenderPass();
 		createDescriptorSetLayout();
+		createGraphicsPipelineLayout();
 		createGraphicsPipeline();
 		createCommandPool();
         createUploadContext();
@@ -791,12 +792,38 @@ void Renderer::createDescriptorSetLayout() {
 		.pBindings = bindings.data()
 	};
 
-	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSeyLayout) != vk::Result::eSuccess) {
+	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
 	mainDeletionQueue.push_function([&]() {
-		device.destroyDescriptorSetLayout(descriptorSeyLayout);
+		device.destroyDescriptorSetLayout(descriptorSetLayout);
 	});
+}
+
+
+void Renderer::createGraphicsPipelineLayout() {
+	 vk::PushConstantRange pushConstantRange {
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .offset = 0,
+        .size = sizeof(MeshPushConstants)
+    };
+
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
+		.setLayoutCount = 1,
+		.pSetLayouts = &descriptorSetLayout,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &pushConstantRange
+	};
+
+	try {
+		pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
+		mainDeletionQueue.push_function([&]() {
+			device.destroyPipelineLayout(pipelineLayout);
+		});
+	}
+	catch (vk::SystemError& err) {
+		throw std::runtime_error(std::string("failed to create pipeline layout!") + err.what());
+	}
 }
 
 void Renderer::createGraphicsPipeline() {
@@ -896,30 +923,6 @@ void Renderer::createGraphicsPipeline() {
 		.pAttachments = &colorBlendAttachment,
 		.blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
 	};
-
-    vk::PushConstantRange pushConstantRange {
-        .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        .offset = 0,
-        .size = sizeof(MeshPushConstants)
-    };
-
-	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
-		.setLayoutCount = 1,
-		.pSetLayouts = &descriptorSeyLayout,
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges = &pushConstantRange
-	};
-
-
-	try {
-		pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo);
-		swapChainDeletionQueue.push_function([&]() {
-			device.destroyPipelineLayout(pipelineLayout);
-		});
-	}
-	catch (vk::SystemError& err) {
-		throw std::runtime_error(std::string("failed to create pipeline layout!") + err.what());
-	}
 
 	vk::PipelineDepthStencilStateCreateInfo depthStencil {
 		.depthTestEnable = VK_TRUE,
@@ -1524,7 +1527,7 @@ void Renderer::createDescriptorPool() {
 }
 
 void Renderer::createDescriptorSets() {
-	std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), descriptorSeyLayout);
+	std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
 	vk::DescriptorSetAllocateInfo allocInfo {
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()),

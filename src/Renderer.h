@@ -107,7 +107,7 @@ public:
 	std::vector<vk::ImageView> swapChainImageViews;
 	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
-	vk::DescriptorSetLayout descriptorSeyLayout;
+	vk::DescriptorSetLayout descriptorSetLayout;
 	std::vector<vk::DescriptorSet> descriptorSets;
 	vk::DescriptorPool descriptorPool;
 	vk::RenderPass renderPass;
@@ -209,6 +209,7 @@ public:
 	void createRenderPass();
 	void createDescriptorSetLayout();
 
+	void createGraphicsPipelineLayout();
 	void createGraphicsPipeline();
 
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);

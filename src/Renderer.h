@@ -84,6 +84,7 @@ public:
 	~Renderer();
 	void drawFrame();
 	void frameBufferResized();
+	Material createMaterial(const char* fileName);
 
 private:
 	std::shared_ptr<WindowWrapper> window;
@@ -113,7 +114,9 @@ private:
 	std::vector<vk::ImageView> swapChainImageViews;
 	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
-	vk::DescriptorSetLayout descriptorSetLayout;
+	vk::DescriptorSetLayout textureDescriptorSetLayout;
+	vk::DescriptorSetLayout uboDescriptorSetLayout;
+	vk::DescriptorSet textureSet;
 	std::vector<vk::DescriptorSet> descriptorSets;
 	vk::DescriptorPool descriptorPool;
 	vk::RenderPass renderPass;
@@ -237,7 +240,7 @@ private:
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 
-    void createTextureImage();
+    void createTextureImage(const char* filename);
     void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);
 	void createTextureImageView();

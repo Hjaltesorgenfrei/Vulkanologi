@@ -122,7 +122,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Rende
 		createColorResources();
 		createDepthResources();
 		createFramebuffers();
-        createTextureImage();
+        createTextureImage(TEXTURE_PATH.c_str());
 		createTextureImageView();
 		createTextureSampler();
 		uploadMeshes();
@@ -222,6 +222,15 @@ void Renderer::createInstance() {
 
 void Renderer::frameBufferResized() {
 	frameBufferResizePending = true;
+}
+
+Material Renderer::createMaterial(const char* fileName) {
+	Material material{};
+
+	// material.textureSet = createTextureDescriptor();
+	// material.pipelineLayout = createGraphicsPipelineLayout();
+
+	return material;
 }
 
 std::vector<const char*> Renderer::getRequiredExtensions() {
@@ -781,28 +790,45 @@ void Renderer::createDescriptorSetLayout() {
 		.pImmutableSamplers = nullptr
 	};
 
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
-		.binding = 1,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.descriptorCount = 1,
-		.stageFlags = vk::ShaderStageFlagBits::eFragment,
-		.pImmutableSamplers = nullptr
-	};
-
-	std::array<vk::DescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo {
 		.bindingCount = static_cast<uint32_t>(bindings.size()),
 		.pBindings = bindings.data()
 	};
 
-	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &descriptorSetLayout) != vk::Result::eSuccess) {
+	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &uboDescriptorSetLayout) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
 	mainDeletionQueue.push_function([&]() {
-		device.destroyDescriptorSetLayout(descriptorSetLayout);
+		device.destroyDescriptorSetLayout(uboDescriptorSetLayout);
+	});
+
+	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
+		.binding = 0,
+		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
+		.descriptorCount = 1,
+		.stageFlags = vk::ShaderStageFlagBits::eFragment,
+		.pImmutableSamplers = nullptr
+	};
+
+	std::array<vk::DescriptorSetLayoutBinding, 1> bindings2 = {samplerLayoutBinding};
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo2 {
+		.bindingCount = static_cast<uint32_t>(bindings2.size()),
+		.pBindings = bindings2.data()
+	};
+
+	if(device.createDescriptorSetLayout(&layoutInfo2, nullptr, &textureDescriptorSetLayout) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to create texture descriptor set layout");
+	}
+	mainDeletionQueue.push_function([&]() {
+		device.destroyDescriptorSetLayout(textureDescriptorSetLayout);
 	});
 }
+
+
+
 
 
 void Renderer::createGraphicsPipelineLayout() {
@@ -812,9 +838,11 @@ void Renderer::createGraphicsPipelineLayout() {
         .size = sizeof(MeshPushConstants)
     };
 
+	std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, textureDescriptorSetLayout}; 
+
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
-		.setLayoutCount = 1,
-		.pSetLayouts = &descriptorSetLayout,
+		.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+		.pSetLayouts = descriptorSetLayouts.data(),
         .pushConstantRangeCount = 1,
         .pPushConstantRanges = &pushConstantRange
 	};
@@ -1160,9 +1188,9 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 	device.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
-void Renderer::createTextureImage() {
+void Renderer::createTextureImage(const char* filename) {
     int texWidth, texHeight, texChannels;
-    stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
 	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     vk::DeviceSize imageSize = texWidth * texHeight * 4;
@@ -1243,8 +1271,9 @@ void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Sample
     catch (vk::SystemError& err) {
         throw std::runtime_error(std::string("failed to create image! ") + err.what());
     }
-
+	
     auto memRequirements = device.getImageMemoryRequirements(image);
+
     vk::MemoryAllocateInfo allocInfo {
         .allocationSize = memRequirements.size,
         .memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eDeviceLocal)
@@ -1517,7 +1546,7 @@ void Renderer::createDescriptorPool() {
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo {
-		.maxSets = static_cast<uint32_t>(swapChainImages.size()),
+		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 1, // This is an extremely bad way to do this. TODO Fix it
 		.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
 		.pPoolSizes = poolSizes.data(),
 	};
@@ -1531,7 +1560,7 @@ void Renderer::createDescriptorPool() {
 }
 
 void Renderer::createDescriptorSets() {
-	std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
+	std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), uboDescriptorSetLayout);
 	vk::DescriptorSetAllocateInfo allocInfo {
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()),
@@ -1543,6 +1572,7 @@ void Renderer::createDescriptorSets() {
 		throw std::runtime_error("Failed to create Descriptor sets!");
 	}
 
+
 	for(size_t i = 0; i < swapChainImages.size(); i++) {
 		vk::DescriptorBufferInfo bufferInfo {
 			.buffer = uniformBuffers[i]._buffer,
@@ -1550,13 +1580,7 @@ void Renderer::createDescriptorSets() {
 			.range = sizeof(UniformBufferObject)
 		};
 
-		vk::DescriptorImageInfo imageInfo {
-			.sampler = textureSampler,
-			.imageView = textureImageView,
-			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};
-
-		std::array<vk::WriteDescriptorSet, 2> descriptorWrites {
+		std::array<vk::WriteDescriptorSet, 1> descriptorWrites {
 			vk::WriteDescriptorSet {
 				.dstSet = descriptorSets[i],
 				.dstBinding = 0,
@@ -1564,19 +1588,38 @@ void Renderer::createDescriptorSets() {
 				.descriptorCount = 1,
 				.descriptorType = vk::DescriptorType::eUniformBuffer,
 				.pBufferInfo = &bufferInfo,
-			},
-			vk::WriteDescriptorSet {
-				.dstSet = descriptorSets[i],
-				.dstBinding = 1,
-				.dstArrayElement = 0,
-				.descriptorCount = 1,
-				.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-				.pImageInfo = &imageInfo,
 			}
 		};
 
 		device.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
+
+	vk::DescriptorSetAllocateInfo textureAllocInfo {
+		.descriptorPool = descriptorPool,
+		.descriptorSetCount = 1,
+		.pSetLayouts = &textureDescriptorSetLayout
+	};
+
+	if(device.allocateDescriptorSets(&textureAllocInfo, &textureSet) != vk::Result::eSuccess) {
+		throw std::runtime_error("Failed to create Texture Descriptor set!");
+	}
+
+	vk::DescriptorImageInfo imageInfo {
+		.sampler = textureSampler,
+		.imageView = textureImageView,
+		.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+	};
+
+	vk::WriteDescriptorSet imageDescriptor {
+		.dstSet = textureSet,
+		.dstBinding = 0,
+		.dstArrayElement = 0,
+		.descriptorCount = 1,
+		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
+		.pImageInfo = &imageInfo,
+	};
+
+	device.updateDescriptorSets(1, &imageDescriptor, 0, nullptr);
 }
 
 void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
@@ -1637,6 +1680,7 @@ void Renderer::recordCommandBuffer(int index) {
 		{
 			//Add commands to buffer
 			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
 			for (auto model : renderData->getModels()) {
 				vk::Buffer vertexBuffers[] = { model->mesh._vertexBuffer._buffer };
@@ -1645,7 +1689,7 @@ void Renderer::recordCommandBuffer(int index) {
 
 				commandBuffers[index].bindIndexBuffer(model->mesh._indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
-				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &textureSet, 0, nullptr);
 
 				MeshPushConstants constants = renderData->getPushConstants();
 				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);

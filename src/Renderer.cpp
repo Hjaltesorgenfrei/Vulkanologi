@@ -122,15 +122,12 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Rende
 		createColorResources();
 		createDepthResources();
 		createFramebuffers();
-        createTextureImage(TEXTURE_PATH.c_str());
-		createTextureImageView();
-		createTextureSampler();
-		uploadMeshes();
 		createUniformBuffers();
 		createDescriptorPool();
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
+		uploadMeshes();
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Renderer failed to initialize!" << std::endl;
@@ -227,8 +224,11 @@ void Renderer::frameBufferResized() {
 Material Renderer::createMaterial(const char* fileName) {
 	Material material{};
 
-	// material.textureSet = createTextureDescriptor();
-	// material.pipelineLayout = createGraphicsPipelineLayout();
+	auto texture = std::make_shared<UploadedTexture>();
+	createTextureImage(fileName, texture);
+	createTextureImageView(texture);
+	createTextureSampler(texture);
+	material.textureSet = createTextureDescriptorSet(texture);
 
 	return material;
 }
@@ -1184,11 +1184,13 @@ void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk:
 	device.bindBufferMemory(buffer, bufferMemory, 0);
 }
 
-void Renderer::createTextureImage(const char* filename) {
+
+
+void Renderer::createTextureImage(const char* filename, std::shared_ptr<UploadedTexture> texture) {
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
-	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+	texture->mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
     vk::DeviceSize imageSize = texWidth * texHeight * 4;
 
     if(!pixels) {
@@ -1215,30 +1217,30 @@ void Renderer::createTextureImage(const char* filename) {
     createImage(
         texWidth,
         texHeight,
-		mipLevels,
+		texture->mipLevels,
 		vk::SampleCountFlagBits::e1,
         vk::Format::eR8G8B8A8Srgb,
         vk::ImageTiling::eOptimal,
         vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
-        textureImage,
-        textureImageMemory
+        texture->textureImage,
+        texture->textureImageMemory
     );
 	transitionImageLayout(
-		textureImage, 
+		texture->textureImage, 
 		vk::Format::eR8G8B8A8Srgb, 
 		vk::ImageLayout::eUndefined, 
 		vk::ImageLayout::eTransferDstOptimal,
-		mipLevels
+		texture->mipLevels
 	);
-	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+	copyBufferToImage(stagingBuffer, texture->textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
 	device.destroyBuffer(stagingBuffer);
 	device.freeMemory(stagingBufferMemory);
 
-	generateMipmaps(textureImage, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, mipLevels);
-	mainDeletionQueue.push_function([&]() {
-		device.destroyImage(textureImage);
-		device.freeMemory(textureImageMemory);
+	generateMipmaps(texture->textureImage, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, texture->mipLevels);
+	mainDeletionQueue.push_function([&, texture]() {
+		device.destroyImage(texture->textureImage);
+		device.freeMemory(texture->textureImageMemory);
 	});
 }
 
@@ -1285,10 +1287,10 @@ void Renderer::createImage(int width, int height, uint32_t mipLevels, vk::Sample
     device.bindImageMemory(image, imageMemory, 0);
 }
 
-void Renderer::createTextureImageView() {
-	textureImageView = createImageView(textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, mipLevels);
-	mainDeletionQueue.push_function([&]() {
-		device.destroyImageView(textureImageView);
+void Renderer::createTextureImageView(std::shared_ptr<UploadedTexture> texture) {
+	texture->textureImageView = createImageView(texture->textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
+	mainDeletionQueue.push_function([&, texture]() {
+		device.destroyImageView(texture->textureImageView);
 	});
 }
 
@@ -1411,7 +1413,7 @@ vk::ImageView Renderer::createImageView(vk::Image image, vk::Format format, vk::
 	return imageView;
 }
 
-void Renderer::createTextureSampler() {
+void Renderer::createTextureSampler(std::shared_ptr<UploadedTexture> texture) {
 	auto properties = physicalDevice.getProperties();
 
 	vk::SamplerCreateInfo samplerInfo{
@@ -1427,16 +1429,16 @@ void Renderer::createTextureSampler() {
 		.compareEnable = VK_FALSE,
 		.compareOp = vk::CompareOp::eAlways,
 		.minLod = 0.0f,
-		.maxLod = static_cast<float>(mipLevels),
+		.maxLod = static_cast<float>(texture->mipLevels),
 		.borderColor = vk::BorderColor::eIntOpaqueBlack,
 		.unnormalizedCoordinates = VK_FALSE,
 	};
 
-	if (device.createSampler(&samplerInfo, nullptr, &textureSampler) != vk::Result::eSuccess) {
+	if (device.createSampler(&samplerInfo, nullptr, &texture->textureSampler) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create texture sampler!");
 	}
-	mainDeletionQueue.push_function([&]() {
-		device.destroySampler(textureSampler);
+	mainDeletionQueue.push_function([&, texture]() {
+		device.destroySampler(texture->textureSampler);
 	});
 }
 
@@ -1448,6 +1450,7 @@ void Renderer::uploadMeshes() {
 			vmaDestroyBuffer(allocator, model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
 			vmaDestroyBuffer(allocator, model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
         });
+		model->material = createMaterial(TEXTURE_PATH.c_str());
 	}
 }
 
@@ -1589,7 +1592,10 @@ void Renderer::createDescriptorSets() {
 
 		device.updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
+}
 
+vk::DescriptorSet Renderer::createTextureDescriptorSet(std::shared_ptr<UploadedTexture> texture) {
+	vk::DescriptorSet textureSet{};
 	vk::DescriptorSetAllocateInfo textureAllocInfo {
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = 1,
@@ -1601,8 +1607,8 @@ void Renderer::createDescriptorSets() {
 	}
 
 	vk::DescriptorImageInfo imageInfo {
-		.sampler = textureSampler,
-		.imageView = textureImageView,
+		.sampler = texture->textureSampler,
+		.imageView = texture->textureImageView,
 		.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
 	};
 
@@ -1616,6 +1622,7 @@ void Renderer::createDescriptorSets() {
 	};
 
 	device.updateDescriptorSets(1, &imageDescriptor, 0, nullptr);
+	return textureSet;
 }
 
 void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {
@@ -1685,7 +1692,7 @@ void Renderer::recordCommandBuffer(int index) {
 
 				commandBuffers[index].bindIndexBuffer(model->mesh._indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
-				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &textureSet, 0, nullptr);
+				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &model->material.textureSet, 0, nullptr);
 
 				MeshPushConstants constants = renderData->getPushConstants();
 				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);

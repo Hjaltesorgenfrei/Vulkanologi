@@ -26,6 +26,8 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [ ] Load more objects
   - [x] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex
     - [x] uploadIndices and uploadVertices can be generalized and simplified.
+    - [ ] Descriptors needs to be dynamically allocated, as they currently fill the pool.
+      - <https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/>
     - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers

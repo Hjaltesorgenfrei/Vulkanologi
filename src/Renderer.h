@@ -78,6 +78,14 @@ struct DeletionQueue
     }
 };
 
+struct UploadedTexture {
+	uint32_t mipLevels;
+    vk::Image textureImage;
+    vk::DeviceMemory textureImageMemory;
+	vk::ImageView textureImageView;
+	vk::Sampler textureSampler;
+};
+
 class Renderer {
 public:
 	Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model);
@@ -116,7 +124,6 @@ private:
 
 	vk::DescriptorSetLayout textureDescriptorSetLayout;
 	vk::DescriptorSetLayout uboDescriptorSetLayout;
-	vk::DescriptorSet textureSet;
 	std::vector<vk::DescriptorSet> descriptorSets;
 	vk::DescriptorPool descriptorPool;
 	vk::RenderPass renderPass;
@@ -133,11 +140,7 @@ private:
 	std::vector<vk::Fence> inFlightFences;
 	std::vector<vk::Fence> imagesInFlight;
 
-	uint32_t mipLevels;
-    vk::Image textureImage;
-    vk::DeviceMemory textureImageMemory;
-	vk::ImageView textureImageView;
-	vk::Sampler textureSampler;
+	std::vector<std::shared_ptr<UploadedTexture>> textures;
 
 	vk::Image depthImage;
 	vk::DeviceMemory depthImageMemory;
@@ -240,11 +243,12 @@ private:
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 
-    void createTextureImage(const char* filename);
+    void createTextureImage(const char* filename, std::shared_ptr<UploadedTexture> texture);
     void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);
-	void createTextureImageView();
-	void createTextureSampler();
+	void createTextureImageView(std::shared_ptr<UploadedTexture> texture);
+	void createTextureSampler(std::shared_ptr<UploadedTexture> texture);
+	vk::DescriptorSet createTextureDescriptorSet(std::shared_ptr<UploadedTexture> texture);
 
     void createUploadContext();
 

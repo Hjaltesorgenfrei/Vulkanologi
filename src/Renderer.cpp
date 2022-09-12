@@ -569,10 +569,6 @@ void Renderer::recreateSwapchain() {
 	createColorResources();
 	createDepthResources();
 	createFramebuffers();
-	createUniformBuffers();
-	createDescriptorPool();
-	createDescriptorSets();
-	createCommandBuffers();
 
 	imagesInFlight.resize(swapChainImages.size(), nullptr);
 	std::cout << "Recreated swapchain" << std::endl;
@@ -1527,7 +1523,7 @@ void Renderer::createUniformBuffers() {
         }
         uniformBuffers[i]._buffer = buffer;
 		uniformBuffers[i]._allocation = allocation;
-		swapChainDeletionQueue.push_function([&, i]() {
+		mainDeletionQueue.push_function([&, i]() {
 			vmaDestroyBuffer(allocator, uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
 		});
 	}
@@ -1554,7 +1550,7 @@ void Renderer::createDescriptorPool() {
 	if(device.createDescriptorPool(&poolInfo, nullptr, &descriptorPool) != vk::Result::eSuccess) {
 		throw std::runtime_error("failed to create descriptor pool");
 	}
-	swapChainDeletionQueue.push_function([&]() {
+	mainDeletionQueue.push_function([&]() {
 		device.destroyDescriptorPool(descriptorPool, nullptr);
 	});
 }
@@ -1642,7 +1638,7 @@ void Renderer::createCommandBuffers() {
 
 	try {
 		commandBuffers = device.allocateCommandBuffers(allocateInfo);
-		swapChainDeletionQueue.push_function([&]() {
+		mainDeletionQueue.push_function([&]() {
 			device.freeCommandBuffers(commandPool, commandBuffers);
 		});
 	}

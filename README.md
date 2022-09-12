@@ -28,6 +28,8 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - [x] uploadIndices and uploadVertices can be generalized and simplified.
     - [ ] Descriptors needs to be dynamically allocated, as they currently fill the pool.
       - <https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/>
+      - Potentially just make a dynamically allocator which creates a pool for each type?
+        - Then when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
     - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers

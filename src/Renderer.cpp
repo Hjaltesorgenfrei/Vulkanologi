@@ -114,6 +114,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<Rende
 		createImageViews();
 		createRenderPass();
 		createDescriptorSetLayout();
+		createTextureDescriptorSetLayout();
 		createGraphicsPipelineLayout();
 		createGraphicsPipeline();
 		createCommandPool();
@@ -146,7 +147,7 @@ void Renderer::createInstance() {
 		.applicationVersion = VK_MAKE_VERSION(1, 0, 0),
 		.pEngineName = "No Engine",
 		.engineVersion = VK_MAKE_VERSION(1, 0, 0),
-		.apiVersion = VK_API_VERSION_1_1
+		.apiVersion = VK_API_VERSION_1_2
 	};
 
 	vk::InstanceCreateInfo createInfo {
@@ -239,7 +240,7 @@ std::vector<const char*> Renderer::getRequiredExtensions() {
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-
+	
 	if (enableValidationLayers) {
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
@@ -444,7 +445,15 @@ void Renderer::createLogicalDevice() {
 		.samplerAnisotropy = VK_TRUE
 	};
 
+	vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexFeatures {
+		.shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
+		// .descriptorBindingPartiallyBound = VK_TRUE,
+		.descriptorBindingVariableDescriptorCount = VK_TRUE,
+		.runtimeDescriptorArray = VK_TRUE
+	};
+
 	vk::DeviceCreateInfo createInfo {
+		.pNext = &descriptorIndexFeatures,
 		.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
 		.pQueueCreateInfos = queueCreateInfos.data(),
 		.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size()),
@@ -799,7 +808,9 @@ void Renderer::createDescriptorSetLayout() {
 	mainDeletionQueue.push_function([&]() {
 		device.destroyDescriptorSetLayout(uboDescriptorSetLayout);
 	});
+}
 
+void Renderer::createTextureDescriptorSetLayout() {
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
 		.binding = 0,
 		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
@@ -808,22 +819,28 @@ void Renderer::createDescriptorSetLayout() {
 		.pImmutableSamplers = nullptr
 	};
 
-	std::array<vk::DescriptorSetLayoutBinding, 1> bindings2 = {samplerLayoutBinding};
+	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {samplerLayoutBinding};
 
-	vk::DescriptorSetLayoutCreateInfo layoutInfo2 {
-		.bindingCount = static_cast<uint32_t>(bindings2.size()),
-		.pBindings = bindings2.data()
+	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount};
+
+	vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags {
+		.bindingCount = bindings.size(),
+		.pBindingFlags = flags.data()
 	};
 
-	if(device.createDescriptorSetLayout(&layoutInfo2, nullptr, &textureDescriptorSetLayout) != vk::Result::eSuccess) {
+	vk::DescriptorSetLayoutCreateInfo layoutInfo {
+		.pNext = &bindingFlags,
+		.bindingCount = static_cast<uint32_t>(bindings.size()),
+		.pBindings = bindings.data()
+	};
+
+	if(device.createDescriptorSetLayout(&layoutInfo, nullptr, &textureDescriptorSetLayout) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create texture descriptor set layout");
 	}
 	mainDeletionQueue.push_function([&]() {
 		device.destroyDescriptorSetLayout(textureDescriptorSetLayout);
 	});
 }
-
-
 
 
 
@@ -1595,8 +1612,17 @@ void Renderer::createDescriptorSets() {
 }
 
 vk::DescriptorSet Renderer::createTextureDescriptorSet(std::shared_ptr<UploadedTexture> texture) {
+	uint32_t counts[1];
+	counts[0] = 1;
+
+	vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
+		.descriptorSetCount = 1,
+		.pDescriptorCounts = counts
+	};
+
 	vk::DescriptorSet textureSet{};
 	vk::DescriptorSetAllocateInfo textureAllocInfo {
+		.pNext = &setCounts,
 		.descriptorPool = descriptorPool,
 		.descriptorSetCount = 1,
 		.pSetLayouts = &textureDescriptorSetLayout

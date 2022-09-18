@@ -244,6 +244,7 @@ private:
 	void createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 
+	void createTextureDescriptorSetLayout();
     void createTextureImage(const char* filename, std::shared_ptr<UploadedTexture> texture);
     void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
                      vk::Image& image, vk::DeviceMemory& memory);

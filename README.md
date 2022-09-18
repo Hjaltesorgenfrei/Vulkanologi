@@ -31,7 +31,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
       - Potentially just make a dynamically allocator which creates a pool for each type?
         - Then when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
     - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
-    - [ ] It's possible to load an array of textures, this should make it easier to load different textures
+    - [x] It's possible to load an array of textures, this should make it easier to load different textures
       - <https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe>
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers

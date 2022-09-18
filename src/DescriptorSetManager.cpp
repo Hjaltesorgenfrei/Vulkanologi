@@ -16,6 +16,7 @@ DescriptorSetManager::~DescriptorSetManager() {
 
 bool DescriptorSetManager::allocate(vk::DescriptorSet* descriptorSet, AnnotatedDescriptorSetLayout layout) {
     auto pool = getPool(layout.type);
+    return false;
 }
 
 vk::DescriptorPool DescriptorSetManager::getPool(vk::DescriptorType type) {
@@ -29,5 +30,5 @@ vk::DescriptorPool DescriptorSetManager::getPool(vk::DescriptorType type) {
 }
 
 vk::DescriptorPool DescriptorSetManager::createPool(vk::DescriptorType type) {
-
+    return vk::DescriptorPool{};
 }

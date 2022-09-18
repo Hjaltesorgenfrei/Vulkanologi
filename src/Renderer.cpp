@@ -161,7 +161,7 @@ void Renderer::createInstance() {
 		};
 		vk::ValidationFeaturesEXT features = {
 			.sType = vk::StructureType::eValidationFeaturesEXT,
-			.enabledValidationFeatureCount = std::size(enables),
+			.enabledValidationFeatureCount = static_cast<uint32_t>(std::size(enables)),
 			.pEnabledValidationFeatures = enables
 		};
 		createInfo.pNext = &features;
@@ -827,7 +827,7 @@ void Renderer::createTextureDescriptorSetLayout() {
 	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount | vk::DescriptorBindingFlagBits::ePartiallyBound};
 
 	vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags {
-		.bindingCount = bindings.size(),
+		.bindingCount = static_cast<uint32_t>(bindings.size()),
 		.pBindingFlags = flags.data()
 	};
 

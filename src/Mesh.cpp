@@ -41,7 +41,7 @@ std::array<vk::VertexInputAttributeDescription, 3> Vertex::getAttributeDescripti
         vk::VertexInputAttributeDescription{
             .location = 2,
             .binding = 0,
-            .format = vk::Format::eR32G32Sfloat,
+            .format = vk::Format::eR32G32B32Sfloat,
             .offset = offsetof(Vertex, texCoord)},
     };
     return attributeDescriptions;
@@ -71,7 +71,8 @@ Mesh Mesh::LoadFromObj(const char* filename) {
                 .color = {1.0f, 1.0f, 1.0f},
                 .texCoord = {
                     attrib.texcoords[2 * index.texcoord_index + 0],
-                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+                    1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
+                    0 // This needs to get the current texture's index
                 }
             };
 

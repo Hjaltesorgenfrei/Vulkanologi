@@ -163,7 +163,7 @@ void Renderer::createInstance() {
 		};
 		vk::ValidationFeaturesEXT features = {
 			.sType = vk::StructureType::eValidationFeaturesEXT,
-			.enabledValidationFeatureCount = 2,
+			.enabledValidationFeatureCount = std::size(enables),
 			.pEnabledValidationFeatures = enables
 		};
 		createInfo.pNext = &features;

@@ -33,6 +33,11 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
     - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
     - [x] It's possible to load an array of textures, this should make it easier to load different textures
       - <https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe>
+    - [ ] Load Lost Empire
+      - [ ] Current memory usage is crazy, figure out what is causing that.
+        - Around 349mb for 'lost_empire-RGB.png'.
+        - Compression is needed, probably KTX.
+      - [ ] Textures are uploaded multiple times.
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers
   - There are resources for how to do this at:

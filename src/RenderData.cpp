@@ -31,7 +31,7 @@ std::vector<RenderObject*> RenderData::getModels() {
 }
 
 void RenderData::loadModel() {
-    auto mesh = Mesh::LoadFromObj("resources/rat.obj");
+    auto mesh = Mesh::LoadFromObj("resources/lost_empire.obj");
     auto texture = Material{};
     RenderObject* model = new RenderObject(mesh, texture);
     models.push_back(model);

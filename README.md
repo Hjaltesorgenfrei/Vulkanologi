@@ -56,3 +56,4 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
   - <https://github.com/Overv/VulkanTutorial/pull/255>
 - [x] Fix controls after adding Imgui
   - [x] Only capture mouse clicks if not over ui.
+- [ ] Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo

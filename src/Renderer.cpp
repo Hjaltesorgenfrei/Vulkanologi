@@ -18,8 +18,6 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-const std::string TEXTURE_PATH = "resources/viking_room.png";
-
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
 	QueueFamilyIndices indices;
 
@@ -222,14 +220,19 @@ void Renderer::frameBufferResized() {
 	frameBufferResizePending = true;
 }
 
-Material Renderer::createMaterial(const char* fileName) {
-	Material material{};
+Material Renderer::createMaterial(std::vector<std::string>& texturePaths) {
+	std::vector<std::shared_ptr<UploadedTexture>> textures;
 
-	auto texture = std::make_shared<UploadedTexture>();
-	createTextureImage(fileName, texture);
-	createTextureImageView(texture);
-	createTextureSampler(texture);
-	material.textureSet = createTextureDescriptorSet(texture);
+	for (const auto& filename : texturePaths) {
+		auto texture = std::make_shared<UploadedTexture>();
+		createTextureImage(filename.c_str(), texture);
+		createTextureImageView(texture);
+		createTextureSampler(texture);
+		textures.push_back(texture);
+	}
+
+	Material material{};
+	material.textureSet = createTextureDescriptorSet(textures);
 
 	return material;
 }
@@ -447,7 +450,7 @@ void Renderer::createLogicalDevice() {
 
 	vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexFeatures {
 		.shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
-		// .descriptorBindingPartiallyBound = VK_TRUE,
+		.descriptorBindingPartiallyBound = VK_TRUE,
 		.descriptorBindingVariableDescriptorCount = VK_TRUE,
 		.runtimeDescriptorArray = VK_TRUE
 	};
@@ -814,14 +817,14 @@ void Renderer::createTextureDescriptorSetLayout() {
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
 		.binding = 0,
 		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.descriptorCount = 1,
+		.descriptorCount = 256,
 		.stageFlags = vk::ShaderStageFlagBits::eFragment,
 		.pImmutableSamplers = nullptr
 	};
 
 	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {samplerLayoutBinding};
 
-	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount};
+	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount | vk::DescriptorBindingFlagBits::ePartiallyBound};
 
 	vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags {
 		.bindingCount = bindings.size(),
@@ -1467,7 +1470,7 @@ void Renderer::uploadMeshes() {
 			vmaDestroyBuffer(allocator, model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
 			vmaDestroyBuffer(allocator, model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
         });
-		model->material = createMaterial(TEXTURE_PATH.c_str());
+		model->material = createMaterial(model->mesh._texturePaths);
 	}
 }
 
@@ -1562,7 +1565,7 @@ void Renderer::createDescriptorPool() {
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo {
-		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 1, // This is an extremely bad way to do this. TODO Fix it
+		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 100, // This is an extremely bad way to do this. TODO Fix it
 		.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
 		.pPoolSizes = poolSizes.data(),
 	};
@@ -1611,16 +1614,15 @@ void Renderer::createDescriptorSets() {
 	}
 }
 
-vk::DescriptorSet Renderer::createTextureDescriptorSet(std::shared_ptr<UploadedTexture> texture) {
+vk::DescriptorSet Renderer::createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>> textures) {
 	uint32_t counts[1];
-	counts[0] = 1;
+	counts[0] = static_cast<uint32_t>(textures.size()); 
 
 	vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
 		.descriptorSetCount = 1,
 		.pDescriptorCounts = counts
 	};
 
-	vk::DescriptorSet textureSet{};
 	vk::DescriptorSetAllocateInfo textureAllocInfo {
 		.pNext = &setCounts,
 		.descriptorPool = descriptorPool,
@@ -1628,23 +1630,28 @@ vk::DescriptorSet Renderer::createTextureDescriptorSet(std::shared_ptr<UploadedT
 		.pSetLayouts = &textureDescriptorSetLayout
 	};
 
+	vk::DescriptorSet textureSet{};
 	if(device.allocateDescriptorSets(&textureAllocInfo, &textureSet) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create Texture Descriptor set!");
 	}
 
-	vk::DescriptorImageInfo imageInfo {
-		.sampler = texture->textureSampler,
-		.imageView = texture->textureImageView,
-		.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-	};
+	std::vector<vk::DescriptorImageInfo> imageInfos;
+	for (const auto& texture : textures) {
+		vk::DescriptorImageInfo imageInfo {
+			.sampler = texture->textureSampler,
+			.imageView = texture->textureImageView,
+			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+		};	
+		imageInfos.push_back(imageInfo);
+	}
 
 	vk::WriteDescriptorSet imageDescriptor {
 		.dstSet = textureSet,
 		.dstBinding = 0,
 		.dstArrayElement = 0,
-		.descriptorCount = 1,
+		.descriptorCount = static_cast<uint32_t>(imageInfos.size()),
 		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = &imageInfo,
+		.pImageInfo = imageInfos.data(),
 	};
 
 	device.updateDescriptorSets(1, &imageDescriptor, 0, nullptr);

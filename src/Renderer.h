@@ -93,7 +93,7 @@ public:
 	~Renderer();
 	void drawFrame();
 	void frameBufferResized();
-	Material createMaterial(const char* fileName);
+	Material createMaterial(std::vector<std::string>& texturePaths);
 
 private:
 	std::shared_ptr<WindowWrapper> window;
@@ -250,7 +250,7 @@ private:
                      vk::Image& image, vk::DeviceMemory& memory);
 	void createTextureImageView(std::shared_ptr<UploadedTexture> texture);
 	void createTextureSampler(std::shared_ptr<UploadedTexture> texture);
-	vk::DescriptorSet createTextureDescriptorSet(std::shared_ptr<UploadedTexture> texture);
+	vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>> texture);
 
     void createUploadContext();
 

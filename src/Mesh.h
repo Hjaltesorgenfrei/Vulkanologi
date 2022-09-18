@@ -6,6 +6,7 @@
 #define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS // Version 145 at least
 #include <vulkan/vulkan.hpp>
 #include <array>
+#include <string>
 #include <vector>
 
 #include "VkTypes.h"
@@ -13,7 +14,8 @@
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 color;
-	glm::vec3 texCoord;
+	glm::vec2 texCoord;
+	uint8_t materialIndex;
 
 	bool operator==(const Vertex& other) const {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
@@ -21,12 +23,13 @@ struct Vertex {
 
 	static vk::VertexInputBindingDescription getBindingDescription();
 
-	static std::array<vk::VertexInputAttributeDescription, 3> getAttributeDescriptions();
+	static std::array<vk::VertexInputAttributeDescription, 4> getAttributeDescriptions();
 };
 
 struct Mesh {
 	std::vector<Vertex> _vertices;
 	std::vector<uint32_t> _indices;
+	std::vector<std::string> _texturePaths; // TODO: Fix this, it's not a good spot to have it saved.
 	AllocatedBuffer _vertexBuffer;
 	AllocatedBuffer _indexBuffer;
 

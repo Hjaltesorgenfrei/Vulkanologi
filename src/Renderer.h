@@ -17,7 +17,7 @@
 #include "RenderData.h"
 #include "VkTypes.h"
 #include "DescriptorSetManager.h"
-
+#include "Deletionqueue.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -60,24 +60,6 @@ struct UploadContext {
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
 std::vector<char> readFile(const std::string& filename);
-
-struct DeletionQueue
-{
-    std::deque<std::function<void()>> deletors;
-
-    void push_function(std::function<void()>&& function) {
-        deletors.push_back(function);
-    }
-
-    void flush() {
-        // reverse iterate the deletion queue to execute all the functions
-        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
-            (*it)(); //call functors
-        }
-
-        deletors.clear();
-    }
-};
 
 struct UploadedTexture {
 	uint32_t mipLevels;

@@ -222,13 +222,16 @@ void Renderer::frameBufferResized() {
 
 Material Renderer::createMaterial(std::vector<std::string>& texturePaths) {
 	std::vector<std::shared_ptr<UploadedTexture>> textures;
-
+	std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
 	for (const auto& filename : texturePaths) {
-		auto texture = std::make_shared<UploadedTexture>();
-		createTextureImage(filename.c_str(), texture);
-		createTextureImageView(texture);
-		createTextureSampler(texture);
-		textures.push_back(texture);
+		if (uploadedTextures.find(filename) == uploadedTextures.end()) {
+			auto texture = std::make_shared<UploadedTexture>();
+			createTextureImage(filename.c_str(), texture);
+			createTextureImageView(texture);
+			createTextureSampler(texture);
+			uploadedTextures[filename] = texture;
+		}
+		textures.push_back(uploadedTextures[filename]);
 	}
 
 	Material material{};
@@ -1565,7 +1568,7 @@ void Renderer::createDescriptorPool() {
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo {
-		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 100, // This is an extremely bad way to do this. TODO Fix it
+		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 1, // This is an extremely bad way to do this. TODO Fix it
 		.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
 		.pPoolSizes = poolSizes.data(),
 	};
@@ -1614,7 +1617,7 @@ void Renderer::createDescriptorSets() {
 	}
 }
 
-vk::DescriptorSet Renderer::createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>> textures) {
+vk::DescriptorSet Renderer::createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& textures) {
 	uint32_t counts[1];
 	counts[0] = static_cast<uint32_t>(textures.size()); 
 

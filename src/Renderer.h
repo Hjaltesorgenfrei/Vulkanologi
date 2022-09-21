@@ -250,7 +250,7 @@ private:
                      vk::Image& image, vk::DeviceMemory& memory);
 	void createTextureImageView(std::shared_ptr<UploadedTexture> texture);
 	void createTextureSampler(std::shared_ptr<UploadedTexture> texture);
-	vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>> texture);
+	vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& texture);
 
     void createUploadContext();
 

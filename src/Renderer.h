@@ -18,6 +18,8 @@
 #include "VkTypes.h"
 #include "DescriptorSetManager.h"
 #include "Deletionqueue.h"
+#include "AssetManager.h"
+
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -51,23 +53,9 @@ struct SwapChainSupportDetails {
 	std::vector<vk::PresentModeKHR> presentModes;
 };
 
-struct UploadContext {
-    vk::Fence _uploadFence;
-    vk::CommandPool _commandPool;
-    vk::CommandBuffer _commandBuffer;
-};
-
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
 std::vector<char> readFile(const std::string& filename);
-
-struct UploadedTexture {
-	uint32_t mipLevels;
-    vk::Image textureImage;
-    vk::DeviceMemory textureImageMemory;
-	vk::ImageView textureImageView;
-	vk::Sampler textureSampler;
-};
 
 class Renderer {
 public:
@@ -82,6 +70,7 @@ private:
 	std::shared_ptr<RenderData> renderData;
 	DeletionQueue mainDeletionQueue;
 	DeletionQueue swapChainDeletionQueue;
+	AssetManager assetManager;
 
 	vk::Instance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -125,15 +114,13 @@ private:
 
 	std::vector<std::shared_ptr<UploadedTexture>> textures;
 
-	vk::Image depthImage;
-	vk::DeviceMemory depthImageMemory;
+	AllocatedImage depthImage;
 	vk::ImageView depthImageView;
 
 	std::vector<AllocatedBuffer> uniformBuffers;
 
 	vk::SampleCountFlagBits msaaSamples = vk::SampleCountFlagBits::e1;
-	vk::Image colorImage;
-	vk::DeviceMemory colorImageMemory;
+	AllocatedImage colorImage;
 	vk::ImageView colorImageView;
 
     UploadContext _uploadContext;
@@ -167,9 +154,6 @@ private:
 
 	void setupDebugMessenger();
 
-	void DestroyDebugUtilsMessengerEXT(vk::Instance instance, vk::DebugUtilsMessengerEXT debugMessenger,
-	                                   const vk::AllocationCallbacks* pAllocator);
-
 	void createSurface();
 
 	void pickPhysicalDevice();
@@ -197,8 +181,6 @@ private:
 	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities);
 
 	void createImageViews();
-	vk::ImageView createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspectFlags, uint32_t mipLevels);
-	void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	void createRenderPass();
 	void createDescriptorSetLayout();
@@ -227,11 +209,6 @@ private:
 	                  vk::Buffer& buffer, vk::DeviceMemory& bufferMemory);
 
 	void createTextureDescriptorSetLayout();
-    void createTextureImage(const char* filename, std::shared_ptr<UploadedTexture> texture);
-    void createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags,
-                     vk::Image& image, vk::DeviceMemory& memory);
-	void createTextureImageView(std::shared_ptr<UploadedTexture> texture);
-	void createTextureSampler(std::shared_ptr<UploadedTexture> texture);
 	vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& texture);
 
     void createUploadContext();

@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include <vk_mem_alloc.h>
+#include <glm/glm.hpp>
 
 struct AllocatedBuffer {
     vk::Buffer _buffer; 
@@ -15,4 +16,18 @@ struct AllocatedImage {
 
 struct MeshPushConstants {
     glm::mat4 model;
+};
+
+struct UploadContext {
+    vk::Fence _uploadFence;
+    vk::CommandPool _commandPool;
+    vk::CommandBuffer _commandBuffer;
+};
+
+struct UploadedTexture {
+	uint32_t mipLevels;
+    AllocatedImage textureImage;
+    vk::DeviceMemory textureImageMemory;
+	vk::ImageView textureImageView;
+	vk::Sampler textureSampler;
 };

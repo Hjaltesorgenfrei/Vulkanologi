@@ -66,7 +66,7 @@ include_directories(ext/imgui)
 
 include_directories(ext/ImGuizmo)
 
-file(GLOB_RECURSE SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(vulkantut 
     ${SOURCES}

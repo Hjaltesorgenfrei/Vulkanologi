@@ -30,14 +30,15 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
       - <https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/>
       - Potentially just make a dynamically allocator which creates a pool for each type?
         - Then when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
-    - [ ] TextureImage and UniformBuffer still uses manual buffer creation. They should be moved over.
+    - [x] TextureImage VMA.
+    - [ ] UniformBuffer still uses manual buffer creation. They should be moved over.
     - [x] It's possible to load an array of textures, this should make it easier to load different textures
       - <https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe>
     - [ ] Load Lost Empire
       - [ ] Current memory usage is crazy, figure out what is causing that.
         - Around 349mb for 'lost_empire-RGB.png'.
         - Compression is needed, probably KTX.
-      - [ ] Textures are uploaded multiple times.
+      - [x] Textures are uploaded multiple times.
 - [ ] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers
   - There are resources for how to do this at:
@@ -62,3 +63,4 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [x] Fix controls after adding Imgui
   - [x] Only capture mouse clicks if not over ui.
 - [ ] Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo
+- [ ] Use VMA.hpp instead

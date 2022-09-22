@@ -1510,7 +1510,7 @@ AllocatedBuffer Renderer::uploadBuffer(std::vector<T>& meshData, VkBufferUsageFl
             .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT
     };
 
-    VmaAllocationCreateInfo vmaallocInfo {
+    VmaAllocationCreateInfo vmaAllocInfo {
             .usage = VMA_MEMORY_USAGE_GPU_ONLY
     };
 
@@ -1518,7 +1518,7 @@ AllocatedBuffer Renderer::uploadBuffer(std::vector<T>& meshData, VkBufferUsageFl
 
     AllocatedBuffer allocatedBuffer{};
 
-    if (vmaCreateBuffer(allocator, &bufferCreateInfo, &vmaallocInfo, &buffer, &allocatedBuffer._allocation, nullptr) != VK_SUCCESS) {
+    if (vmaCreateBuffer(allocator, &bufferCreateInfo, &vmaAllocInfo, &buffer, &allocatedBuffer._allocation, nullptr) != VK_SUCCESS) {
         throw std::runtime_error("Failed to upload buffer!");
     }
     allocatedBuffer._buffer = buffer;

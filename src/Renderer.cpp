@@ -1163,38 +1163,6 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void Renderer::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties,
-	vk::Buffer& buffer, vk::DeviceMemory& bufferMemory) {
-
-	std::array<uint32_t, 2> allowedQueueIndices { graphicsQueueIndex, transferQueueIndex };
-	vk::BufferCreateInfo bufferInfo {
-		.size = size,
-		.usage = usage,
-		.sharingMode = vk::SharingMode::eConcurrent,
-		.queueFamilyIndexCount = static_cast<uint32_t>(allowedQueueIndices.size()),
-		.pQueueFamilyIndices = allowedQueueIndices.data()
-	};
-
-	if (device.createBuffer(&bufferInfo, nullptr, &buffer) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to create vertex buffer!");
-	}
-
-	vk::MemoryRequirements memoryRequirements;
-	device.getBufferMemoryRequirements(buffer, &memoryRequirements);
-
-	vk::MemoryAllocateInfo allocateInfo {
-		.allocationSize = memoryRequirements.size,
-		.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, properties)
-	};
-
-	if (device.allocateMemory(&allocateInfo, nullptr, &bufferMemory) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to allocate vertex buffer memory!");
-	}
-
-	// If memory allocation was successful we can bind it to the buffer
-	device.bindBufferMemory(buffer, bufferMemory, 0);
-}
-
 void Renderer::uploadMeshes() {
 	for (auto model : renderData->getModels()) {
         model->mesh._vertexBuffer = uploadBuffer(model->mesh._vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
@@ -1754,25 +1722,5 @@ void Renderer::transitionImageLayout(vk::Image image, vk::Format format, vk::Ima
 			0, nullptr, 
 			1, &barrier
 		);
-	});
-}
-
-void Renderer::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {	
-	vk::BufferImageCopy region {
-		.bufferOffset = 0,
-		.bufferRowLength = 0,
-		.bufferImageHeight = 0,
-		.imageSubresource = vk::ImageSubresourceLayers {
-			.aspectMask = vk::ImageAspectFlagBits::eColor,
-			.mipLevel = 0,
-			.baseArrayLayer = 0,
-			.layerCount = 1
-		},
-		.imageOffset =  {0, 0, 0},
-		.imageExtent = {width, height, 1}
-	};
-
-	immediateSubmit([&](auto cmd){
-		cmd.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
 	});
 }

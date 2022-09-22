@@ -1,24 +1,22 @@
 #pragma once
-#include <vector>
-#include <memory>
 #include <glm/glm.hpp>
+#include <memory>
+#include <vector>
+
 #include "RenderObject.h"
 
-struct UniformBufferObject
-{
+struct UniformBufferObject {
     glm::mat4 view;
     glm::mat4 proj;
     glm::mat4 projView;
 };
 
-class RenderData
-{
-public:
+class RenderData {
+   public:
     RenderData();
     ~RenderData();
-	RenderData& operator=(const RenderData&) = delete;
-	RenderData(const RenderData&) = delete;
-    MeshPushConstants getPushConstants();
+    RenderData& operator=(const RenderData&) = delete;
+    RenderData(const RenderData&) = delete;
     const UniformBufferObject getCameraProject(float width, float height);
     std::vector<RenderObject*> getModels();
     void moveCameraForward(float speed);
@@ -27,10 +25,8 @@ public:
     void moveCameraRight(float speed);
     void resetCursorPos();
     void newCursorPos(float xPos, float yPos);
-    glm::mat4 modelMatrix;
 
-
-private:
+   private:
     std::vector<RenderObject*> models;
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;

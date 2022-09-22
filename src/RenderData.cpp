@@ -11,7 +11,6 @@
 
 RenderData::RenderData() {
     loadModel();
-    modelMatrix = glm::mat4(1.0f);
 
     cameraYaw   = 135.0f;
     cameraPitch = -35.0f;
@@ -31,16 +30,8 @@ std::vector<RenderObject*> RenderData::getModels() {
 }
 
 void RenderData::loadModel() {
-    auto mesh = Mesh::LoadFromObj("resources/lost_empire.obj");
-    auto texture = Material{};
-    RenderObject* model = new RenderObject(mesh, texture);
-    models.push_back(model);
-}
-
-MeshPushConstants RenderData::getPushConstants() {
-    return {
-            .model = modelMatrix
-    };
+    models.push_back(new RenderObject(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    models.push_back(new RenderObject(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
 }
 
 const UniformBufferObject RenderData::getCameraProject(float width, float height) {

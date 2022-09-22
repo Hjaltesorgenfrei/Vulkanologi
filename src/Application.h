@@ -11,10 +11,12 @@ private:
 	std::shared_ptr<RenderData> model;
 	std::unique_ptr<Renderer> renderer;
     bool mouseCaptured = false;
+    bool showImguizmo = true;
 
 	void mainLoop();
     void processPressedKeys(double delta);
     void setupCallBacks();
+    void drawImGuizmo(glm::mat4* matrix);
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);

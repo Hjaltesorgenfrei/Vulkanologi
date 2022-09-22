@@ -1266,7 +1266,7 @@ void Renderer::createDescriptorPool() {
 	};
 
 	vk::DescriptorPoolCreateInfo poolInfo {
-		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 1, // This is an extremely bad way to do this. TODO Fix it
+		.maxSets = static_cast<uint32_t>(swapChainImages.size()) + 100, // This is an extremely bad way to do this. TODO Fix it
 		.poolSizeCount = static_cast<uint32_t>(poolSizes.size()),
 		.pPoolSizes = poolSizes.data(),
 	};
@@ -1428,7 +1428,7 @@ void Renderer::recordCommandBuffer(int index) {
 
 				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &model->material.textureSet, 0, nullptr);
 
-				MeshPushConstants constants = renderData->getPushConstants();
+				MeshPushConstants constants = model->transformMatrix;
 				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
 				
 				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh._indices.size()), 1, 0, 0, 0);

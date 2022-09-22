@@ -87,6 +87,9 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
         app->window->fullscreenWindow();
     }
+    if(key == GLFW_KEY_E && action == GLFW_PRESS) {
+        app->showImguizmo = !app->showImguizmo;
+    }
 }
 
 void App::mainLoop() {
@@ -101,18 +104,25 @@ void App::mainLoop() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGuizmo::BeginFrame();
-        ImGuizmo::Enable(true);
-        auto [width, height] = window->getFramebufferSize();
-        auto ubo = model->getCameraProject(static_cast<float>(width), static_cast<float>(height));
-        ubo.proj[1][1] *= -1; // ImGuizmo Expects the opposite
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], ImGuizmo::SCALE, ImGuizmo::WORLD, &(model->modelMatrix)[0][0]);
+        if (showImguizmo) {
+            auto lastModel = model->getModels().back(); // Just a testing statement
+            drawImGuizmo(&lastModel->transformMatrix.model);
+        }
 
         //ImGui::ShowDemoWindow();
 		renderer->drawFrame();
 	}
+}
+
+void App::drawImGuizmo(glm::mat4* matrix) {
+    ImGuizmo::BeginFrame();
+    ImGuizmo::Enable(true);
+    auto [width, height] = window->getFramebufferSize();
+    auto ubo = model->getCameraProject(static_cast<float>(width), static_cast<float>(height));
+    ubo.proj[1][1] *= -1; // ImGuizmo Expects the opposite
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], ImGuizmo::TRANSLATE, ImGuizmo::WORLD, &(*matrix)[0][0]);
 }
 
 void App::processPressedKeys(double delta) {

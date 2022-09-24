@@ -14,6 +14,7 @@
 struct Vertex {
 	glm::vec3 pos;
 	glm::vec3 color;
+	glm::vec3 normal;
 	glm::vec2 texCoord;
 	uint8_t materialIndex;
 
@@ -23,7 +24,7 @@ struct Vertex {
 
 	static vk::VertexInputBindingDescription getBindingDescription();
 
-	static std::array<vk::VertexInputAttributeDescription, 4> getAttributeDescriptions();
+	static std::array<vk::VertexInputAttributeDescription, 5> getAttributeDescriptions();
 };
 
 struct Mesh {

@@ -10,5 +10,5 @@ layout(location = 2) in flat uint materialIndex;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-	outColor = texture(texSampler[int(materialIndex)], fragTexCoord.xy);
+	outColor = texture(texSampler[int(materialIndex)], fragTexCoord.xy) * vec4(fragColor, 1.0); // Shitty shadows
 }

@@ -6,6 +6,9 @@ project(vulkantut)
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 if(MSVC)
+    if (NOT CMAKE_BUILD_TYPE) # Assume debug if dont have specified. Makes it work for vscode.
+        set(CMAKE_BUILD_TYPE "Debug")
+    endif()
     set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 else()
     set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR})

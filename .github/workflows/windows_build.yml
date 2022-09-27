@@ -42,7 +42,9 @@ jobs:
         path: ${{github.workspace}}/build/Release
 
     - name: Upload Release
-      uses: ncipollo/release-action@v1
+      uses: "marvinpinto/action-automatic-releases@latest"
       with:
-        artifacts: 'windows-x64-release.zip'
-        token: ${{ secrets.GITHUB_TOKEN }}
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: latest
+        files: |
+          windows-x64-release.zip

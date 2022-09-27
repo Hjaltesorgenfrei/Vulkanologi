@@ -40,17 +40,10 @@ jobs:
         filename: 'windows-x64-release.zip'
         path: ${{github.workspace}}/build/Release
 
-    - name: Create Tag
-      id: create_tag
-      uses: anothrNick/github-tag-action@1.40.0
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        WITH_V: true
-
     - name: Upload Release
       uses: marvinpinto/action-automatic-releases@v1.2.1
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "${{steps.create_tag.outputs.new_tag}}"
+        automatic_release_tag: "${{ github.sha }}"
         files: |
           windows-x64-release.zip

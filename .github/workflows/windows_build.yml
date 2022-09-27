@@ -15,17 +15,17 @@ jobs:
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: windows-latest
+
+    steps:
     - name: Configure Vulkan SDK using the downloaded spec
-      uses:  humbletim/install-vulkan-sdk@v1.1.1
+      uses: humbletim/install-vulkan-sdk@v1.1.1
       with:
         version: latest
         cache: true
 
-    steps:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
-
 
     - name: Configure CMake
       run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}

@@ -1,10 +1,10 @@
 name: Windows Build
 
-#on:
-#  push:
-#    branches: [ "master" ]
-#  pull_request:
-#    branches: [ "master" ]
+on:
+  push:
+    branches: 
+      - master
+      - github-actio
 
 env:
   BUILD_TYPE: Release

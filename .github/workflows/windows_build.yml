@@ -23,7 +23,7 @@ jobs:
       with: { committish: acc3bcf76b84ae5041c86ab55fe138ae7b8255c7 }
 
     - name: Install vulkan
-      run: vcpkg install vulkan:x64
+      run: vcpkg install vulkan:x64-windows
 
     - name: Configure CMake
       run: cmake --no-warn-unused-cli -D "CMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64

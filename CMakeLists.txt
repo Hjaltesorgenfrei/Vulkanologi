@@ -6,20 +6,20 @@ project(vulkantut)
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
 if(MSVC)
-    set(build-output-path ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE_INIT})
+    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 else()
-    set(build-output-path ${CMAKE_BINARY_DIR})
+    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 endif()
 
 function(add_shader TARGET SHADER)
     find_program(GLSLC glslc)
 
     set(current-shader-path ${CMAKE_CURRENT_SOURCE_DIR}/src/shaders/${SHADER})
-    set(current-output-path ${build-output-path}/shaders/${SHADER}.spv)
+    set(current-output-path ${BUILD_OUTPUT_PATH}/shaders/${SHADER}.spv)
 
     # Add a custom command to compile GLSL to SPIR-V.
-    get_filename_component(current-output-dir ${current-output-path} DIRECTORY)
-    file(MAKE_DIRECTORY ${current-output-dir})
+    get_filename_component(CURRENT_OUTPUT_DIR ${current-output-path} DIRECTORY)
+    file(MAKE_DIRECTORY ${CURRENT_OUTPUT_DIR})
 
     add_custom_command(
            OUTPUT ${current-output-path}
@@ -34,7 +34,7 @@ function(add_shader TARGET SHADER)
 endfunction(add_shader)
 
 add_custom_target(copy-runtime-files ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/resources ${build-output-path}/resources)
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/resources ${BUILD_OUTPUT_PATH}/resources)
 
 find_package(Vulkan REQUIRED)
 

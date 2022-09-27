@@ -17,15 +17,16 @@ jobs:
     runs-on: windows-latest
 
     steps:
+
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
     - name: Configure Vulkan SDK using the downloaded spec
       uses: humbletim/install-vulkan-sdk@v1.1.1
       with:
         version: latest
         cache: true
-
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
 
     - name: Configure CMake
       run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}

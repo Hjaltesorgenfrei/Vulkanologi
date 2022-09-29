@@ -2,14 +2,20 @@
 #include "Renderer.h"
 #include "RenderData.h"
 
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
+
 class App {
 public:
-	void run();
+    App();
+
+    void run();
 
 private:
-	std::shared_ptr<WindowWrapper> window;
+    std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::shared_ptr<RenderData> model;
 	std::unique_ptr<Renderer> renderer;
+    std::shared_ptr<VulkanDevice> device;
     bool mouseCaptured = false;
     bool showImguizmo = true;
 

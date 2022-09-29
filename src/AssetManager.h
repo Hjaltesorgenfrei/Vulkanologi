@@ -9,22 +9,12 @@
 #include "Deletionqueue.h"
 #include "VkInit.h"
 #include "VkTypes.h"
+#include "Vulkandevice.h"
 
 class AssetManager {
    public:
-    void init(vk::PhysicalDevice physicalDevice,
-              vk::Device device,
-              vk::Queue transferQueue,
-              VmaAllocator allocator,
-              UploadContext uploadContext) {
-        this->physicalDevice = physicalDevice;
-        this->device = device;
-        this->transferQueue = transferQueue;
-        this->allocator = allocator;
-        this->uploadContext = uploadContext;
-    }
+    explicit AssetManager(std::shared_ptr<VulkanDevice>& device) : device{device} {
 
-    AssetManager() {
     }
     ~AssetManager() {
         cleanUp();
@@ -34,6 +24,7 @@ class AssetManager {
     AssetManager(const AssetManager&) = delete;
 
     void cleanUp() {
+        device->device().waitIdle();
         deletionQueue.flush();
     }
 
@@ -42,11 +33,7 @@ class AssetManager {
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
    private:
-    vk::PhysicalDevice physicalDevice;
-    vk::Device device;
-    vk::Queue transferQueue;
-    VmaAllocator allocator;
-    UploadContext uploadContext;
+    std::shared_ptr<VulkanDevice> device;
 
     DeletionQueue deletionQueue{};
     std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
@@ -68,9 +55,7 @@ class AssetManager {
 
     void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
-    bool hasStencilComponent(vk::Format format);
-
-    void immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function);
+    static bool hasStencilComponent(vk::Format format);
 };
 
 template <typename T>
@@ -87,16 +72,16 @@ inline AllocatedBuffer AssetManager::stageData(std::span<T>& dataToStage) {
     VkBuffer buffer;
     AllocatedBuffer stagingBuffer{};
 
-    if (vmaCreateBuffer(allocator, &stagingCreate, &stagingAlloc, &buffer, &stagingBuffer._allocation, nullptr) != VK_SUCCESS) {
+    if (vmaCreateBuffer(device->allocator(), &stagingCreate, &stagingAlloc, &buffer, &stagingBuffer._allocation, nullptr) != VK_SUCCESS) {
         throw std::runtime_error("Failed to uploadBuffer mesh vertices!");
     }
     stagingBuffer._buffer = buffer;
 
     void* data;
-    vmaMapMemory(allocator, stagingBuffer._allocation, &data);
+    vmaMapMemory(device->allocator(), stagingBuffer._allocation, &data);
     {
         memcpy(data, dataToStage.data(), dataToStage.size() * sizeof(T));
     }
-    vmaUnmapMemory(allocator, stagingBuffer._allocation);
+    vmaUnmapMemory(device->allocator(), stagingBuffer._allocation);
     return stagingBuffer;
 }

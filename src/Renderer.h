@@ -1,6 +1,6 @@
 ﻿#pragma once
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
+
+#include "WindowWrapper.h"
 
 #include <memory>
 
@@ -17,45 +17,17 @@
 #include "DescriptorSetManager.h"
 #include "RenderData.h"
 #include "VkTypes.h"
-#include "WindowWrapper.h"
+#include "VulkanDevice.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
-
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"};
-
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-    std::optional<uint32_t> transferFamily;
-
-    [[nodiscard]] bool isComplete() const {
-        return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails {
-    vk::SurfaceCapabilitiesKHR capabilities;
-    std::vector<vk::SurfaceFormatKHR> formats;
-    std::vector<vk::PresentModeKHR> presentModes;
-};
-
-QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface);
 
 std::vector<char> readFile(const std::string& filename);
 
 class Renderer {
    public:
-    Renderer(std::shared_ptr<WindowWrapper>& window, std::shared_ptr<RenderData>& model);
+    Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<VulkanDevice> device, AssetManager &assetManager,
+             std::shared_ptr<RenderData> &renderData);
+
     ~Renderer();
     void drawFrame();
     void frameBufferResized();
@@ -63,25 +35,14 @@ class Renderer {
 
    private:
     std::shared_ptr<WindowWrapper> window;
+    std::shared_ptr<VulkanDevice> device;
+    AssetManager& assetManager;
+
     std::shared_ptr<RenderData> renderData;
     DeletionQueue mainDeletionQueue;
     DeletionQueue swapChainDeletionQueue;
-    AssetManager assetManager;
-
-    vk::Instance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    vk::SurfaceKHR surface;
-
-    vk::PhysicalDevice physicalDevice;
-    vk::Device device;
-
-    VmaAllocator allocator;
 
     vk::DescriptorPool imguiPool;
-
-    vk::Queue presentQueue;
-    vk::Queue graphicsQueue;
-    vk::Queue transferQueue;
 
     vk::SwapchainKHR swapChain;
     vk::Format swapChainImageFormat;
@@ -115,51 +76,15 @@ class Renderer {
 
     std::vector<AllocatedBuffer> uniformBuffers;
 
-    vk::SampleCountFlagBits msaaSamples = vk::SampleCountFlagBits::e1;
     AllocatedImage colorImage;
     vk::ImageView colorImageView;
-
-    UploadContext _uploadContext;
 
     size_t currentFrame = 0;
 
     bool frameBufferResizePending = false;
-    uint32_t graphicsQueueIndex;
-    uint32_t transferQueueIndex;
 
     Renderer& operator=(const Renderer&) = delete;
     Renderer(const Renderer&) = delete;
-
-    void createInstance();
-
-    std::vector<const char*> getRequiredExtensions();
-
-    bool validateExtensions(std::vector<const char*> extensions,
-                            std::vector<vk::ExtensionProperties> supportedExtensions);
-
-    bool checkValidationLayerSupport() const;
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData);
-
-    void setupDebugMessenger();
-
-    void createSurface();
-
-    void pickPhysicalDevice();
-
-    int rateDeviceSuitability(vk::PhysicalDevice device);
-
-    bool checkDeviceExtensionSupport(vk::PhysicalDevice device);
-
-    SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device);
-
-    void createLogicalDevice();
-
-    void createAllocator();
 
     void initImgui();
 
@@ -201,10 +126,6 @@ class Renderer {
 
     void createTextureDescriptorSetLayout();
     vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& texture);
-
-    void createUploadContext();
-
-    void immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function);
 
     void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 

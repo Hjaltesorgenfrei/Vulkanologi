@@ -72,3 +72,5 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [x] Only capture mouse clicks if not over ui.
 - [ ] Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo
 - [ ] Use VMA.hpp instead
+- [ ] Create a style to autoformat with
+- [ ] Move swap chain to its own class

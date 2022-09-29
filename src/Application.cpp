@@ -15,16 +15,13 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "ImGuizmo.h"
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
-
-
 
 void App::run() {
-	window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	model = std::make_shared<RenderData>();
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
-	renderer = std::make_unique<Renderer>(window, model);
+    device = std::make_unique<VulkanDevice>(window);
+    AssetManager manager(device);
+	renderer = std::make_unique<Renderer>(window, device, manager, model);
     mainLoop();
 }
 
@@ -136,6 +133,10 @@ void App::processPressedKeys(double delta) {
         model->moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         model->moveCameraRight(cameraSpeed);
+}
+
+App::App() {
+
 }
 
 int main() {

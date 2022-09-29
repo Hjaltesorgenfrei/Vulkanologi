@@ -51,19 +51,19 @@ void AssetManager::createTextureImage(const char *filename, std::shared_ptr<Uplo
 
 	generateMipmaps(texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
-		vmaDestroyImage(allocator, texture->textureImage._image, texture->textureImage._allocation);
+		vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
 	});
 }
 
 void AssetManager::createTextureImageView(std::shared_ptr<UploadedTexture> texture) {
-	texture->textureImageView = createImageView(device, texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
+	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
-		device.destroyImageView(texture->textureImageView);
+		device->device().destroyImageView(texture->textureImageView);
 	});
 }
 
 void AssetManager::createTextureSampler(std::shared_ptr<UploadedTexture> texture) {
-	auto properties = physicalDevice.getProperties();
+	auto properties = device->physicalDevice().getProperties();
 
 	vk::SamplerCreateInfo samplerInfo{
 			.magFilter = vk::Filter::eLinear,
@@ -83,17 +83,17 @@ void AssetManager::createTextureSampler(std::shared_ptr<UploadedTexture> texture
 			.unnormalizedCoordinates = VK_FALSE,
 	};
 
-	if (device.createSampler(&samplerInfo, nullptr, &texture->textureSampler) != vk::Result::eSuccess) {
+	if (device->device().createSampler(&samplerInfo, nullptr, &texture->textureSampler) != vk::Result::eSuccess) {
 		throw std::runtime_error("Failed to create texture sampler!");
 	}
 	deletionQueue.push_function([&, texture]() {
-		device.destroySampler(texture->textureSampler);
+		device->device().destroySampler(texture->textureSampler);
 	});
 }
 
 
 void AssetManager::cleanUpStagingBuffer(AllocatedBuffer buffer) {
-	vmaDestroyBuffer(allocator, buffer._buffer, buffer._allocation);
+	vmaDestroyBuffer(device->allocator(), buffer._buffer, buffer._allocation);
 }
 
 AllocatedImage AssetManager::createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples,
@@ -121,7 +121,7 @@ AllocatedImage AssetManager::createImage(int width, int height, uint32_t mipLeve
 
 	VkImage image;
 	VkImageCreateInfo imageInfoCreate = static_cast<VkImageCreateInfo>(imageInfo);  // TODO: Add VMA HPP and fix this soup.
-	if (vmaCreateImage(allocator, &imageInfoCreate, &vmaAllocCreateInfo, &image, &allocatedImage._allocation, nullptr) != VK_SUCCESS) {
+	if (vmaCreateImage(device->allocator(), &imageInfoCreate, &vmaAllocCreateInfo, &image, &allocatedImage._allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate image");
 	}
 	allocatedImage._image = image;
@@ -176,7 +176,7 @@ void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk:
 		throw std::invalid_argument("Unsupported layout transistion!");
 	}
 
-	immediateSubmit([&](auto cmd) {
+	device->immediateSubmit([&](auto cmd) {
 		cmd.pipelineBarrier(
 				sourceStage, destinationStage,
 				vk::DependencyFlags(),
@@ -199,20 +199,20 @@ void AssetManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_
 			.imageOffset = {0, 0, 0},
 			.imageExtent = {width, height, 1}};
 
-	immediateSubmit([&](auto cmd) {
+    device->immediateSubmit([&](auto cmd) {
 		cmd.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, 1, &region);
 	});
 }
 
 void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight,
 								   uint32_t mipLevels) {
-	auto properties = physicalDevice.getFormatProperties(imageFormat);
+	auto properties = device->physicalDevice().getFormatProperties(imageFormat);
 
 	if (!(properties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
 		throw std::runtime_error("Texture image format does not support linear blitting!");
 	}
 
-	immediateSubmit([&](auto commandBuffer) {
+    device->immediateSubmit([&](auto commandBuffer) {
 		vk::ImageMemoryBarrier barrier{
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -292,29 +292,4 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 
 bool AssetManager::hasStencilComponent(vk::Format format) {
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
-}
-
-void AssetManager::immediateSubmit(std::function<void(vk::CommandBuffer)> &&function) {
-	auto& commandBuffer = uploadContext._commandBuffer;
-	vk::CommandBufferBeginInfo beginInfo{
-			.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
-
-	commandBuffer.begin(beginInfo);
-	function(commandBuffer);
-	commandBuffer.end();
-
-	vk::SubmitInfo submitInfo{
-			.commandBufferCount = 1,
-			.pCommandBuffers = &commandBuffer};
-	auto& fence = uploadContext._uploadFence;
-	if (transferQueue.submit(1, &submitInfo, fence) != vk::Result::eSuccess) {
-		throw std::runtime_error("Immediate submit failed!");
-	}
-	if (device.waitForFences(1, &fence, true, 99999999) != vk::Result::eSuccess) {
-		throw std::runtime_error("Immediate submit failed!");
-	}
-	if (device.resetFences(1, &fence) != vk::Result::eSuccess) {
-		throw std::runtime_error("Immediate submit failed!");
-	}
-	device.resetCommandPool(uploadContext._commandPool);
 }

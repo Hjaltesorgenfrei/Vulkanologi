@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <utility>
+
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 class WindowWrapper {

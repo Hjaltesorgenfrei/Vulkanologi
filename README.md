@@ -74,3 +74,4 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Use VMA.hpp instead
 - [ ] Create a style to autoformat with
 - [ ] Move swap chain to its own class
+- [ ] Fix the hash for checking if vertices are equal.

@@ -46,6 +46,7 @@ class Renderer {
 
     vk::SwapchainKHR swapChain;
     vk::Format swapChainImageFormat;
+    uint32_t swapChainImageCount;
     vk::Extent2D swapChainExtent;
     std::vector<vk::Image> swapChainImages;
     std::vector<vk::ImageView> swapChainImageViews;

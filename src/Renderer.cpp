@@ -93,14 +93,14 @@ void Renderer::createSwapChain() {
 	const vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 	const vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
+    swapChainImageCount = swapChainSupport.capabilities.minImageCount + 1;
+	if (swapChainSupport.capabilities.maxImageCount > 0 && swapChainImageCount > swapChainSupport.capabilities.maxImageCount) {
+        swapChainImageCount = swapChainSupport.capabilities.maxImageCount;
 	}
 
 	vk::SwapchainCreateInfoKHR createInfo {
 		.surface = device->surface(),
-		.minImageCount = imageCount,
+		.minImageCount = swapChainImageCount,
 		.imageFormat = surfaceFormat.format,
 		.imageColorSpace = surfaceFormat.colorSpace,
 		.imageExtent = extent,
@@ -254,8 +254,8 @@ void Renderer::initImgui() {
 	init_info.Device = device->device();
 	init_info.Queue = device->graphicsQueue();
 	init_info.DescriptorPool = imguiPool;
-	init_info.MinImageCount = 3;
-	init_info.ImageCount = 3;
+	init_info.MinImageCount = device->swapChainSupport().capabilities.minImageCount;
+	init_info.ImageCount = swapChainImageCount;
 	init_info.MSAASamples = static_cast<VkSampleCountFlagBits>(device->msaaSamples());
 
 	ImGui_ImplVulkan_Init(&init_info, renderPass);

@@ -791,7 +791,7 @@ void Renderer::createDescriptorSetLayout() {
 		.binding = 0,
 		.descriptorType = vk::DescriptorType::eUniformBuffer,
 		.descriptorCount = 1,
-		.stageFlags = vk::ShaderStageFlagBits::eVertex,
+		.stageFlags = vk::ShaderStageFlagBits::eAllGraphics,
 		.pImmutableSamplers = nullptr
 	};
 

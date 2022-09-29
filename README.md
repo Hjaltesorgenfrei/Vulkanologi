@@ -1,10 +1,18 @@
-# VulkanTut
+# Caldera
 
-Learning Vulkan from <https://vulkan-tutorial.com>, while trying to keep it as clean and modern c++ as possible.
+A Vulkan Renderer written in C++ 20. Very much WIP.
 
-## Compiling on Windows
+## Building
 
-To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows>
+To build on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows>
+
+On arch install `sudo pacman -S vulkan-devel`
+
+## Credits
+
+Based upon [Vulkan Tutorial](https://vulkan-tutorial.com), inspiration drawn from [Vulkan Guide](https://vkguide.dev/) 
+and [Brendan Galea's YouTube series](https://www.youtube.com/c/BrendanGalea).
+Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/).
 
 ## TODO
 
@@ -26,10 +34,10 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
 - [ ] Load more objects
   - [x] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex
     - [x] uploadIndices and uploadVertices can be generalized and simplified.
-    - [ ] Descriptors needs to be dynamically allocated, as they currently fill the pool.
+    - [ ] Descriptors need to be dynamically allocated, as they currently fill the pool.
       - <https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/>
-      - Potentially just make a dynamically allocator which creates a pool for each type?
-        - Then when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
+      - Potentially just make a dynamic allocator which creates a pool for each type?
+        - Then, when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
     - [x] TextureImage VMA.
     - [ ] UniformBuffer still uses manual buffer creation. They should be moved over.
     - [x] It's possible to load an array of textures, this should make it easier to load different textures
@@ -50,7 +58,7 @@ To compile on Windows download Vulkan SDK from <https://vulkan.lunarg.com/sdk/ho
   - Usage of transfer queue is only possible for some commands.
     - Therefore, a dedicated upload command is needed, which is separate from the mip map calculation.
     - Through another possibility is using multiple graphics queues. But the transfer queue might be faster so I need to look in to that.
-- [ ] Create a Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
+- [ ] Create an Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
   - <https://vkguide.dev/docs/extra-chapter/asset_system/>
   - [ ] Meshes
   - [ ] Textures

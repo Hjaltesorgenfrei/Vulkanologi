@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.1)
 set(CMAKE_CXX_STANDARD 20)
 
-project(vulkantut)
+project(vulkanologi)
 
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
@@ -71,7 +71,7 @@ include_directories(ext/ImGuizmo)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-add_executable(vulkantut 
+add_executable(vulkanologi
     ${SOURCES}
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.cpp
@@ -84,8 +84,8 @@ add_executable(vulkantut
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.cpp
 )
-target_link_libraries(vulkantut glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
-add_shader(vulkantut shader.frag)
-add_shader(vulkantut shader.vert)
+target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
+add_shader(vulkanologi shader.frag)
+add_shader(vulkanologi shader.vert)
 
-add_dependencies(vulkantut copy-runtime-files)
+add_dependencies(vulkanologi copy-runtime-files)

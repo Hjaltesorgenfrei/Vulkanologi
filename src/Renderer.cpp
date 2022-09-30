@@ -39,11 +39,17 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
         : window(window), device{device}, assetManager(assetManager) {
 	this->renderData = renderData;
 	try {
+        descriptorAllocator.init(device->device());
+        descriptorLayoutCache.init(device->device());
+        mainDeletionQueue.push_function([&](){
+            descriptorLayoutCache.cleanup();
+            descriptorAllocator.cleanup();
+        });
 		createSwapChain();
 		createImageViews();
 		createRenderPass();
 		createDescriptorSetLayout();
-		createTextureDescriptorSetLayout();
+		uploadMeshes();
 		createGraphicsPipelineLayout();
 		createGraphicsPipeline();
 		createCommandPool();
@@ -56,7 +62,6 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
-		uploadMeshes();
 	}
 	catch (const std::exception& e) {
 		std::cerr << "Renderer failed to initialize!" << std::endl;
@@ -80,8 +85,25 @@ Material Renderer::createMaterial(std::vector<std::string>& texturePaths) {
 		textures.push_back(assetManager.getTexture(filename));
 	}
 
-	Material material{};
-	material.textureSet = createTextureDescriptorSet(textures);
+
+    std::vector<vk::DescriptorImageInfo> imageInfos;
+    for (const auto& texture : textures) {
+        vk::DescriptorImageInfo imageInfo {
+                .sampler = texture->textureSampler,
+                .imageView = texture->textureImageView,
+                .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        };
+        imageInfos.push_back(imageInfo);
+    }
+
+    Material material{};
+    auto textureResult = DescriptorBuilder::begin(&descriptorLayoutCache, &descriptorAllocator)
+            .bindImages(0, imageInfos, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment)
+            .build(material.textureSet, textureDescriptorSetLayout);
+
+    if(!textureResult) {
+        throw std::runtime_error("Failed to create Material");
+    }
 
 	return material;
 }
@@ -395,40 +417,6 @@ void Renderer::createDescriptorSetLayout() {
 		device->device().destroyDescriptorSetLayout(uboDescriptorSetLayout);
 	});
 }
-
-void Renderer::createTextureDescriptorSetLayout() {
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
-		.binding = 0,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.descriptorCount = 256,
-		.stageFlags = vk::ShaderStageFlagBits::eFragment,
-		.pImmutableSamplers = nullptr
-	};
-
-	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {samplerLayoutBinding};
-
-	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount | vk::DescriptorBindingFlagBits::ePartiallyBound};
-
-	vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags {
-		.bindingCount = static_cast<uint32_t>(bindings.size()),
-		.pBindingFlags = flags.data()
-	};
-
-	vk::DescriptorSetLayoutCreateInfo layoutInfo {
-		.pNext = &bindingFlags,
-		.bindingCount = static_cast<uint32_t>(bindings.size()),
-		.pBindings = bindings.data()
-	};
-
-	if(device->device().createDescriptorSetLayout(&layoutInfo, nullptr, &textureDescriptorSetLayout) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to create texture descriptor set layout");
-	}
-	mainDeletionQueue.push_function([&]() {
-		device->device().destroyDescriptorSetLayout(textureDescriptorSetLayout);
-	});
-}
-
-
 
 void Renderer::createGraphicsPipelineLayout() {
 	 vk::PushConstantRange pushConstantRange {
@@ -899,50 +887,6 @@ void Renderer::createDescriptorSets() {
 
 		device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
-}
-
-vk::DescriptorSet Renderer::createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& textures) {
-	uint32_t counts[1];
-	counts[0] = static_cast<uint32_t>(textures.size()); 
-
-	vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
-		.descriptorSetCount = 1,
-		.pDescriptorCounts = counts
-	};
-
-	vk::DescriptorSetAllocateInfo textureAllocInfo {
-		.pNext = &setCounts,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &textureDescriptorSetLayout
-	};
-
-	vk::DescriptorSet textureSet{};
-	if(device->device().allocateDescriptorSets(&textureAllocInfo, &textureSet) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to create Texture Descriptor set!");
-	}
-
-	std::vector<vk::DescriptorImageInfo> imageInfos;
-	for (const auto& texture : textures) {
-		vk::DescriptorImageInfo imageInfo {
-			.sampler = texture->textureSampler,
-			.imageView = texture->textureImageView,
-			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};	
-		imageInfos.push_back(imageInfo);
-	}
-
-	vk::WriteDescriptorSet imageDescriptor {
-		.dstSet = textureSet,
-		.dstBinding = 0,
-		.dstArrayElement = 0,
-		.descriptorCount = static_cast<uint32_t>(imageInfos.size()),
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = imageInfos.data(),
-	};
-
-	device->device().updateDescriptorSets(1, &imageDescriptor, 0, nullptr);
-	return textureSet;
 }
 
 void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {

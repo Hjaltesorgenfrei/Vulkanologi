@@ -75,3 +75,24 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Create a style to autoformat with
 - [ ] Move swap chain to its own class
 - [ ] Fix the hash for checking if vertices are equal.
+
+### Descriptor Layout Idea
+
+The DescriptorSet setup could work by creating DescriptorSetLayouts before.
+Then validating the created DescriptorSets against a provided layout. 
+The DescriptorSetLayout could also have a builder
+`.addBinding(uint32_t binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, uint32t_t count = 1)`
+If any binding has > 1 count, then it should be variable length and partially bound.
+Only the last binding may have variable length, so this should also be checked. Maybe it should just be a flag? 
+[VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkDescriptorBindingFlagBits.html)
+
+Using a buffer for the other locations might be a possibility to still add all material properties as bindless. But that is to be looked at.
+
+
+Then the DescriptorBuilder would have 
+```cpp
+DescriptorBuilder &bindBuffer(uint32_t binding, vk::DescriptorBufferInfo *bufferInfo, vk::DescriptorType type);
+DescriptorBuilder &bindImage(uint32_t binding, vk::DescriptorImageInfo *imageInfo, vk::DescriptorType type);
+DescriptorBuilder &bindImages(uint32_t binding, std::vector<vk::DescriptorImageInfo>& imageInfos, vk::DescriptorType type);
+```
+bindImages would also validate that the length is less than the max set in descriptor builder.

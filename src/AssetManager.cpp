@@ -4,7 +4,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-std::shared_ptr<UploadedTexture> AssetManager::getTexture(std::string filename) {
+std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& filename) {
 	if (uploadedTextures.find(filename) == uploadedTextures.end()) {
 		auto texture = std::make_shared<UploadedTexture>();
 		createTextureImage(filename.c_str(), texture);
@@ -15,7 +15,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getTexture(std::string filename) 
 	return uploadedTextures[filename];
 }
 
-void AssetManager::createTextureImage(const char *filename, std::shared_ptr<UploadedTexture> texture) {
+void AssetManager::createTextureImage(const char *filename, const std::shared_ptr<UploadedTexture>& texture) {
 	int texWidth, texHeight, texChannels;
 	stbi_uc* pixels = stbi_load(filename, &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 
@@ -55,14 +55,14 @@ void AssetManager::createTextureImage(const char *filename, std::shared_ptr<Uplo
 	});
 }
 
-void AssetManager::createTextureImageView(std::shared_ptr<UploadedTexture> texture) {
+void AssetManager::createTextureImageView(const std::shared_ptr<UploadedTexture>& texture) {
 	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
 		device->device().destroyImageView(texture->textureImageView);
 	});
 }
 
-void AssetManager::createTextureSampler(std::shared_ptr<UploadedTexture> texture) {
+void AssetManager::createTextureSampler(const std::shared_ptr<UploadedTexture>& texture) {
 	auto properties = device->physicalDevice().getProperties();
 
 	vk::SamplerCreateInfo samplerInfo{
@@ -120,7 +120,7 @@ AllocatedImage AssetManager::createImage(int width, int height, uint32_t mipLeve
 			.usage = VMA_MEMORY_USAGE_GPU_ONLY};
 
 	VkImage image;
-	VkImageCreateInfo imageInfoCreate = static_cast<VkImageCreateInfo>(imageInfo);  // TODO: Add VMA HPP and fix this soup.
+	auto imageInfoCreate = static_cast<VkImageCreateInfo>(imageInfo);  // TODO: Add VMA HPP and fix this soup.
 	if (vmaCreateImage(device->allocator(), &imageInfoCreate, &vmaAllocCreateInfo, &image, &allocatedImage._allocation, nullptr) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to allocate image");
 	}

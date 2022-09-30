@@ -18,6 +18,7 @@
 #include "RenderData.h"
 #include "VkTypes.h"
 #include "VulkanDevice.h"
+#include "VkDescriptors.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -27,8 +28,10 @@ class Renderer {
    public:
     Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<VulkanDevice> device, AssetManager &assetManager,
              std::shared_ptr<RenderData> &renderData);
-
     ~Renderer();
+    Renderer& operator=(const Renderer&) = delete;
+    Renderer(const Renderer&) = delete;
+
     void drawFrame();
     void frameBufferResized();
     Material createMaterial(std::vector<std::string>& texturePaths);
@@ -52,11 +55,14 @@ class Renderer {
     std::vector<vk::ImageView> swapChainImageViews;
     std::vector<vk::Framebuffer> swapChainFramebuffers;
 
-    vk::DescriptorSetLayout textureDescriptorSetLayout;
+    vk::DescriptorSetLayout materialDescriptorSetLayout;
     vk::DescriptorSetLayout uboDescriptorSetLayout;
     std::vector<vk::DescriptorSet> descriptorSets;
     vk::DescriptorPool descriptorPool;
     vk::RenderPass renderPass;
+
+    DescriptorAllocator descriptorAllocator;
+    DescriptorLayoutCache descriptorLayoutCache;
 
     vk::PipelineLayout pipelineLayout;
     vk::Pipeline graphicsPipeline;
@@ -84,9 +90,6 @@ class Renderer {
 
     bool frameBufferResizePending = false;
 
-    Renderer& operator=(const Renderer&) = delete;
-    Renderer(const Renderer&) = delete;
-
     void initImgui();
 
     void createSwapChain();
@@ -102,7 +105,8 @@ class Renderer {
     void createImageViews();
 
     void createRenderPass();
-    void createDescriptorSetLayout();
+    void createGlobalDescriptorSetLayout();
+    void createMaterialDescriptorSetLayout();
 
     void createGraphicsPipelineLayout();
     void createGraphicsPipeline();
@@ -124,9 +128,6 @@ class Renderer {
 
     template <typename T>
     AllocatedBuffer uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage);
-
-    void createTextureDescriptorSetLayout();
-    vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& texture);
 
     void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 

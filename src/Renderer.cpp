@@ -39,11 +39,17 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
         : window(window), device{device}, assetManager(assetManager) {
 	this->renderData = renderData;
 	try {
+        descriptorAllocator.init(device->device());
+        descriptorLayoutCache.init(device->device());
+        mainDeletionQueue.push_function([&](){
+            descriptorLayoutCache.cleanup();
+            descriptorAllocator.cleanup();
+        });
 		createSwapChain();
 		createImageViews();
 		createRenderPass();
-		createDescriptorSetLayout();
-		createTextureDescriptorSetLayout();
+        createGlobalDescriptorSetLayout();
+        createMaterialDescriptorSetLayout();
 		createGraphicsPipelineLayout();
 		createGraphicsPipeline();
 		createCommandPool();
@@ -80,8 +86,26 @@ Material Renderer::createMaterial(std::vector<std::string>& texturePaths) {
 		textures.push_back(assetManager.getTexture(filename));
 	}
 
-	Material material{};
-	material.textureSet = createTextureDescriptorSet(textures);
+
+    std::vector<vk::DescriptorImageInfo> imageInfos;
+    for (const auto& texture : textures) {
+        vk::DescriptorImageInfo imageInfo {
+                .sampler = texture->textureSampler,
+                .imageView = texture->textureImageView,
+                .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+        };
+        imageInfos.push_back(imageInfo);
+    }
+
+    Material material{};
+
+    auto textureResult =  DescriptorSetBuilder::begin(materialDescriptorSetLayout, &descriptorAllocator)
+            .bindImages(0, imageInfos, vk::DescriptorType::eCombinedImageSampler)
+            .build(material.textureSet);
+
+    if(!textureResult) {
+        throw std::runtime_error("Failed to create Material");
+    }
 
 	return material;
 }
@@ -372,62 +396,26 @@ void Renderer::createRenderPass() {
 
 }
 
-void Renderer::createDescriptorSetLayout() {
-	vk::DescriptorSetLayoutBinding uboLayoutBinding {
-		.binding = 0,
-		.descriptorType = vk::DescriptorType::eUniformBuffer,
-		.descriptorCount = 1,
-		.stageFlags = vk::ShaderStageFlagBits::eAllGraphics,
-		.pImmutableSamplers = nullptr
-	};
+void Renderer::createGlobalDescriptorSetLayout() {
+    auto success = DescriptorSetLayoutBuilder::begin(&descriptorLayoutCache)
+            .addBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics)
+            .build(uboDescriptorSetLayout);
 
-	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {uboLayoutBinding};
-
-	vk::DescriptorSetLayoutCreateInfo layoutInfo {
-		.bindingCount = static_cast<uint32_t>(bindings.size()),
-		.pBindings = bindings.data()
-	};
-
-	if(device->device().createDescriptorSetLayout(&layoutInfo, nullptr, &uboDescriptorSetLayout) != vk::Result::eSuccess) {
+	if(!success) {
 		throw std::runtime_error("Failed to create descriptor set layout");
 	}
-	mainDeletionQueue.push_function([&]() {
-		device->device().destroyDescriptorSetLayout(uboDescriptorSetLayout);
-	});
 }
 
-void Renderer::createTextureDescriptorSetLayout() {
-	vk::DescriptorSetLayoutBinding samplerLayoutBinding { 
-		.binding = 0,
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.descriptorCount = 256,
-		.stageFlags = vk::ShaderStageFlagBits::eFragment,
-		.pImmutableSamplers = nullptr
-	};
 
-	std::array<vk::DescriptorSetLayoutBinding, 1> bindings = {samplerLayoutBinding};
+void Renderer::createMaterialDescriptorSetLayout() {
+     auto success = DescriptorSetLayoutBuilder::begin(&descriptorLayoutCache)
+        .addBinding(0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment ,256, vk::DescriptorBindingFlagBits::ePartiallyBound)
+        .build(materialDescriptorSetLayout);
 
-	std::array<vk::DescriptorBindingFlags, 1> flags = {vk::DescriptorBindingFlagBits::eVariableDescriptorCount | vk::DescriptorBindingFlagBits::ePartiallyBound};
-
-	vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlags {
-		.bindingCount = static_cast<uint32_t>(bindings.size()),
-		.pBindingFlags = flags.data()
-	};
-
-	vk::DescriptorSetLayoutCreateInfo layoutInfo {
-		.pNext = &bindingFlags,
-		.bindingCount = static_cast<uint32_t>(bindings.size()),
-		.pBindings = bindings.data()
-	};
-
-	if(device->device().createDescriptorSetLayout(&layoutInfo, nullptr, &textureDescriptorSetLayout) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to create texture descriptor set layout");
-	}
-	mainDeletionQueue.push_function([&]() {
-		device->device().destroyDescriptorSetLayout(textureDescriptorSetLayout);
-	});
+    if(!success) {
+        throw std::runtime_error("Failed to create Material descriptor set layout");
+    }
 }
-
 
 
 void Renderer::createGraphicsPipelineLayout() {
@@ -437,7 +425,7 @@ void Renderer::createGraphicsPipelineLayout() {
         .size = sizeof(MeshPushConstants)
     };
 
-	std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, textureDescriptorSetLayout}; 
+	std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, materialDescriptorSetLayout};
 
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
 		.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
@@ -899,50 +887,6 @@ void Renderer::createDescriptorSets() {
 
 		device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 	}
-}
-
-vk::DescriptorSet Renderer::createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& textures) {
-	uint32_t counts[1];
-	counts[0] = static_cast<uint32_t>(textures.size()); 
-
-	vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
-		.descriptorSetCount = 1,
-		.pDescriptorCounts = counts
-	};
-
-	vk::DescriptorSetAllocateInfo textureAllocInfo {
-		.pNext = &setCounts,
-		.descriptorPool = descriptorPool,
-		.descriptorSetCount = 1,
-		.pSetLayouts = &textureDescriptorSetLayout
-	};
-
-	vk::DescriptorSet textureSet{};
-	if(device->device().allocateDescriptorSets(&textureAllocInfo, &textureSet) != vk::Result::eSuccess) {
-		throw std::runtime_error("Failed to create Texture Descriptor set!");
-	}
-
-	std::vector<vk::DescriptorImageInfo> imageInfos;
-	for (const auto& texture : textures) {
-		vk::DescriptorImageInfo imageInfo {
-			.sampler = texture->textureSampler,
-			.imageView = texture->textureImageView,
-			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};	
-		imageInfos.push_back(imageInfo);
-	}
-
-	vk::WriteDescriptorSet imageDescriptor {
-		.dstSet = textureSet,
-		.dstBinding = 0,
-		.dstArrayElement = 0,
-		.descriptorCount = static_cast<uint32_t>(imageInfos.size()),
-		.descriptorType = vk::DescriptorType::eCombinedImageSampler,
-		.pImageInfo = imageInfos.data(),
-	};
-
-	device->device().updateDescriptorSets(1, &imageDescriptor, 0, nullptr);
-	return textureSet;
 }
 
 void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size) {

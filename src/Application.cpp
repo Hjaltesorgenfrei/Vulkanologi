@@ -87,6 +87,12 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     if(key == GLFW_KEY_E && action == GLFW_PRESS) {
         app->showImguizmo = !app->showImguizmo;
     }
+    if(key == GLFW_KEY_LEFT_SHIFT && action != GLFW_RELEASE) {
+        app->shiftPressed = true;
+    }
+    if(key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE) {
+        app->shiftPressed = false;
+    }
 }
 
 void App::mainLoop() {
@@ -124,7 +130,10 @@ void App::drawImGuizmo(glm::mat4* matrix) {
 
 void App::processPressedKeys(double delta) {
     auto glfw_window = window->getGLFWwindow();
-    const float cameraSpeed = 0.005f * static_cast<float>(delta);
+    float cameraSpeed = 0.005f * static_cast<float>(delta);
+    if (shiftPressed) {
+        cameraSpeed *= 4;
+    }
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         model->moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)

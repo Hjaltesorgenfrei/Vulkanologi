@@ -28,7 +28,7 @@ class AssetManager {
         deletionQueue.flush();
     }
 
-    std::shared_ptr<UploadedTexture> getTexture(std::string filename);
+    std::shared_ptr<UploadedTexture> getTexture(const std::string& filename);
 
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
@@ -38,11 +38,11 @@ class AssetManager {
     DeletionQueue deletionQueue{};
     std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
 
-    void createTextureImage(const char* filename, std::shared_ptr<UploadedTexture> texture);
+    void createTextureImage(const char* filename, const std::shared_ptr<UploadedTexture>& texture);
 
-    void createTextureImageView(std::shared_ptr<UploadedTexture> texture);
+    void createTextureImageView(const std::shared_ptr<UploadedTexture>& texture);
 
-    void createTextureSampler(std::shared_ptr<UploadedTexture> texture);
+    void createTextureSampler(const std::shared_ptr<UploadedTexture>& texture);
 
     template <typename T>
     [[nodiscard]] AllocatedBuffer stageData(std::span<T>& dataToStage);

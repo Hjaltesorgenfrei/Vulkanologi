@@ -18,6 +18,7 @@
 #include "RenderData.h"
 #include "VkTypes.h"
 #include "VulkanDevice.h"
+#include "VkDescriptors.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -57,6 +58,9 @@ class Renderer {
     std::vector<vk::DescriptorSet> descriptorSets;
     vk::DescriptorPool descriptorPool;
     vk::RenderPass renderPass;
+
+    DescriptorAllocator descriptorAllocator;
+    DescriptorLayoutCache descriptorLayoutCache;
 
     vk::PipelineLayout pipelineLayout;
     vk::Pipeline graphicsPipeline;
@@ -124,9 +128,6 @@ class Renderer {
 
     template <typename T>
     AllocatedBuffer uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage);
-
-    void createTextureDescriptorSetLayout();
-    vk::DescriptorSet createTextureDescriptorSet(std::vector<std::shared_ptr<UploadedTexture>>& texture);
 
     void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 

@@ -46,6 +46,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
 		createTextureDescriptorSetLayout();
 		createGraphicsPipelineLayout();
 		createGraphicsPipeline();
+		createWireframePipeline();
 		createCommandPool();
 		initImgui();
 		createColorResources();
@@ -164,6 +165,7 @@ void Renderer::recreateSwapchain() {
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
+	createWireframePipeline();
 	createColorResources();
 	createDepthResources();
 	createFramebuffers();
@@ -600,6 +602,148 @@ void Renderer::createGraphicsPipeline() {
 	device->device().destroyShaderModule(fragShaderModule);
 }
 
+void Renderer::createWireframePipeline() {
+	auto vertShaderCode = readFile("shaders/shader_unlit.vert.spv");
+	auto fragShaderCode = readFile("shaders/shader_unlit.frag.spv");
+
+	auto vertShaderModule = createShaderModule(vertShaderCode);
+	auto fragShaderModule = createShaderModule(fragShaderCode);
+
+	vk::PipelineShaderStageCreateInfo vertShaderStageInfo {
+			.stage = vk::ShaderStageFlagBits::eVertex,
+			.module = vertShaderModule,
+			.pName = "main"
+	};
+	vk::PipelineShaderStageCreateInfo fragShaderStageInfo {
+			.stage = vk::ShaderStageFlagBits::eFragment,
+			.module = fragShaderModule,
+			.pName = "main"
+	};
+	vk::PipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+
+	auto bindingDescriptions = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+	vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
+			.vertexBindingDescriptionCount = 1,
+			.pVertexBindingDescriptions = &bindingDescriptions,
+			.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+			.pVertexAttributeDescriptions = attributeDescriptions.data(),
+	};
+
+	vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
+			.topology = vk::PrimitiveTopology::eTriangleList,
+			.primitiveRestartEnable = VK_FALSE
+	};
+
+	vk::Viewport viewport {
+			.x = 0.0f,
+			.y = 0.0f,
+			.width = static_cast<float>(swapChainExtent.width),
+			.height = static_cast<float>(swapChainExtent.height),
+			.minDepth = 0.0f,
+			.maxDepth = 1.0f
+	};
+
+	vk::Rect2D scissor {
+			.offset = {0, 0},
+			.extent = swapChainExtent
+	};
+
+	vk::PipelineViewportStateCreateInfo viewportState {
+			.viewportCount = 1,
+			.pViewports = &viewport,
+			.scissorCount = 1,
+			.pScissors = &scissor,
+	};
+
+
+	vk::PipelineRasterizationStateCreateInfo rasterizer {
+			.depthClampEnable = VK_FALSE,
+			.rasterizerDiscardEnable = VK_FALSE,
+			.polygonMode = vk::PolygonMode::eLine,
+			.cullMode = vk::CullModeFlagBits::eBack,
+			.frontFace = vk::FrontFace::eCounterClockwise,
+			.depthBiasEnable = VK_FALSE,
+			.depthBiasConstantFactor = 0.0f,
+			.depthBiasClamp = 0.0f,
+			.depthBiasSlopeFactor = 0.0f,
+			.lineWidth = 1.0f,
+	};
+
+
+	vk::PipelineMultisampleStateCreateInfo multisampling {
+			.rasterizationSamples = device->msaaSamples(),
+			.sampleShadingEnable = VK_TRUE,
+			.minSampleShading = 0.2f,
+			.pSampleMask = nullptr,
+			.alphaToCoverageEnable = VK_FALSE,
+			.alphaToOneEnable = VK_FALSE,
+	};
+
+
+	vk::PipelineColorBlendAttachmentState colorBlendAttachment {
+			.blendEnable = VK_FALSE,
+			.colorWriteMask = vk::ColorComponentFlagBits::eR
+							  | vk::ColorComponentFlagBits::eG
+							  | vk::ColorComponentFlagBits::eB
+							  | vk::ColorComponentFlagBits::eA,
+	};
+
+
+
+	vk::PipelineColorBlendStateCreateInfo colorBlending {
+			.logicOpEnable = VK_FALSE,
+			.logicOp = vk::LogicOp::eCopy,
+			.attachmentCount = 1,
+			.pAttachments = &colorBlendAttachment,
+			.blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
+	};
+
+	vk::PipelineDepthStencilStateCreateInfo depthStencil {
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = vk::CompareOp::eLess,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE
+	};
+
+	vk::GraphicsPipelineCreateInfo pipelineInfo {
+			// Reference programmable stages
+			.stageCount = 2,
+
+			// Fixed Function stages
+			.pStages = shaderStages,
+			.pVertexInputState = &vertexInputInfo,
+			.pInputAssemblyState = &inputAssembly,
+			.pViewportState = &viewportState,
+			.pRasterizationState = &rasterizer,
+			.pMultisampleState = &multisampling,
+			.pDepthStencilState = &depthStencil,
+			.pColorBlendState = &colorBlending,
+
+			// A vulkan handle, not a struct pointer
+			.layout = pipelineLayout,
+
+			.renderPass = renderPass,
+			.subpass = 0,
+			.basePipelineHandle = nullptr,
+			.basePipelineIndex = -1,
+	};
+
+	auto result = device->device().createGraphicsPipeline(nullptr, pipelineInfo);
+	if (result.result != vk::Result::eSuccess) {
+		throw std::runtime_error("failed to create graphics pipeline!");
+	}
+	wireframePipeline = result.value;
+	swapChainDeletionQueue.push_function([&]() {
+		device->device().destroyPipeline(wireframePipeline);
+	});
+
+	device->device().destroyShaderModule(vertShaderModule);
+	device->device().destroyShaderModule(fragShaderModule);
+}
+
 vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
 	const vk::ShaderModuleCreateInfo createInfo {
 		.codeSize = code.size(),
@@ -1002,7 +1146,14 @@ void Renderer::recordCommandBuffer(int index) {
 		commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 		{
 			//Add commands to buffer
-			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+			vk::Pipeline pipeLineToBind{nullptr};
+			if(rendererMode == NORMAL) {
+				pipeLineToBind = graphicsPipeline;
+			}
+			else if(rendererMode == WIREFRAME) {
+				pipeLineToBind = wireframePipeline;
+			}
+			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeLineToBind);
 			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
 			for (auto model : renderData->getModels()) {

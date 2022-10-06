@@ -87,5 +87,7 @@ add_executable(vulkanologi
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
+add_shader(vulkanologi shader_unlit.frag)
+add_shader(vulkanologi shader_unlit.vert)
 
 add_dependencies(vulkanologi copy-runtime-files)

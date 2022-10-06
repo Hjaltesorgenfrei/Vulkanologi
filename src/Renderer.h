@@ -24,6 +24,11 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 
 std::vector<char> readFile(const std::string& filename);
 
+enum RendererMode {
+	NORMAL,
+	WIREFRAME
+};
+
 class Renderer {
    public:
     Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<VulkanDevice> device, AssetManager &assetManager,
@@ -35,8 +40,9 @@ class Renderer {
     void drawFrame();
     void frameBufferResized();
     Material createMaterial(std::vector<std::string>& texturePaths);
+	RendererMode rendererMode = RendererMode::NORMAL;
 
-   private:
+private:
     std::shared_ptr<WindowWrapper> window;
     std::shared_ptr<VulkanDevice> device;
     AssetManager& assetManager;
@@ -66,6 +72,7 @@ class Renderer {
 
     vk::PipelineLayout pipelineLayout;
     vk::Pipeline graphicsPipeline;
+	vk::Pipeline wireframePipeline;
 
     vk::CommandPool commandPool;
     vk::CommandPool transferCommandPool;
@@ -110,8 +117,9 @@ class Renderer {
 
     void createGraphicsPipelineLayout();
     void createGraphicsPipeline();
+	void createWireframePipeline();
 
-    vk::ShaderModule createShaderModule(const std::vector<char>& code);
+	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 
     void createFramebuffers();
 

@@ -84,6 +84,12 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     if(key == GLFW_KEY_F11 && action == GLFW_PRESS) {
         app->window->fullscreenWindow();
     }
+	if(key == GLFW_KEY_F1 && action == GLFW_PRESS) {
+		app->renderer->rendererMode = NORMAL;
+	}
+	if(key == GLFW_KEY_F2 && action == GLFW_PRESS) {
+		app->renderer->rendererMode = WIREFRAME;
+	}
     if(key == GLFW_KEY_E && action == GLFW_PRESS) {
         app->showImguizmo = !app->showImguizmo;
     }

@@ -152,7 +152,8 @@ void VulkanDevice::createLogicalDevice() {
 
     vk::PhysicalDeviceFeatures deviceFeatures {
             .sampleRateShading = VK_TRUE,
-            .samplerAnisotropy = VK_TRUE
+			.fillModeNonSolid = VK_TRUE,
+            .samplerAnisotropy = VK_TRUE,
     };
 
     vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexFeatures {
@@ -247,6 +248,7 @@ std::vector<const char *> VulkanDevice::getRequiredExtensions() {
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
+
 
     return extensions;
 }

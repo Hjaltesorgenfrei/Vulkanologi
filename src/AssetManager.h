@@ -9,7 +9,7 @@
 #include "Deletionqueue.h"
 #include "VkInit.h"
 #include "VkTypes.h"
-#include "Vulkandevice.h"
+#include "VulkanDevice.h"
 
 class AssetManager {
    public:

@@ -3,6 +3,10 @@
 #include "Mesh.h"
 
 bool VkPipelineBuilder::build(DeletionQueue& deletionQueue, vk::Pipeline& pipeline) {
+	if(!validate()) {
+		return false;
+	}
+
 	std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
 	std::vector<vk::ShaderModule> shaderModules;
 	for (const auto& [filepath, stage] : _shaders) {
@@ -180,4 +184,17 @@ VkPipelineBuilder VkPipelineBuilder::begin(VulkanDevice *device, vk::Extent2D ex
 VkPipelineBuilder &VkPipelineBuilder::shader(const std::string& filepath, vk::ShaderStageFlagBits stage) {
 	this->_shaders.emplace_back(filepath, stage);
 	return *this;
+}
+
+bool VkPipelineBuilder::validate() {
+	vk::Flags<vk::ShaderStageFlagBits> currentShaders;
+	for (const auto &[_, stage] : _shaders) {
+		if (currentShaders & stage) {
+			std::cerr << "Multiple shaders of the same type!\n";
+			return false;
+		}
+		currentShaders = currentShaders | stage;
+	}
+
+	return true;
 }

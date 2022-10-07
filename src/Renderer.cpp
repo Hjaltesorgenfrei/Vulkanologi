@@ -48,6 +48,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
 		uploadMeshes();
 	}
 	catch (const std::exception& e) {
+		cleanup();
 		std::cerr << "Renderer failed to initialize!" << std::endl;
 		std::cerr << "Error: " << e.what() << std::endl;
 		throw e;

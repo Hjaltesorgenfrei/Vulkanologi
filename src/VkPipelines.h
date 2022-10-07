@@ -21,4 +21,6 @@ private:
 	std::vector<std::pair<std::string, vk::ShaderStageFlagBits>> _shaders;
 
 	vk::ShaderModule createShaderModule(const std::vector<char> &code);
+
+	bool validate();
 };

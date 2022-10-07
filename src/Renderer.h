@@ -14,7 +14,6 @@
 
 #include "AssetManager.h"
 #include "Deletionqueue.h"
-#include "DescriptorSetManager.h"
 #include "RenderData.h"
 #include "VkTypes.h"
 #include "VulkanDevice.h"

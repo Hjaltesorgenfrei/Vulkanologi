@@ -70,7 +70,10 @@ private:
     DescriptorLayoutCache descriptorLayoutCache;
 
     vk::PipelineLayout pipelineLayout;
+    vk::PipelineLayout billboardPipelineLayout;
+
     vk::Pipeline graphicsPipeline;
+    vk::Pipeline billboardPipeline;
 	vk::Pipeline wireframePipeline;
 
     vk::CommandPool commandPool;
@@ -115,7 +118,11 @@ private:
     void createMaterialDescriptorSetLayout();
 
     void createGraphicsPipelineLayout();
+    void createBillboardPipelineLayout();
+
+    void createPipelines();
     void createGraphicsPipeline();
+    void createBillboardPipeline();
 	void createWireframePipeline();
 
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);

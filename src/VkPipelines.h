@@ -8,6 +8,8 @@ public:
 	static VkPipelineBuilder begin(VulkanDevice* device, vk::Extent2D extent, vk::PipelineLayout pipelineLayout, vk::RenderPass renderPass);
 	VkPipelineBuilder &polygonMode(vk::PolygonMode polygonMode);
 	VkPipelineBuilder &shader(const std::string& filepath, vk::ShaderStageFlagBits stage);
+    VkPipelineBuilder &bindingDescriptions(std::vector<vk::VertexInputBindingDescription> descriptions);
+    VkPipelineBuilder &attributeDescriptions(std::vector<vk::VertexInputAttributeDescription> descriptions);
 	bool build(DeletionQueue& deletionQueue, vk::Pipeline& pipeline);
 
 private:
@@ -19,6 +21,8 @@ private:
 	// Fields that can be changed, possibly use optional at some point if it is necessary
 	vk::PolygonMode _polygonMode = vk::PolygonMode::eFill;
 	std::vector<std::pair<std::string, vk::ShaderStageFlagBits>> _shaders;
+    std::vector<vk::VertexInputBindingDescription> _bindingDescriptions;
+    std::vector<vk::VertexInputAttributeDescription> _attributeDescriptions;
 
 	vk::ShaderModule createShaderModule(const std::vector<char> &code);
 

@@ -22,9 +22,9 @@ struct Vertex {
 		return pos == other.pos && color == other.color && texCoord == other.texCoord;
 	}
 
-	static vk::VertexInputBindingDescription getBindingDescription();
+	static std::vector<vk::VertexInputBindingDescription> getBindingDescription();
 
-	static std::array<vk::VertexInputAttributeDescription, 5> getAttributeDescriptions();
+	static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions();
 };
 
 struct Mesh {

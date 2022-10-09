@@ -1,4 +1,6 @@
 #include "VkPipelines.h"
+
+#include <utility>
 #include "Util.h"
 #include "Mesh.h"
 
@@ -20,14 +22,11 @@ bool VkPipelineBuilder::build(DeletionQueue& deletionQueue, vk::Pipeline& pipeli
 		shaderStageCreateInfos.push_back(shaderStageCreateInfo);
 	}
 
-	auto bindingDescriptions = Vertex::getBindingDescription();
-	auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
-			.vertexBindingDescriptionCount = 1,
-			.pVertexBindingDescriptions = &bindingDescriptions,
-			.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-			.pVertexAttributeDescriptions = attributeDescriptions.data(),
+			.vertexBindingDescriptionCount = static_cast<uint32_t>(_bindingDescriptions.size()),
+			.pVertexBindingDescriptions = _bindingDescriptions.data(),
+			.vertexAttributeDescriptionCount = static_cast<uint32_t>(_attributeDescriptions.size()),
+			.pVertexAttributeDescriptions = _attributeDescriptions.data(),
 	};
 
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
@@ -178,6 +177,11 @@ VkPipelineBuilder VkPipelineBuilder::begin(VulkanDevice *device, vk::Extent2D ex
 	pipelineBuilder.extent = extent;
 	pipelineBuilder.pipelineLayout = pipelineLayout;
 	pipelineBuilder.renderPass = renderPass;
+
+
+    pipelineBuilder._bindingDescriptions = Vertex::getBindingDescription();
+    pipelineBuilder._attributeDescriptions = Vertex::getAttributeDescriptions();
+
 	return pipelineBuilder;
 }
 
@@ -197,4 +201,15 @@ bool VkPipelineBuilder::validate() {
 	}
 
 	return true;
+}
+
+VkPipelineBuilder &VkPipelineBuilder::bindingDescriptions(std::vector<vk::VertexInputBindingDescription> descriptions) {
+    _bindingDescriptions = std::move(descriptions);
+    return *this;
+}
+
+VkPipelineBuilder &
+VkPipelineBuilder::attributeDescriptions(std::vector<vk::VertexInputAttributeDescription> descriptions) {
+    _attributeDescriptions = std::move(descriptions);
+    return *this;
 }

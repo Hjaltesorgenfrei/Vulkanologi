@@ -33,8 +33,8 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<Vulkan
         createGlobalDescriptorSetLayout();
         createMaterialDescriptorSetLayout();
 		createGraphicsPipelineLayout();
-		createGraphicsPipeline();
-		createWireframePipeline();
+        createBillboardPipelineLayout();
+		createPipelines();
 		createCommandPool();
 		initImgui();
 		createColorResources();
@@ -171,8 +171,7 @@ void Renderer::recreateSwapchain() {
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
-	createGraphicsPipeline();
-	createWireframePipeline();
+	createPipelines();
 	createColorResources();
 	createDepthResources();
 	createFramebuffers();
@@ -430,6 +429,31 @@ void Renderer::createGraphicsPipelineLayout() {
 	}
 }
 
+void Renderer::createBillboardPipelineLayout() {
+    std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts = {uboDescriptorSetLayout};
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
+            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+            .pSetLayouts = descriptorSetLayouts.data()
+    };
+
+    try {
+        billboardPipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
+        mainDeletionQueue.push_function([&]() {
+            device->device().destroyPipelineLayout(billboardPipelineLayout);
+        });
+    }
+    catch (vk::SystemError& err) {
+        throw std::runtime_error(std::string("failed to create billboard pipeline layout!") + err.what());
+    }
+}
+
+void Renderer::createPipelines() {
+    createGraphicsPipeline();
+    createBillboardPipeline();
+    createWireframePipeline();
+}
+
 void Renderer::createGraphicsPipeline() {
 	auto success = VkPipelineBuilder::begin(device.get(), swapChainExtent, pipelineLayout, renderPass)
 			.shader("shaders/shader.vert.spv", vk::ShaderStageFlagBits::eVertex)
@@ -439,6 +463,19 @@ void Renderer::createGraphicsPipeline() {
 	if (!success) {
 		throw std::runtime_error("Failed to create graphics pipeline");
 	}
+}
+
+void Renderer::createBillboardPipeline() {
+    auto success = VkPipelineBuilder::begin(device.get(), swapChainExtent, billboardPipelineLayout, renderPass)
+            .attributeDescriptions(std::vector<vk::VertexInputAttributeDescription>()) // TODO: This is kinda yucky, probably use a config instead of a builder.
+            .bindingDescriptions(std::vector<vk::VertexInputBindingDescription>())
+            .shader("shaders/point_light.vert.spv", vk::ShaderStageFlagBits::eVertex)
+            .shader("shaders/point_light.frag.spv", vk::ShaderStageFlagBits::eFragment)
+            .build(swapChainDeletionQueue, billboardPipeline);
+
+    if (!success) {
+        throw std::runtime_error("Failed to create graphics pipeline");
+    }
 }
 
 void Renderer::createWireframePipeline() {
@@ -835,6 +872,11 @@ void Renderer::recordCommandBuffer(int index) {
 				
 				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh._indices.size()), 1, 0, 0, 0);
 			}
+
+            // Point lights
+            commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, billboardPipeline);
+            commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+            commandBuffers[index].draw(6, 1, 0, 0);
 		}
 
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);

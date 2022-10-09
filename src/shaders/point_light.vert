@@ -1,5 +1,10 @@
 #version 450
 
+#include "utils/global_ubo.glsl"
+layout(set = 0, binding = 0) uniform UniformBufferObject {
+    GlobalUbo ubo;
+};
+
 const vec2 OFFSETS[6] = vec2[](
 vec2(-1.0, 1.0),
 vec2(-1.0, -1.0),
@@ -10,15 +15,6 @@ vec2(1.0, 1.0)
 );
 
 layout (location = 0) out vec2 fragOffset;
-
-layout(set = 0, binding = 0) uniform UniformBufferObject {
-    mat4 view;
-    mat4 proj;
-    mat4 projView;
-    vec4 ambientLightColor; // w is intensity
-    vec4 lightPosition; // w is ignored
-    vec4 lightColor; // w is intensity
-} ubo;
 
 const float LIGHT_RADIUS = 0.05;
 

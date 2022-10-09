@@ -75,8 +75,12 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Create a style to autoformat with
 - [ ] Move swap chain to its own class
 - [ ] Fix the hash for checking if vertices are equal.
-- [ ] Fix that cast which are needed because of VMA, probably just put it in a class which has a hpp interface.
+- [x] Fix that cast which are needed because of VMA, probably just put it in a class which has a hpp interface.
   - Currently makes it so new versions of MSVC cant compile the project.
+  - Was caused by compiling for 32 bit, so don't do that.
+- [ ] Abstract pipelines some more
+  - Maybe create some systems which holds the pipeline and layout.
+  - The systems could also have a render function.
 
 ### Descriptor Layout Idea
 

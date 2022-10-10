@@ -31,23 +31,23 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Copy Textures to output folder automatically
   - [x] Add it as custom command so it is done on build
 - [x] Move Model Matrix into push constant, but leave proj and view in UBO
-- [ ] Load more objects
+- [x] Load more objects
   - [x] Introduce VMA, VK-Guide has a tutorial for this. Else the buffer management is too complex
     - [x] uploadIndices and uploadVertices can be generalized and simplified.
-    - [ ] Descriptors need to be dynamically allocated, as they currently fill the pool.
+    - [x] Descriptors need to be dynamically allocated, as they currently fill the pool.
       - <https://vkguide.dev/docs/extra-chapter/abstracting_descriptors/>
       - Potentially just make a dynamic allocator which creates a pool for each type?
         - Then, when a descriptor set for textures is asked for, more can just be allocated. This would avoid any memory problems.
     - [x] TextureImage VMA.
-    - [ ] UniformBuffer still uses manual buffer creation. They should be moved over.
+    - [x] UniformBuffer still uses manual buffer creation. They should be moved over.
     - [x] It's possible to load an array of textures, this should make it easier to load different textures
       - <https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe>
-    - [ ] Load Lost Empire
-      - [ ] Current memory usage is crazy, figure out what is causing that.
-        - Around 349mb for 'lost_empire-RGB.png'.
-        - Compression is needed, probably KTX.
-      - [x] Textures are uploaded multiple times.
-- [ ] Add wireframe mode which can be switched to.
+- [ ] Load Lost Empire
+  - [ ] Current memory usage is crazy, figure out what is causing that.
+    - Around 349mb for 'lost_empire-RGB.png'.
+    - Compression is needed, probably KTX.
+  - [x] Textures are uploaded multiple times.
+- [x] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary buffer to multiple secondary buffers
   - There are resources for how to do this at:
     - <https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/>

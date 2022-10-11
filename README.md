@@ -81,6 +81,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Abstract pipelines some more
   - Maybe create some systems which holds the pipeline and layout.
   - The systems could also have a render function.
+- [ ] Create handles for materials and uploaded models, currently its just returned as an object. 
+  - The handles could be `uint64_t`.
+  - This would also remove the shared ptr, which is weird to use anyway as the lifetime of the object is more than the data.
 
 ### Descriptor Layout Idea
 

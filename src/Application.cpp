@@ -1,14 +1,11 @@
 #define GLFW_INCLUDE_VULKAN
-#include <algorithm>
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <functional>
 #include <cstdlib>
-#include <fstream>
 #include <chrono>
 
 #include "Renderer.h"
-#include "WindowWrapper.h"
 #include "Application.h"
 
 #include "backends/imgui_impl_glfw.h"
@@ -17,11 +14,10 @@
 
 
 void App::run() {
-	model = std::make_shared<RenderData>();
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
     device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
-	renderer = std::make_unique<Renderer>(window, device, manager, model);
+	renderer = std::make_unique<Renderer>(window, device, manager);
     mainLoop();
 }
 
@@ -44,13 +40,13 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
     if (app->mouseCaptured) {
         auto xPos = static_cast<float>(xPosIn);
         auto yPos = static_cast<float>(yPosIn);
-        app->model->camera.newCursorPos(xPos, yPos);
+        app->camera.newCursorPos(xPos, yPos);
     }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    app->model->camera.resetCursorPos();
+    app->camera.resetCursorPos();
 }
 
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -64,7 +60,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
         if (!app->mouseCaptured) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            app->model->camera.resetCursorPos();
+            app->camera.resetCursorPos();
             app->mouseCaptured = true;
         }
     }
@@ -103,6 +99,10 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
+    std::vector<std::shared_ptr<RenderObject>> objects;
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    renderer->uploadMeshes(objects);
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> delta = now - timeStart;
@@ -113,13 +113,17 @@ void App::mainLoop() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        if (showImguizmo) {
-            auto lastModel = model->getModels().back(); // Just a testing statement
+        if (showImguizmo && !objects.empty()) {
+            auto lastModel = objects.back(); // Just a testing statement
             drawImGuizmo(&lastModel->transformMatrix.model);
         }
 
         //ImGui::ShowDemoWindow();
-		renderer->drawFrame();
+        FrameInfo frameInfo{};
+        frameInfo.objects = objects;
+        frameInfo.camera = camera;
+
+		renderer->drawFrame(frameInfo);
 	}
 }
 
@@ -127,11 +131,11 @@ void App::drawImGuizmo(glm::mat4* matrix) {
     ImGuizmo::BeginFrame();
     ImGuizmo::Enable(true);
     auto [width, height] = window->getFramebufferSize();
-    auto ubo = model->getCameraProject(static_cast<float>(width), static_cast<float>(height));
-    ubo.proj[1][1] *= -1; // ImGuizmo Expects the opposite
+    auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+    proj[1][1] *= -1; // ImGuizmo Expects the opposite
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(&ubo.view[0][0], &ubo.proj[0][0], ImGuizmo::TRANSLATE, ImGuizmo::WORLD, &(*matrix)[0][0]);
+    ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], ImGuizmo::TRANSLATE, ImGuizmo::WORLD, &(*matrix)[0][0]);
 }
 
 void App::processPressedKeys(double delta) {
@@ -141,18 +145,16 @@ void App::processPressedKeys(double delta) {
         cameraSpeed *= 4;
     }
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
-        model->camera.moveCameraForward(cameraSpeed);
+        camera.moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
-        model->camera.moveCameraBackward(cameraSpeed);
+        camera.moveCameraBackward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
-        model->camera.moveCameraLeft(cameraSpeed);
+        camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
-        model->camera.moveCameraRight(cameraSpeed);
+        camera.moveCameraRight(cameraSpeed);
 }
 
-App::App() {
-
-}
+App::App() = default;
 
 int main() {
 	App app;

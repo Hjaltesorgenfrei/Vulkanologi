@@ -34,5 +34,5 @@ struct Mesh {
 	AllocatedBuffer _vertexBuffer;
 	AllocatedBuffer _indexBuffer;
 
-	static Mesh LoadFromObj(const char* filename);
+	static std::shared_ptr<Mesh> LoadFromObj(const char* filename);
 };

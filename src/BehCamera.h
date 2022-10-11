@@ -23,6 +23,8 @@ public:
 
     void newCursorPos(float xPos, float yPos);
 
+    glm::mat4 getCameraProjection(float width, float height) const;
+
 private:
 
     glm::vec3 cameraPosition;
@@ -30,6 +32,8 @@ private:
     glm::vec3 cameraUp;
     float cameraYaw;
     float cameraPitch;
+
+    float fovY = 45.0f;
 
     float cursorXPos, cursorYPos;
     bool firstCursorCall = true; // Used to not move the camera far when the mouse enter the screen;

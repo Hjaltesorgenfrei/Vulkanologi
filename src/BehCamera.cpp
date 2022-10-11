@@ -75,3 +75,9 @@ void BehCamera::newCursorPos(float xPos, float yPos) {
 void BehCamera::resetCursorPos() {
     firstCursorCall = true;
 }
+
+glm::mat4 BehCamera::getCameraProjection(float width, float height) const {
+    auto proj = glm::perspective(glm::radians(fovY), width / height, 0.1f, 1000.0f);
+    proj[1][1] *= -1; // GLM was originally designed for OpenGL, where the Y coordinate of the clip coordinates is inverted.
+    return proj;
+}

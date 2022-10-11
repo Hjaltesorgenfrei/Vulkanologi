@@ -14,11 +14,11 @@
 
 #include "AssetManager.h"
 #include "Deletionqueue.h"
-#include "RenderData.h"
 #include "BehVkTypes.h"
 #include "BehDevice.h"
 #include "BehDescriptors.h"
 #include "BehPipelines.h"
+#include "BehFrameInfo.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -31,13 +31,13 @@ enum RendererMode {
 
 class Renderer {
    public:
-    Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager,
-             std::shared_ptr<RenderData> &renderData);
+    Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager);
     ~Renderer();
     Renderer& operator=(const Renderer&) = delete;
     Renderer(const Renderer&) = delete;
 
-    void drawFrame();
+    void drawFrame(FrameInfo& frameInfo);
+    void uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects);
     void frameBufferResized();
     Material createMaterial(std::vector<std::string>& texturePaths);
 	RendererMode rendererMode = RendererMode::NORMAL;
@@ -47,7 +47,6 @@ private:
     std::shared_ptr<BehDevice> device;
     AssetManager& assetManager;
 
-    std::shared_ptr<RenderData> renderData;
     DeletionQueue mainDeletionQueue;
     DeletionQueue swapChainDeletionQueue;
 
@@ -139,8 +138,6 @@ private:
     bool hasStencilComponent(vk::Format format);
     vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
-    void uploadMeshes();
-
     template <typename T>
     AllocatedBuffer uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage);
 
@@ -152,10 +149,10 @@ private:
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
     void createCommandBuffers();
-    void recordCommandBuffer(int index);
+    void recordCommandBuffer(uint32_t index, FrameInfo& frameInfo);
 
     void createSyncObjects();
-    void updateUniformBuffer(uint32_t currentImage);
+    void updateUniformBuffer(uint32_t currentImage, FrameInfo& frameInfo);
 
     void cleanup();
 };

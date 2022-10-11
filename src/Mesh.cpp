@@ -60,8 +60,8 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::getAttributeDescription
     return attributeDescriptions;
 }
 
-Mesh Mesh::LoadFromObj(const char *filename) {
-    Mesh mesh{};
+std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
+    std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -73,16 +73,16 @@ Mesh Mesh::LoadFromObj(const char *filename) {
 
     std::unordered_map<Vertex, uint32_t> uniqueVertices{};
     // Loop over shapes
-    for (size_t s = 0; s < shapes.size(); s++) {
+    for (auto & shape : shapes) {
         // Loop over faces(polygon)
         size_t index_offset = 0;
-        for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++) {
-            size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
+        for (size_t f = 0; f < shape.mesh.num_face_vertices.size(); f++) {
+            auto fv = size_t(shape.mesh.num_face_vertices[f]);
 
             // Loop over vertices in the face.
             for (size_t v = 0; v < fv; v++) {
                 // access to vertex
-                tinyobj::index_t index = shapes[s].mesh.indices[index_offset + v];
+                tinyobj::index_t index = shape.mesh.indices[index_offset + v];
 
                 Vertex vertex{
                         .pos = {
@@ -90,7 +90,7 @@ Mesh Mesh::LoadFromObj(const char *filename) {
                                 attrib.vertices[3 * index.vertex_index + 1],
                                 attrib.vertices[3 * index.vertex_index + 2]},
                         .color = {1.0f, 1.0f, 1.0f},
-                        .materialIndex = static_cast<uint8_t>(shapes[s].mesh.material_ids[f]) // Index of material which is loaded later
+                        .materialIndex = static_cast<uint8_t>(shape.mesh.material_ids[f]) // Index of material which is loaded later
                 };
 
                 if (index.normal_index >= 0) {
@@ -106,18 +106,18 @@ Mesh Mesh::LoadFromObj(const char *filename) {
                 }
 
                 if (uniqueVertices.count(vertex) == 0) {
-                    uniqueVertices[vertex] = static_cast<uint32_t>(mesh._vertices.size());
-                    mesh._vertices.push_back(vertex);
+                    uniqueVertices[vertex] = static_cast<uint32_t>(mesh->_vertices.size());
+                    mesh->_vertices.push_back(vertex);
                 }
 
-                mesh._indices.push_back(uniqueVertices[vertex]);
+                mesh->_indices.push_back(uniqueVertices[vertex]);
             }
             index_offset += fv;
         }
     }
 
     for (const auto &material: materials) {
-        mesh._texturePaths.push_back("./resources/" + material.diffuse_texname);
+        mesh->_texturePaths.push_back("./resources/" + material.diffuse_texname);
     }
 
     return mesh;

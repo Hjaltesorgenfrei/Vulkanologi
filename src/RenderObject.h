@@ -6,10 +6,10 @@
 
 
 class RenderObject {
-public: 
-    Mesh mesh;
+public:
+    std::shared_ptr<Mesh> mesh;
     Material material;
     MeshPushConstants transformMatrix;
-    RenderObject(Mesh mesh, Material material);
+    RenderObject(std::shared_ptr<Mesh> mesh, Material material);
     void Draw(vk::CommandBuffer commandBuffer);
 };

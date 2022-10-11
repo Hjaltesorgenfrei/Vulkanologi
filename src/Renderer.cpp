@@ -4,22 +4,24 @@
 #include "BehPipelines.h"
 
 #include <chrono>
-#include <algorithm>
 #include <set>
 #include <map>
 #include <stdexcept>
 #include <iostream>
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "BehFrameInfo.h"
 
-Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager,
-                   std::shared_ptr<RenderData> &renderData)
+Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {
-	this->renderData = renderData;
 	try {
         descriptorAllocator.init(device->device());
         descriptorLayoutCache.init(device->device());
@@ -45,7 +47,6 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
 		createDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
-		uploadMeshes();
 	}
 	catch (const std::exception& e) {
 		cleanup();
@@ -641,15 +642,15 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void Renderer::uploadMeshes() {
-	for (auto model : renderData->getModels()) {
-        model->mesh._vertexBuffer = uploadBuffer(model->mesh._vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        model->mesh._indexBuffer = uploadBuffer(model->mesh._indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects) {
+	for (const auto& model : objects) {
+        model->mesh->_vertexBuffer = uploadBuffer(model->mesh->_vertices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        model->mesh->_indexBuffer = uploadBuffer(model->mesh->_indices, VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 		mainDeletionQueue.push_function([&, model]() {
-			vmaDestroyBuffer(device->allocator(), model->mesh._vertexBuffer._buffer, model->mesh._vertexBuffer._allocation);
-			vmaDestroyBuffer(device->allocator(), model->mesh._indexBuffer._buffer, model->mesh._indexBuffer._allocation);
+			vmaDestroyBuffer(device->allocator(), model->mesh->_vertexBuffer._buffer, model->mesh->_vertexBuffer._allocation);
+			vmaDestroyBuffer(device->allocator(), model->mesh->_indexBuffer._buffer, model->mesh->_indexBuffer._allocation);
         });
-		model->material = createMaterial(model->mesh._texturePaths);
+		model->material = createMaterial(model->mesh->_texturePaths);
 	}
 }
 
@@ -709,7 +710,7 @@ void Renderer::createUniformBuffers() {
 	uniformBuffers.resize(swapChainImages.size());
     VkBufferCreateInfo create {
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = sizeof(UniformBufferObject),
+            .size = sizeof(GlobalUbo),
             .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
     };
 
@@ -775,7 +776,7 @@ void Renderer::createDescriptorSets() {
 		vk::DescriptorBufferInfo bufferInfo {
 			.buffer = uniformBuffers[i]._buffer,
 			.offset = 0,
-			.range = sizeof(UniformBufferObject)
+			.range = sizeof(GlobalUbo)
 		};
 
 		std::array<vk::WriteDescriptorSet, 1> descriptorWrites {
@@ -822,7 +823,7 @@ void Renderer::createCommandBuffers() {
 	}
 }
 
-void Renderer::recordCommandBuffer(int index) {
+void Renderer::recordCommandBuffer(uint32_t index, FrameInfo& frameInfo) {
 	vk::CommandBufferBeginInfo beginInfo {};
 
 		try {
@@ -858,19 +859,19 @@ void Renderer::recordCommandBuffer(int index) {
             }
 			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
-			for (auto model : renderData->getModels()) {
-				vk::Buffer vertexBuffers[] = { model->mesh._vertexBuffer._buffer };
+			for (const auto& model : frameInfo.objects) {
+				vk::Buffer vertexBuffers[] = { model->mesh->_vertexBuffer._buffer };
 				vk::DeviceSize offsets[] = { 0 };
 				commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-				commandBuffers[index].bindIndexBuffer(model->mesh._indexBuffer._buffer, 0, vk::IndexType::eUint32);
+				commandBuffers[index].bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
 				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &model->material.textureSet, 0, nullptr);
 
 				MeshPushConstants constants = model->transformMatrix;
 				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
 				
-				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh._indices.size()), 1, 0, 0, 0);
+				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
 			}
 
             // Point lights
@@ -918,8 +919,13 @@ void Renderer::createSyncObjects() {
 	}
 }
 
-void Renderer::updateUniformBuffer(uint32_t currentImage) {
-	auto& ubo = renderData->getCameraProject(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height));
+void Renderer::updateUniformBuffer(uint32_t currentImage, FrameInfo& frameInfo) {
+    GlobalUbo ubo {
+            .view = frameInfo.camera.viewMatrix(),
+            .proj = frameInfo.camera.getCameraProjection(static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height))
+    };
+    ubo.projView = ubo.proj * ubo.view;
+
     void* data;
     vmaMapMemory(device->allocator(), uniformBuffers[currentImage]._allocation, &data);
 	{
@@ -928,7 +934,7 @@ void Renderer::updateUniformBuffer(uint32_t currentImage) {
     vmaUnmapMemory(device->allocator(), uniformBuffers[currentImage]._allocation);
 }
 
-void Renderer::drawFrame() {
+void Renderer::drawFrame(FrameInfo& frameInfo) {
 
 	while (device->device().waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
 		== vk::Result::eTimeout) {
@@ -981,9 +987,9 @@ void Renderer::drawFrame() {
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 
-	updateUniformBuffer(imageIndex);
+	updateUniformBuffer(imageIndex, frameInfo);
 	
-	recordCommandBuffer(imageIndex);
+	recordCommandBuffer(imageIndex, frameInfo);
 
 	vk::SubmitInfo submitInfo {
 

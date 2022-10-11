@@ -44,13 +44,13 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
     if (app->mouseCaptured) {
         auto xPos = static_cast<float>(xPosIn);
         auto yPos = static_cast<float>(yPosIn);
-        app->model->newCursorPos(xPos, yPos);
+        app->model->camera.newCursorPos(xPos, yPos);
     }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    app->model->resetCursorPos();
+    app->model->camera.resetCursorPos();
 }
 
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -64,7 +64,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
         if (!app->mouseCaptured) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            app->model->resetCursorPos();
+            app->model->camera.resetCursorPos();
             app->mouseCaptured = true;
         }
     }
@@ -141,13 +141,13 @@ void App::processPressedKeys(double delta) {
         cameraSpeed *= 4;
     }
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
-        model->moveCameraForward(cameraSpeed);
+        model->camera.moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
-        model->moveCameraBackward(cameraSpeed);
+        model->camera.moveCameraBackward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
-        model->moveCameraLeft(cameraSpeed);
+        model->camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
-        model->moveCameraRight(cameraSpeed);
+        model->camera.moveCameraRight(cameraSpeed);
 }
 
 App::App() {

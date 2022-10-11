@@ -1,7 +1,7 @@
 ﻿#include "Renderer.h"
 #include "Mesh.h"
 #include "Util.h"
-#include "VkPipelines.h"
+#include "BehPipelines.h"
 
 #include <chrono>
 #include <algorithm>
@@ -16,7 +16,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<VulkanDevice> device, AssetManager &assetManager,
+Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager,
                    std::shared_ptr<RenderData> &renderData)
         : window(window), device{device}, assetManager(assetManager) {
 	this->renderData = renderData;
@@ -455,39 +455,41 @@ void Renderer::createPipelines() {
 }
 
 void Renderer::createGraphicsPipeline() {
-	auto success = VkPipelineBuilder::begin(device.get(), swapChainExtent, pipelineLayout, renderPass)
-			.shader("shaders/shader.vert.spv", vk::ShaderStageFlagBits::eVertex)
-			.shader("shaders/shader.frag.spv", vk::ShaderStageFlagBits::eFragment)
-			.build(swapChainDeletionQueue, graphicsPipeline);
-
-	if (!success) {
-		throw std::runtime_error("Failed to create graphics pipeline");
-	}
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    pipelineConfig.addShader("shaders/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
+    graphicsPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 void Renderer::createBillboardPipeline() {
-    auto success = VkPipelineBuilder::begin(device.get(), swapChainExtent, billboardPipelineLayout, renderPass)
-            .attributeDescriptions(std::vector<vk::VertexInputAttributeDescription>()) // TODO: This is kinda yucky, probably use a config instead of a builder.
-            .bindingDescriptions(std::vector<vk::VertexInputBindingDescription>())
-            .shader("shaders/point_light.vert.spv", vk::ShaderStageFlagBits::eVertex)
-            .shader("shaders/point_light.frag.spv", vk::ShaderStageFlagBits::eFragment)
-            .build(swapChainDeletionQueue, billboardPipeline);
-
-    if (!success) {
-        throw std::runtime_error("Failed to create graphics pipeline");
-    }
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    pipelineConfig.attributeDescriptions.clear();
+    pipelineConfig.bindingDescriptions.clear();
+    pipelineConfig.addShader("shaders/point_light.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/point_light.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.pipelineLayout = billboardPipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
+    billboardPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 void Renderer::createWireframePipeline() {
-	auto success = VkPipelineBuilder::begin(device.get(), swapChainExtent, pipelineLayout, renderPass)
-		.polygonMode(vk::PolygonMode::eLine)
-		.shader("shaders/shader_unlit.vert.spv", vk::ShaderStageFlagBits::eVertex)
-		.shader("shaders/shader_unlit.frag.spv", vk::ShaderStageFlagBits::eFragment)
-		.build(swapChainDeletionQueue, wireframePipeline);
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    pipelineConfig.addShader("shaders/shader_unlit.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/shader_unlit.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
 
-	if (!success) {
-		throw std::runtime_error("Failed to create wireframe pipeline");
-	}
+    pipelineConfig.polygonMode = vk::PolygonMode::eLine;
+
+    wireframePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 vk::ShaderModule Renderer::createShaderModule(const std::vector<char>& code) {
@@ -848,14 +850,12 @@ void Renderer::recordCommandBuffer(int index) {
 		commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
 		{
 			//Add commands to buffer
-			vk::Pipeline pipeLineToBind{nullptr};
 			if(rendererMode == NORMAL) {
-				pipeLineToBind = graphicsPipeline;
+				graphicsPipeline->bind(commandBuffers[index]);
 			}
 			else if(rendererMode == WIREFRAME) {
-				pipeLineToBind = wireframePipeline;
-			}
-			commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, pipeLineToBind);
+                wireframePipeline->bind(commandBuffers[index]);
+            }
 			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
 			for (auto model : renderData->getModels()) {
@@ -874,7 +874,7 @@ void Renderer::recordCommandBuffer(int index) {
 			}
 
             // Point lights
-            commandBuffers[index].bindPipeline(vk::PipelineBindPoint::eGraphics, billboardPipeline);
+            billboardPipeline->bind(commandBuffers[index]);
             commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
             commandBuffers[index].draw(6, 1, 0, 0);
 		}

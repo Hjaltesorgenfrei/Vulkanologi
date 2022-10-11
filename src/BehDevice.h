@@ -7,7 +7,7 @@
 #include <map>
 #include <optional>
 #include <set>
-#include "VkTypes.h"
+#include "BehVkTypes.h"
 #include "Deletionqueue.h"
 
 #ifdef NDEBUG
@@ -32,15 +32,15 @@ struct SwapChainSupportDetails {
     std::vector<vk::PresentModeKHR> presentModes;
 };
 
-class VulkanDevice {
+class BehDevice {
 public:
-    explicit VulkanDevice(std::shared_ptr<WindowWrapper> window);
-    ~VulkanDevice();
+    explicit BehDevice(std::shared_ptr<WindowWrapper> window);
+    ~BehDevice();
 
-    VulkanDevice(const VulkanDevice &) = delete;
-    VulkanDevice &operator=(const VulkanDevice &) = delete;
-    VulkanDevice(VulkanDevice &&) = delete;
-    VulkanDevice &operator=(VulkanDevice &&) = delete;
+    BehDevice(const BehDevice &) = delete;
+    BehDevice &operator=(const BehDevice &) = delete;
+    BehDevice(BehDevice &&) = delete;
+    BehDevice &operator=(BehDevice &&) = delete;
 
     void immediateSubmit(std::function<void(vk::CommandBuffer)> &&function);
     QueueFamilyIndices queueFamilies();

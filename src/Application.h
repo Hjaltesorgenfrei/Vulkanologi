@@ -15,7 +15,7 @@ private:
     std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::shared_ptr<RenderData> model;
 	std::unique_ptr<Renderer> renderer;
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<BehDevice> device;
     bool mouseCaptured = false;
     bool showImguizmo = true;
 

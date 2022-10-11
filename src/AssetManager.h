@@ -7,13 +7,13 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Deletionqueue.h"
-#include "VkInit.h"
-#include "VkTypes.h"
-#include "VulkanDevice.h"
+#include "BehVkInit.h"
+#include "BehVkTypes.h"
+#include "BehDevice.h"
 
 class AssetManager {
    public:
-    explicit AssetManager(std::shared_ptr<VulkanDevice>& device) : device{device} {
+    explicit AssetManager(std::shared_ptr<BehDevice>& device) : device{device} {
 
     }
     ~AssetManager() {
@@ -33,7 +33,7 @@ class AssetManager {
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
    private:
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<BehDevice> device;
 
     DeletionQueue deletionQueue{};
     std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;

@@ -19,7 +19,7 @@
 void App::run() {
 	model = std::make_shared<RenderData>();
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
-    device = std::make_unique<VulkanDevice>(window);
+    device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager, model);
     mainLoop();

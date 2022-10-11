@@ -15,9 +15,10 @@
 #include "AssetManager.h"
 #include "Deletionqueue.h"
 #include "RenderData.h"
-#include "VkTypes.h"
-#include "VulkanDevice.h"
-#include "VkDescriptors.h"
+#include "BehVkTypes.h"
+#include "BehDevice.h"
+#include "BehDescriptors.h"
+#include "BehPipelines.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -30,7 +31,7 @@ enum RendererMode {
 
 class Renderer {
    public:
-    Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<VulkanDevice> device, AssetManager &assetManager,
+    Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager,
              std::shared_ptr<RenderData> &renderData);
     ~Renderer();
     Renderer& operator=(const Renderer&) = delete;
@@ -43,7 +44,7 @@ class Renderer {
 
 private:
     std::shared_ptr<WindowWrapper> window;
-    std::shared_ptr<VulkanDevice> device;
+    std::shared_ptr<BehDevice> device;
     AssetManager& assetManager;
 
     std::shared_ptr<RenderData> renderData;
@@ -72,9 +73,9 @@ private:
     vk::PipelineLayout pipelineLayout;
     vk::PipelineLayout billboardPipelineLayout;
 
-    vk::Pipeline graphicsPipeline;
-    vk::Pipeline billboardPipeline;
-	vk::Pipeline wireframePipeline;
+    std::unique_ptr<BehPipeline> graphicsPipeline;
+    std::unique_ptr<BehPipeline> billboardPipeline;
+    std::unique_ptr<BehPipeline> wireframePipeline;
 
     vk::CommandPool commandPool;
     vk::CommandPool transferCommandPool;

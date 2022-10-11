@@ -1,6 +1,6 @@
-﻿#include "VulkanDevice.h"
+﻿#include "BehDevice.h"
 
-VulkanDevice::VulkanDevice(std::shared_ptr<WindowWrapper> window) : window{window} {
+BehDevice::BehDevice(std::shared_ptr<WindowWrapper> window) : window{window} {
     createInstance();
     createSurface();
     pickPhysicalDevice();
@@ -11,12 +11,12 @@ VulkanDevice::VulkanDevice(std::shared_ptr<WindowWrapper> window) : window{windo
 }
 
 
-VulkanDevice::~VulkanDevice() {
+BehDevice::~BehDevice() {
     _device.waitIdle();
     mainDeletionQueue.flush();
 }
 
-void VulkanDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function) {
+void BehDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function) {
     auto& commandBuffer = _uploadContext._commandBuffer;
     vk::CommandBufferBeginInfo beginInfo {
             .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
@@ -43,7 +43,7 @@ void VulkanDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& 
     _device.resetCommandPool(_uploadContext._commandPool);
 }
 
-void VulkanDevice::createInstance() {
+void BehDevice::createInstance() {
     vk::ApplicationInfo appInfo {
             .pApplicationName = "Hello Triangle",
             .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
@@ -120,7 +120,7 @@ void VulkanDevice::createInstance() {
 
 }
 
-void VulkanDevice::createSurface() {
+void BehDevice::createSurface() {
     VkSurfaceKHR rawSurface;
 
     if (glfwCreateWindowSurface(_instance, window->getGLFWwindow(), nullptr, &rawSurface) != VK_SUCCESS) { // Ugly c :(
@@ -133,7 +133,7 @@ void VulkanDevice::createSurface() {
     });
 }
 
-void VulkanDevice::createLogicalDevice() {
+void BehDevice::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(_physicalDevice, _surface);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -195,7 +195,7 @@ void VulkanDevice::createLogicalDevice() {
     _device.getQueue(indices.transferFamily.value(), 0, &_transferQueue);
 }
 
-void VulkanDevice::createAllocator() {
+void BehDevice::createAllocator() {
     VmaAllocatorCreateInfo allocatorInfo {
             .physicalDevice = _physicalDevice,
             .device = _device,
@@ -208,7 +208,7 @@ void VulkanDevice::createAllocator() {
 }
 
 
-void VulkanDevice::createUploadContext() {
+void BehDevice::createUploadContext() {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice, _surface);
 
     const vk::CommandPoolCreateInfo uploadPoolInfo {
@@ -238,7 +238,7 @@ void VulkanDevice::createUploadContext() {
     }
 }
 
-std::vector<const char *> VulkanDevice::getRequiredExtensions() {
+std::vector<const char *> BehDevice::getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -253,8 +253,8 @@ std::vector<const char *> VulkanDevice::getRequiredExtensions() {
     return extensions;
 }
 
-bool VulkanDevice::validateExtensions(const std::vector<const char*>& extensions,
-                                      std::vector<vk::ExtensionProperties> supportedExtensions) {
+bool BehDevice::validateExtensions(const std::vector<const char*>& extensions,
+                                   std::vector<vk::ExtensionProperties> supportedExtensions) {
     for (const auto& extension : extensions) {
         bool extensionFound = false;
 
@@ -273,7 +273,7 @@ bool VulkanDevice::validateExtensions(const std::vector<const char*>& extensions
     return true;
 }
 
-bool VulkanDevice::checkValidationLayerSupport() const {
+bool BehDevice::checkValidationLayerSupport() const {
     std::vector<vk::LayerProperties> availableLayers = vk::enumerateInstanceLayerProperties();
 
     for (const char* layerName : validationLayers) {
@@ -308,7 +308,7 @@ VkBool32 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     return VK_FALSE;
 }
 
-void VulkanDevice::setupDebugMessenger() {
+void BehDevice::setupDebugMessenger() {
     if constexpr (!enableValidationLayers) return;
 
     const vk::DebugUtilsMessengerCreateInfoEXT createInfo = {
@@ -331,8 +331,8 @@ void VulkanDevice::setupDebugMessenger() {
 }
 
 VkResult
-VulkanDevice::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                           const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pCallback) {
+BehDevice::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pCallback) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pCallback);
@@ -342,15 +342,15 @@ VulkanDevice::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUti
     }
 }
 
-void VulkanDevice::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback,
-                                                 const VkAllocationCallbacks *pAllocator) {
+void BehDevice::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback,
+                                              const VkAllocationCallbacks *pAllocator) {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, callback, pAllocator);
     }
 }
 
-void VulkanDevice::pickPhysicalDevice() {
+void BehDevice::pickPhysicalDevice() {
     auto devices = _instance.enumeratePhysicalDevices();
 
     if (devices.empty()) {
@@ -375,7 +375,7 @@ void VulkanDevice::pickPhysicalDevice() {
     }
 }
 
-int VulkanDevice::rateDeviceSuitability(vk::PhysicalDevice physicalDevice) {
+int BehDevice::rateDeviceSuitability(vk::PhysicalDevice physicalDevice) {
     auto deviceProperties = physicalDevice.getProperties();
     auto deviceFeatures = physicalDevice.getFeatures();
 
@@ -415,7 +415,7 @@ int VulkanDevice::rateDeviceSuitability(vk::PhysicalDevice physicalDevice) {
     return score;
 }
 
-vk::SampleCountFlagBits VulkanDevice::getMaxUsableSampleCount(vk::PhysicalDevice physicalDevice) {
+vk::SampleCountFlagBits BehDevice::getMaxUsableSampleCount(vk::PhysicalDevice physicalDevice) {
     auto physicalDeviceProperties = physicalDevice.getProperties();
 
     auto counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
@@ -429,7 +429,7 @@ vk::SampleCountFlagBits VulkanDevice::getMaxUsableSampleCount(vk::PhysicalDevice
     return vk::SampleCountFlagBits::e1;
 }
 
-bool VulkanDevice::checkDeviceExtensionSupport(const vk::PhysicalDevice physicalDevice) {
+bool BehDevice::checkDeviceExtensionSupport(const vk::PhysicalDevice physicalDevice) {
     auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
@@ -440,7 +440,7 @@ bool VulkanDevice::checkDeviceExtensionSupport(const vk::PhysicalDevice physical
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndices VulkanDevice::findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+QueueFamilyIndices BehDevice::findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
     QueueFamilyIndices indices;
 
     auto queueFamilies = device.getQueueFamilyProperties();
@@ -470,7 +470,7 @@ QueueFamilyIndices VulkanDevice::findQueueFamilies(vk::PhysicalDevice device, vk
     return indices;
 }
 
-SwapChainSupportDetails VulkanDevice::querySwapChainSupport(vk::PhysicalDevice physicalDevice) {
+SwapChainSupportDetails BehDevice::querySwapChainSupport(vk::PhysicalDevice physicalDevice) {
     SwapChainSupportDetails details;
 
     details.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(_surface);
@@ -480,10 +480,10 @@ SwapChainSupportDetails VulkanDevice::querySwapChainSupport(vk::PhysicalDevice p
     return details;
 }
 
-SwapChainSupportDetails VulkanDevice::swapChainSupport() {
+SwapChainSupportDetails BehDevice::swapChainSupport() {
     return querySwapChainSupport(_physicalDevice);
 }
 
-QueueFamilyIndices VulkanDevice::queueFamilies() {
+QueueFamilyIndices BehDevice::queueFamilies() {
     return findQueueFamilies(_physicalDevice, _surface);
 }

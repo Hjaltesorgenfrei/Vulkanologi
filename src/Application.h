@@ -14,6 +14,7 @@ private:
     std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::unique_ptr<Renderer> renderer;
     std::shared_ptr<BehDevice> device;
+    std::vector<std::shared_ptr<RenderObject>> objects;
     BehCamera camera{};
     bool mouseCaptured = false;
     bool showImguizmo = true;
@@ -30,4 +31,6 @@ private:
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
     bool shiftPressed = false;
+
+    void drawLoop();
 };

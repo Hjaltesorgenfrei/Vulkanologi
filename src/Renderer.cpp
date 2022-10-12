@@ -153,15 +153,8 @@ void Renderer::createSwapChain() {
 }
 
 void Renderer::recreateSwapchain() {
-    int width = 0, height = 0;
-    auto glfwWindow = window->getGLFWwindow();
-    glfwGetFramebufferSize(glfwWindow, &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(glfwWindow, &width, &height);
-        glfwWaitEvents();
-    }
+    auto timeStart = std::chrono::high_resolution_clock::now();
 
-    device->device().waitIdle(); // Has to wait for rendering to finish before creating new swapchain. Better solutions exists.
     oldSwapChain = swapChain;
     createSwapChain();
     device->device().destroySwapchainKHR(oldSwapChain);
@@ -181,7 +174,9 @@ void Renderer::recreateSwapchain() {
     for (int i = 0; i < swapChainImages.size(); i++) {
         awaitingSwapchainImageUsed |= 1UL << i;
     }
-    std::cout << "Recreated swapchain" << std::endl;
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> delta = now - timeStart;
+    std::cout << "Recreated swapchain in " << delta.count() << "ms" << std::endl;
 }
 
 vk::SurfaceFormatKHR

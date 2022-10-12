@@ -4,6 +4,7 @@
 #include <functional>
 #include <cstdlib>
 #include <chrono>
+#include <thread>
 
 #include "Renderer.h"
 #include "Application.h"
@@ -23,10 +24,19 @@ void App::run() {
 
 void App::setupCallBacks() {
     glfwSetWindowUserPointer(window->getGLFWwindow(), this);
+    // glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
     glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
     glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
+}
+
+void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
+    FrameInfo frameInfo{};
+    frameInfo.objects = app->objects;
+    frameInfo.camera = app->camera;
+    app->renderer->drawFrame(frameInfo);
 }
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
@@ -91,18 +101,8 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
-void App::mainLoop() {
-    auto timeStart = std::chrono::high_resolution_clock::now();
-    std::vector<std::shared_ptr<RenderObject>> objects;
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
-    renderer->uploadMeshes(objects);
-	while (!window->windowShouldClose()) {
-        auto now = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> delta = now - timeStart;
-        timeStart = now;
-		glfwPollEvents();
-        processPressedKeys(delta.count());
+void App::drawLoop() {
+    while (!window->windowShouldClose()) {
         ImGui_ImplVulkan_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -117,8 +117,26 @@ void App::mainLoop() {
         frameInfo.objects = objects;
         frameInfo.camera = camera;
 
-		renderer->drawFrame(frameInfo);
+        renderer->drawFrame(frameInfo);
+    }
+}
+
+void App::mainLoop() {
+    auto timeStart = std::chrono::high_resolution_clock::now();
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    renderer->uploadMeshes(objects);
+
+    std::thread drawThread([&](){drawLoop();});
+
+	while (!window->windowShouldClose()) {
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> delta = now - timeStart;
+        timeStart = now;
+		glfwPollEvents();
+        processPressedKeys(delta.count());
 	}
+    drawThread.join();
 }
 
 void App::drawImGuizmo(glm::mat4* matrix) {

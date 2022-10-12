@@ -24,7 +24,7 @@ void App::run() {
 
 void App::setupCallBacks() {
     glfwSetWindowUserPointer(window->getGLFWwindow(), this);
-    // glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
+    glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
     glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
@@ -33,10 +33,7 @@ void App::setupCallBacks() {
 
 void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    FrameInfo frameInfo{};
-    frameInfo.objects = app->objects;
-    frameInfo.camera = app->camera;
-    app->renderer->drawFrame(frameInfo);
+    app->updateWindowSize = true;
 }
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
@@ -101,23 +98,37 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
+int App::drawFrame() {
+    // std::lock_guard<std::mutex> lockGuard(rendererMutex);
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    if (showImguizmo && !objects.empty()) {
+        auto lastModel = objects.back(); // Just a testing statement
+        drawImGuizmo(&lastModel->transformMatrix.model);
+    }
+
+    //ImGui::ShowDemoWindow();
+    FrameInfo frameInfo{};
+    frameInfo.objects = objects;
+    frameInfo.camera = camera;
+
+    auto result = renderer->drawFrame(frameInfo);
+    ImGui::EndFrame();
+    return result;
+}
+
 void App::drawLoop() {
     while (!window->windowShouldClose()) {
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        if (showImguizmo && !objects.empty()) {
-            auto lastModel = objects.back(); // Just a testing statement
-            drawImGuizmo(&lastModel->transformMatrix.model);
+        if (updateWindowSize) {
+            renderer->recreateSwapchain();
+            updateWindowSize = false;
         }
-
-        //ImGui::ShowDemoWindow();
-        FrameInfo frameInfo{};
-        frameInfo.objects = objects;
-        frameInfo.camera = camera;
-
-        renderer->drawFrame(frameInfo);
+        auto result = drawFrame();
+        if (result == 1) {
+            renderer->recreateSwapchain();
+        }
     }
 }
 

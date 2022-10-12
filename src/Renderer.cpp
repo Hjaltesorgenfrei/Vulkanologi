@@ -1019,7 +1019,7 @@ void Renderer::updateUniformBuffer(uint32_t currentImage, FrameInfo &frameInfo) 
     vmaUnmapMemory(device->allocator(), uniformBuffers[currentImage]._allocation);
 }
 
-void Renderer::drawFrame(FrameInfo &frameInfo) {
+int Renderer::drawFrame(FrameInfo &frameInfo) {
 
     while (device->device().waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
            == vk::Result::eTimeout) {
@@ -1040,9 +1040,7 @@ void Renderer::drawFrame(FrameInfo &frameInfo) {
                 imageIndex = acquired.value;
                 break;
             case vk::Result::eErrorOutOfDateKHR:
-                recreateSwapchain();
-
-                return;
+                return 1;
             default:
                 throw std::runtime_error("failed to acquire swap chain image!");
         }
@@ -1050,8 +1048,8 @@ void Renderer::drawFrame(FrameInfo &frameInfo) {
 
     }
     catch (vk::OutOfDateKHRError err) { // https://github.com/KhronosGroup/Vulkan-Hpp/issues/599
-        recreateSwapchain();
-        return;
+        // recreateSwapchain();
+        return 1;
     }
     catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("failed to acquire swap chain image!") + err.what());
@@ -1117,14 +1115,12 @@ void Renderer::drawFrame(FrameInfo &frameInfo) {
                 break;
             case vk::Result::eSuboptimalKHR:
             case vk::Result::eErrorOutOfDateKHR: // What we would like to do :) But it's actually an exception
-                recreateSwapchain();
-                break;
+                return 1;
             default:
                 throw std::runtime_error("failed to present swap chain image!");  // an unexpected result is returned!
         }
     } catch (vk::OutOfDateKHRError &err) {
-        std::cerr << "Recreating Swapchain: " << err.what() << "\n";
-        recreateSwapchain();
+        return 1;
     }
 
     awaitingSwapchainImageUsed &= ~(1UL << imageIndex);
@@ -1137,6 +1133,7 @@ void Renderer::drawFrame(FrameInfo &frameInfo) {
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    return 0;
 }
 
 void Renderer::cleanup() {

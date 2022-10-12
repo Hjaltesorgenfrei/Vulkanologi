@@ -18,6 +18,7 @@ private:
     BehCamera camera{};
     bool mouseCaptured = false;
     bool showImguizmo = true;
+    bool updateWindowSize = false;
 
 	void mainLoop();
     void processPressedKeys(double delta);
@@ -33,4 +34,7 @@ private:
     bool shiftPressed = false;
 
     void drawLoop();
+
+    int drawFrame();
+
 };

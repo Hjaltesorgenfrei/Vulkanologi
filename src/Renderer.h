@@ -36,10 +36,11 @@ class Renderer {
     Renderer& operator=(const Renderer&) = delete;
     Renderer(const Renderer&) = delete;
 
-    void drawFrame(FrameInfo& frameInfo);
+    int drawFrame(FrameInfo& frameInfo);
     void uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects);
     Material createMaterial(std::vector<std::string>& texturePaths);
-	RendererMode rendererMode = RendererMode::NORMAL;
+    void recreateSwapchain();
+    RendererMode rendererMode = RendererMode::NORMAL;
 
 private:
     std::shared_ptr<WindowWrapper> window;
@@ -106,8 +107,6 @@ private:
     void initImgui();
 
     void createSwapChain();
-
-    void recreateSwapchain();
 
     vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<struct vk::SurfaceFormatKHR>& availableFormats);
 

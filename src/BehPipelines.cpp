@@ -37,28 +37,6 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
             .primitiveRestartEnable = VK_FALSE
     };
 
-    vk::Viewport viewport {
-            .x = 0.0f,
-            .y = 0.0f,
-            .width = static_cast<float>(config.extent.width),
-            .height = static_cast<float>(config.extent.height),
-            .minDepth = 0.0f,
-            .maxDepth = 1.0f
-    };
-
-    vk::Rect2D scissor {
-            .offset = {0, 0},
-            .extent = config.extent
-    };
-
-    vk::PipelineViewportStateCreateInfo viewportState {
-            .viewportCount = 1,
-            .pViewports = &viewport,
-            .scissorCount = 1,
-            .pScissors = &scissor,
-    };
-
-
     vk::PipelineRasterizationStateCreateInfo rasterizer {
             .depthClampEnable = VK_FALSE,
             .rasterizerDiscardEnable = VK_FALSE,
@@ -109,6 +87,21 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
             .stencilTestEnable = VK_FALSE
     };
 
+    std::vector<vk::DynamicState> dynamicStates {
+        vk::DynamicState::eScissor,
+        vk::DynamicState::eViewport
+    };
+
+    vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo {
+        .dynamicStateCount = static_cast<uint32_t>(dynamicStates.size()),
+        .pDynamicStates = dynamicStates.data()
+    };
+
+    vk::PipelineViewportStateCreateInfo viewportState {
+            .viewportCount = 1,
+            .scissorCount = 1,
+    };
+
     vk::GraphicsPipelineCreateInfo pipelineInfo {
             // Reference programmable stages
             .stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size()),
@@ -122,6 +115,7 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
             .pMultisampleState = &multisampling,
             .pDepthStencilState = &depthStencil,
             .pColorBlendState = &colorBlending,
+            .pDynamicState = &dynamicStateCreateInfo,
 
             // A vulkan handle, not a struct pointer
             .layout = config.pipelineLayout,

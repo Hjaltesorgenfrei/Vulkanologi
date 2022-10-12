@@ -172,7 +172,6 @@ void Renderer::recreateSwapchain() {
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
-	createPipelines();
 	createColorResources();
 	createDepthResources();
 	createFramebuffers();
@@ -826,70 +825,89 @@ void Renderer::createCommandBuffers() {
 void Renderer::recordCommandBuffer(uint32_t index, FrameInfo& frameInfo) {
 	vk::CommandBufferBeginInfo beginInfo {};
 
-		try {
-			commandBuffers[index].begin(beginInfo);
-		}
-		catch (vk::SystemError& err) {
-			throw std::runtime_error(std::string("failed to begin recording command buffer!") + err.what());
-		}
+    try {
+        commandBuffers[index].begin(beginInfo);
+    }
+    catch (vk::SystemError& err) {
+        throw std::runtime_error(std::string("failed to begin recording command buffer!") + err.what());
+    }
 
-		std::array<vk::ClearValue, 2> clearValues{};
-		clearValues[0].color = {std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f }};
-		clearValues[1].depthStencil = vk::ClearDepthStencilValue {1.0f, 0};
+    std::array<vk::ClearValue, 2> clearValues{};
+    clearValues[0].color = {std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f }};
+    clearValues[1].depthStencil = vk::ClearDepthStencilValue {1.0f, 0};
 
-		vk::RenderPassBeginInfo renderPassInfo {
-			.renderPass = renderPass,
-			.framebuffer = swapChainFramebuffers[index],
-			.renderArea = {
-				.offset = {0, 0},
-				.extent = swapChainExtent,
-			},
-			.clearValueCount = static_cast<uint32_t>(clearValues.size()),
-			.pClearValues = clearValues.data()
-		};
+    vk::RenderPassBeginInfo renderPassInfo {
+        .renderPass = renderPass,
+        .framebuffer = swapChainFramebuffers[index],
+        .renderArea = {
+            .offset = {0, 0},
+            .extent = swapChainExtent,
+        },
+        .clearValueCount = static_cast<uint32_t>(clearValues.size()),
+        .pClearValues = clearValues.data()
+    };
 
-		commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
-		{
-			//Add commands to buffer
-			if(rendererMode == NORMAL) {
-				graphicsPipeline->bind(commandBuffers[index]);
-			}
-			else if(rendererMode == WIREFRAME) {
-                wireframePipeline->bind(commandBuffers[index]);
-            }
-			commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+    vk::Rect2D scissor {
+            .offset = {0, 0},
+            .extent = swapChainExtent
+    };
 
-			for (const auto& model : frameInfo.objects) {
-				vk::Buffer vertexBuffers[] = { model->mesh->_vertexBuffer._buffer };
-				vk::DeviceSize offsets[] = { 0 };
-				commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+    commandBuffers[index].setScissor(0, 1, &scissor);
 
-				commandBuffers[index].bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
+    vk::Viewport viewport {
+            .x = 0.0f,
+            .y = 0.0f,
+            .width = static_cast<float>(swapChainExtent.width),
+            .height = static_cast<float>(swapChainExtent.height),
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f
+    };
 
-				commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &model->material.textureSet, 0, nullptr);
+    commandBuffers[index].setViewport(0, 1, &viewport);
 
-				MeshPushConstants constants = model->transformMatrix;
-				commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
-				
-				commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
-			}
 
-            // Point lights
-            billboardPipeline->bind(commandBuffers[index]);
-            commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
-            commandBuffers[index].draw(6, 1, 0, 0);
-		}
+    commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+    {
+        //Add commands to buffer
+        if(rendererMode == NORMAL) {
+            graphicsPipeline->bind(commandBuffers[index]);
+        }
+        else if(rendererMode == WIREFRAME) {
+            wireframePipeline->bind(commandBuffers[index]);
+        }
+        commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
 
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);
-		
-		commandBuffers[index].endRenderPass();
+        for (const auto& model : frameInfo.objects) {
+            vk::Buffer vertexBuffers[] = { model->mesh->_vertexBuffer._buffer };
+            vk::DeviceSize offsets[] = { 0 };
+            commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-		try {
-			commandBuffers[index].end();
-		}
-		catch (vk::SystemError& err) {
-			throw std::runtime_error(std::string("failed to record command buffer!") + err.what());
-		}
+            commandBuffers[index].bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
+
+            commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1, &model->material.textureSet, 0, nullptr);
+
+            MeshPushConstants constants = model->transformMatrix;
+            commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(MeshPushConstants), &constants);
+
+            commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
+        }
+
+        // Point lights
+        billboardPipeline->bind(commandBuffers[index]);
+        commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1, &descriptorSets[index], 0, nullptr);
+        commandBuffers[index].draw(6, 1, 0, 0);
+    }
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);
+
+    commandBuffers[index].endRenderPass();
+
+    try {
+        commandBuffers[index].end();
+    }
+    catch (vk::SystemError& err) {
+        throw std::runtime_error(std::string("failed to record command buffer!") + err.what());
+    }
 }
 
 void Renderer::createSyncObjects() {

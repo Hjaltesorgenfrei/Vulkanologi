@@ -38,7 +38,6 @@ class Renderer {
 
     void drawFrame(FrameInfo& frameInfo);
     void uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects);
-    void frameBufferResized();
     Material createMaterial(std::vector<std::string>& texturePaths);
 	RendererMode rendererMode = RendererMode::NORMAL;
 
@@ -96,8 +95,6 @@ private:
     vk::ImageView colorImageView;
 
     size_t currentFrame = 0;
-
-    bool frameBufferResizePending = false;
 
     void initImgui();
 

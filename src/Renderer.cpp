@@ -60,10 +60,6 @@ Renderer::~Renderer() {
 	cleanup();
 }
 
-void Renderer::frameBufferResized() {
-	frameBufferResizePending = true;
-}
-
 Material Renderer::createMaterial(std::vector<std::string>& texturePaths) {
 	std::vector<std::shared_ptr<UploadedTexture>> textures;
 	std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
@@ -1047,10 +1043,6 @@ void Renderer::drawFrame(FrameInfo& frameInfo) {
 	try {
 		switch (device->presentQueue().presentKHR(presentInfo)) {
 		case vk::Result::eSuccess:
-			if (frameBufferResizePending) {
-				recreateSwapchain();
-				frameBufferResizePending = false;
-			}
 			break;
 		case vk::Result::eSuboptimalKHR:
 		case vk::Result::eErrorOutOfDateKHR: // What we would like to do :) But it's actually an exception

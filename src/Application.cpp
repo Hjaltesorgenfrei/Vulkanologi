@@ -23,16 +23,10 @@ void App::run() {
 
 void App::setupCallBacks() {
     glfwSetWindowUserPointer(window->getGLFWwindow(), this);
-    glfwSetFramebufferSizeCallback(window->getGLFWwindow(), framebufferResizeCallback);
     glfwSetCursorPosCallback(window->getGLFWwindow(), cursorPosCallback);
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
     glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
     glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
-}
-
-void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    app->renderer->frameBufferResized();
 }
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {

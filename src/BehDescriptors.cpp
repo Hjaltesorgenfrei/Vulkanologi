@@ -47,12 +47,12 @@ bool DescriptorAllocator::allocate(vk::DescriptorSet *set, vk::DescriptorSetLayo
             .pSetLayouts = &layout,
     };
 
-    if (!counts.empty()) {
-        vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
-                .descriptorSetCount = 1,
-                .pDescriptorCounts = counts.data()
-        };
+    vk::DescriptorSetVariableDescriptorCountAllocateInfo setCounts = {
+            .descriptorSetCount = 1,
+            .pDescriptorCounts = counts.data()
+    };
 
+    if (!counts.empty()) {
         allocInfo.pNext = &setCounts;
     }
 
@@ -251,12 +251,12 @@ bool DescriptorSetLayoutBuilder::build(vk::DescriptorSetLayout &layout) {
         anyFlags = anyFlags || bindingFlag;
     }
 
-    if (anyFlags) {
-        vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{
-                .bindingCount = static_cast<uint32_t>(bindingFlags.size()),
-                .pBindingFlags = bindingFlags.data()
-        };
+    vk::DescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo {
+            .bindingCount = static_cast<uint32_t>(bindingFlags.size()),
+            .pBindingFlags = bindingFlags.data()
+    };
 
+    if (anyFlags) {
         layoutInfo.pNext = &bindingFlagsCreateInfo;
     }
 

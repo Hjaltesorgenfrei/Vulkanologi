@@ -1,6 +1,8 @@
 ﻿#include "BehDevice.h"
 
-BehDevice::BehDevice(std::shared_ptr<WindowWrapper> window) : window{window} {
+#include <utility>
+
+BehDevice::BehDevice(std::shared_ptr<WindowWrapper> window) : window{std::move(window)} {
     createInstance();
     createSurface();
     pickPhysicalDevice();
@@ -16,9 +18,9 @@ BehDevice::~BehDevice() {
     mainDeletionQueue.flush();
 }
 
-void BehDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& function) {
-    auto& commandBuffer = _uploadContext._commandBuffer;
-    vk::CommandBufferBeginInfo beginInfo {
+void BehDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)> &&function) {
+    auto &commandBuffer = _uploadContext._commandBuffer;
+    vk::CommandBufferBeginInfo beginInfo{
             .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit
     };
 
@@ -26,11 +28,11 @@ void BehDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& fun
     function(commandBuffer);
     commandBuffer.end();
 
-    vk::SubmitInfo submitInfo {
+    vk::SubmitInfo submitInfo{
             .commandBufferCount = 1,
             .pCommandBuffers = &commandBuffer
     };
-    auto& fence = _uploadContext._uploadFence;
+    auto &fence = _uploadContext._uploadFence;
     if (_graphicsQueue.submit(1, &submitInfo, fence) != vk::Result::eSuccess) {
         throw std::runtime_error("Immediate submit failed!");
     }
@@ -44,7 +46,7 @@ void BehDevice::immediateSubmit(std::function<void(vk::CommandBuffer cmd)>&& fun
 }
 
 void BehDevice::createInstance() {
-    vk::ApplicationInfo appInfo {
+    vk::ApplicationInfo appInfo{
             .pApplicationName = "Hello Triangle",
             .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
             .pEngineName = "No Engine",
@@ -52,7 +54,7 @@ void BehDevice::createInstance() {
             .apiVersion = VK_API_VERSION_1_2
     };
 
-    vk::InstanceCreateInfo createInfo {
+    vk::InstanceCreateInfo createInfo{
 
             .pApplicationInfo = &appInfo,
     };
@@ -90,8 +92,7 @@ void BehDevice::createInstance() {
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-    }
-    else {
+    } else {
         createInfo.enabledLayerCount = 0;
     }
 
@@ -100,9 +101,8 @@ void BehDevice::createInstance() {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
 
-        createInfo.pNext = static_cast<vk::DebugUtilsMessengerCreateInfoEXT*>(&debugCreateInfo);
-    }
-    else {
+        createInfo.pNext = static_cast<vk::DebugUtilsMessengerCreateInfoEXT *>(&debugCreateInfo);
+    } else {
         createInfo.enabledLayerCount = 0;
 
         createInfo.pNext = nullptr;
@@ -114,7 +114,7 @@ void BehDevice::createInstance() {
             _instance.destroy();
         });
     }
-    catch (vk::SystemError& err) {
+    catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("Failed to create Vulkan Instance!") + err.what());
     }
 
@@ -137,11 +137,12 @@ void BehDevice::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(_physicalDevice, _surface);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value(),
+                                              indices.transferFamily.value()};
 
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
-        vk::DeviceQueueCreateInfo queueCreateInfo {
+    for (uint32_t queueFamily: uniqueQueueFamilies) {
+        vk::DeviceQueueCreateInfo queueCreateInfo{
                 .queueFamilyIndex = queueFamily,
                 .queueCount = 1,
                 .pQueuePriorities = &queuePriority
@@ -150,20 +151,25 @@ void BehDevice::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    vk::PhysicalDeviceFeatures deviceFeatures {
+    vk::PhysicalDeviceFeatures deviceFeatures{
             .sampleRateShading = VK_TRUE,
-			.fillModeNonSolid = VK_TRUE,
+            .fillModeNonSolid = VK_TRUE,
             .samplerAnisotropy = VK_TRUE,
     };
 
-    vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexFeatures {
+    vk::PhysicalDeviceImagelessFramebufferFeatures framebufferFeatures{
+            .imagelessFramebuffer = VK_TRUE
+    };
+
+    vk::PhysicalDeviceDescriptorIndexingFeatures descriptorIndexFeatures{
+            .pNext = &framebufferFeatures,
             .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
             .descriptorBindingPartiallyBound = VK_TRUE,
             .descriptorBindingVariableDescriptorCount = VK_TRUE,
             .runtimeDescriptorArray = VK_TRUE
     };
 
-    vk::DeviceCreateInfo createInfo {
+    vk::DeviceCreateInfo createInfo{
             .pNext = &descriptorIndexFeatures,
             .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
             .pQueueCreateInfos = queueCreateInfos.data(),
@@ -175,8 +181,7 @@ void BehDevice::createLogicalDevice() {
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
-    }
-    else {
+    } else {
         createInfo.enabledLayerCount = 0;
     }
 
@@ -186,7 +191,7 @@ void BehDevice::createLogicalDevice() {
             _device.destroy();
         });
     }
-    catch (vk::SystemError& err) {
+    catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
     }
 
@@ -196,7 +201,7 @@ void BehDevice::createLogicalDevice() {
 }
 
 void BehDevice::createAllocator() {
-    VmaAllocatorCreateInfo allocatorInfo {
+    VmaAllocatorCreateInfo allocatorInfo{
             .physicalDevice = _physicalDevice,
             .device = _device,
             .instance = _instance
@@ -211,14 +216,14 @@ void BehDevice::createAllocator() {
 void BehDevice::createUploadContext() {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice, _surface);
 
-    const vk::CommandPoolCreateInfo uploadPoolInfo {
+    const vk::CommandPoolCreateInfo uploadPoolInfo{
             .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
     };
 
     try {
         _uploadContext._commandPool = _device.createCommandPool(uploadPoolInfo);
 
-        vk::CommandBufferAllocateInfo uploadAllocateInfo {
+        vk::CommandBufferAllocateInfo uploadAllocateInfo{
                 .commandPool = _uploadContext._commandPool,
                 .level = vk::CommandBufferLevel::ePrimary,
                 .commandBufferCount = static_cast<uint32_t>(1),
@@ -226,24 +231,24 @@ void BehDevice::createUploadContext() {
 
         _uploadContext._commandBuffer = _device.allocateCommandBuffers(uploadAllocateInfo)[0];
 
-        vk::FenceCreateInfo uploadFenceInfo { };
+        vk::FenceCreateInfo uploadFenceInfo{};
         _uploadContext._uploadFence = _device.createFence(uploadFenceInfo);
         mainDeletionQueue.push_function([&]() {
             _device.destroyFence(_uploadContext._uploadFence);
             _device.destroyCommandPool(_uploadContext._commandPool);
         });
     }
-    catch (vk::SystemError& err) {
+    catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("Failed in creating upload context") + err.what());
     }
 }
 
 std::vector<const char *> BehDevice::getRequiredExtensions() {
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
+    const char **glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    std::vector<const char *> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -253,12 +258,12 @@ std::vector<const char *> BehDevice::getRequiredExtensions() {
     return extensions;
 }
 
-bool BehDevice::validateExtensions(const std::vector<const char*>& extensions,
-                                   std::vector<vk::ExtensionProperties> supportedExtensions) {
-    for (const auto& extension : extensions) {
+bool BehDevice::validateExtensions(const std::vector<const char *> &extensions,
+                                   const std::vector<vk::ExtensionProperties>& supportedExtensions) {
+    for (const auto &extension: extensions) {
         bool extensionFound = false;
 
-        for (const auto& supportedExtension : supportedExtensions) {
+        for (const auto &supportedExtension: supportedExtensions) {
             if (strcmp(extension, supportedExtension.extensionName) == 0) {
                 extensionFound = true;
                 break;
@@ -276,10 +281,10 @@ bool BehDevice::validateExtensions(const std::vector<const char*>& extensions,
 bool BehDevice::checkValidationLayerSupport() const {
     std::vector<vk::LayerProperties> availableLayers = vk::enumerateInstanceLayerProperties();
 
-    for (const char* layerName : validationLayers) {
+    for (const char *layerName: validationLayers) {
         bool layerFound = false;
 
-        for (const auto& layerProperties : availableLayers) {
+        for (const auto &layerProperties: availableLayers) {
             if (strcmp(layerName, layerProperties.layerName) == 0) {
                 layerFound = true;
                 break;
@@ -296,8 +301,8 @@ bool BehDevice::checkValidationLayerSupport() const {
 
 VkBool32 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                        VkDebugUtilsMessageTypeFlagsEXT messageType,
-                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                       void* pUserData) {
+                       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                       void *pUserData) {
 
     if (strncmp(pCallbackData->pMessage, "Device Extension:", strlen("Device Extension:")) == 0) {
         return VK_TRUE; // Don't spam with loaded layers
@@ -322,7 +327,9 @@ void BehDevice::setupDebugMessenger() {
     };
 
 
-    if (createDebugUtilsMessengerEXT(_instance, reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT*>(&createInfo), nullptr, &debugMessenger) != VK_SUCCESS) {
+    if (createDebugUtilsMessengerEXT(_instance,
+                                     reinterpret_cast<const VkDebugUtilsMessengerCreateInfoEXT *>(&createInfo), nullptr,
+                                     &debugMessenger) != VK_SUCCESS) {
         throw std::runtime_error("failed to set up debug callback!");
     }
     mainDeletionQueue.push_function([&]() {
@@ -333,18 +340,18 @@ void BehDevice::setupDebugMessenger() {
 VkResult
 BehDevice::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                         const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pCallback) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pCallback);
-    }
-    else {
+    } else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 }
 
 void BehDevice::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT callback,
                                               const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance,
+                                                                            "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
         func(instance, callback, pAllocator);
     }
@@ -360,7 +367,7 @@ void BehDevice::pickPhysicalDevice() {
     //Get the score of devices
     std::multimap<int, vk::PhysicalDevice> candidates;
 
-    for (const auto& physicalDevice : devices) {
+    for (const auto &physicalDevice: devices) {
         int score = rateDeviceSuitability(physicalDevice);
         candidates.insert(std::make_pair(score, physicalDevice));
     }
@@ -369,8 +376,7 @@ void BehDevice::pickPhysicalDevice() {
     if (candidates.rbegin()->first > 0) {
         _physicalDevice = candidates.rbegin()->second;
         _msaaSamples = getMaxUsableSampleCount(_physicalDevice);
-    }
-    else {
+    } else {
         throw std::runtime_error("Failed to find suitable GPU!");
     }
 }
@@ -418,7 +424,8 @@ int BehDevice::rateDeviceSuitability(vk::PhysicalDevice physicalDevice) {
 vk::SampleCountFlagBits BehDevice::getMaxUsableSampleCount(vk::PhysicalDevice physicalDevice) {
     auto physicalDeviceProperties = physicalDevice.getProperties();
 
-    auto counts = physicalDeviceProperties.limits.framebufferColorSampleCounts & physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    auto counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                  physicalDeviceProperties.limits.framebufferDepthSampleCounts;
     if (counts & vk::SampleCountFlagBits::e64) { return vk::SampleCountFlagBits::e64; }
     if (counts & vk::SampleCountFlagBits::e32) { return vk::SampleCountFlagBits::e32; }
     if (counts & vk::SampleCountFlagBits::e16) { return vk::SampleCountFlagBits::e16; }
@@ -433,7 +440,7 @@ bool BehDevice::checkDeviceExtensionSupport(const vk::PhysicalDevice physicalDev
     auto availableExtensions = physicalDevice.enumerateDeviceExtensionProperties();
 
     std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-    for (const auto& extension : availableExtensions) {
+    for (const auto &extension: availableExtensions) {
         requiredExtensions.erase(extension.extensionName);
     }
 
@@ -446,7 +453,7 @@ QueueFamilyIndices BehDevice::findQueueFamilies(vk::PhysicalDevice device, vk::S
     auto queueFamilies = device.getQueueFamilyProperties();
 
     int i = 0;
-    for (const auto& queueFamily : queueFamilies) {
+    for (const auto &queueFamily: queueFamilies) {
         // documentation of VkQueueFamilyProperties states that "Each queue family must support at least one queue".
 
         if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
@@ -457,7 +464,8 @@ QueueFamilyIndices BehDevice::findQueueFamilies(vk::PhysicalDevice device, vk::S
             indices.presentFamily = i;
         }
 
-        if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer && !(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)) {
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eTransfer &&
+            !(queueFamily.queueFlags & vk::QueueFlagBits::eGraphics)) {
             indices.transferFamily = i;
         }
 

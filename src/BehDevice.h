@@ -69,7 +69,7 @@ private:
     static std::vector<const char*> getRequiredExtensions();
 
     static bool validateExtensions(const std::vector<const char*>& extensions,
-                                      std::vector<vk::ExtensionProperties> supportedExtensions);
+                                      const std::vector<vk::ExtensionProperties>& supportedExtensions);
 
     [[nodiscard]] bool checkValidationLayerSupport() const;
 

@@ -47,17 +47,24 @@ private:
     AssetManager& assetManager;
 
     DeletionQueue mainDeletionQueue;
-    DeletionQueue swapChainDeletionQueue;
+
+    // Using a barrier to check for usage might be better
+    DeletionQueue deleteLaterQueue;
+    std::vector<DeletionQueue> oldDeleteLaterQueues;
+    uint32_t awaitingSwapchainImageUsed;
+    bool awaitingClean = false;
 
     vk::DescriptorPool imguiPool;
 
     vk::SwapchainKHR swapChain;
+    vk::SwapchainKHR oldSwapChain{VK_NULL_HANDLE};
     vk::Format swapChainImageFormat;
+    vk::Format depthFormat;
     uint32_t swapChainImageCount;
     vk::Extent2D swapChainExtent;
     std::vector<vk::Image> swapChainImages;
     std::vector<vk::ImageView> swapChainImageViews;
-    std::vector<vk::Framebuffer> swapChainFramebuffers;
+    vk::Framebuffer swapChainFramebuffer;
 
     vk::DescriptorSetLayout materialDescriptorSetLayout;
     vk::DescriptorSetLayout uboDescriptorSetLayout;

@@ -107,6 +107,7 @@ void Renderer::createSwapChain() {
         swapChainImageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
+	swapChainSupportedFlags = swapChainSupport.capabilities.supportedUsageFlags;
     vk::SwapchainCreateInfoKHR createInfo{
             .surface = device->surface(),
             .minImageCount = swapChainImageCount,
@@ -114,7 +115,7 @@ void Renderer::createSwapChain() {
             .imageColorSpace = surfaceFormat.colorSpace,
             .imageExtent = extent,
             .imageArrayLayers = 1,
-            .imageUsage = vk::ImageUsageFlagBits::eColorAttachment
+            .imageUsage = vk::ImageUsageFlagBits::eColorAttachment | (vk::ImageUsageFlagBits::eTransferSrc & swapChainSupportedFlags)
     };
 
 
@@ -537,7 +538,7 @@ void Renderer::createFramebuffers() {
     };
 
     vk::FramebufferAttachmentImageInfo colorAttachResolve{
-            .usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc,
+            .usage = vk::ImageUsageFlagBits::eColorAttachment | (vk::ImageUsageFlagBits::eTransferSrc & swapChainSupportedFlags),
             .width = swapChainExtent.width,
             .height = swapChainExtent.height,
             .layerCount = 1,
@@ -905,7 +906,6 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
 
     commandBuffers[index].setViewport(0, 1, &viewport);
 
-    // colorAttachment, depthAttachment,  colorAttachmentResolve
     std::vector<vk::ImageView> attachments {
             colorImageView,
             depthImageView,
@@ -1126,8 +1126,9 @@ int Renderer::drawFrame(FrameInfo &frameInfo) {
     awaitingSwapchainImageUsed &= ~(1UL << imageIndex);
     // TODO: Check this on another thread
     if (!awaitingSwapchainImageUsed && awaitingClean) {
-        for (auto& deletionQueue: oldDeleteLaterQueues) {
-            deletionQueue.flush();
+        while (!oldDeleteLaterQueues.empty()) {
+			oldDeleteLaterQueues.back().flush();
+			oldDeleteLaterQueues.pop_back();
         }
         awaitingClean = false;
     }

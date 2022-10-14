@@ -66,6 +66,7 @@ private:
     std::vector<vk::Image> swapChainImages;
     std::vector<vk::ImageView> swapChainImageViews;
     vk::Framebuffer swapChainFramebuffer;
+	vk::ImageUsageFlags swapChainSupportedFlags;
 
     vk::DescriptorSetLayout materialDescriptorSetLayout;
     vk::DescriptorSetLayout uboDescriptorSetLayout;

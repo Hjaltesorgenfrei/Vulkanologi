@@ -84,13 +84,13 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Create handles for materials and uploaded models, currently its just returned as an object. 
   - The handles could be `uint64_t`.
   - This would also remove the shared ptr, which is weird to use anyway as the lifetime of the object is more than the data.
-- [ ] Smooth resize
+- [x] Smooth resize
   - [x] Use old_swapchain when creating a new swapchain
-  - [ ] Never resize in the drawing thread, only call resize in the  OS 'resize callback/event'
-  - [ ] In the OS 'resize callback/even', repaint the scene.
+  - [x] Never resize in the drawing thread, only call resize in the  OS 'resize callback/event'
+  - [x] In the OS 'resize callback/even', repaint the scene.
   - [x] Never delete resources (images, views, framebuffers) in the resize. Instead put it in a delayed-deletion-queue. This will delete it when its no longer being used in a couple of frames
   - [x] use imageless framebuffer
-  - [ ] If the items in 4 and 5 are implemented, the resize function will not need to call vkDeviceWaitIdle()
+  - [x] If the items in 4 and 5 are implemented, the resize function will not need to call vkDeviceWaitIdle()
 
 ### Descriptor Layout Idea
 

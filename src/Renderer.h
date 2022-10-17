@@ -4,7 +4,6 @@
 
 #include <memory>
 
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS  // Version 145 at least
 #include <deque>
 #include <functional>
 #include <optional>

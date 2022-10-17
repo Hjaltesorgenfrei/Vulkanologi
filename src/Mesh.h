@@ -3,7 +3,6 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS // Version 145 at least
 #include <vulkan/vulkan.hpp>
 #include <array>
 #include <string>

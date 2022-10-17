@@ -1,4 +1,3 @@
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS // Version 145 at least
 #include "AssetManager.h"
 
 #define STB_IMAGE_IMPLEMENTATION

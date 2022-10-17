@@ -84,6 +84,11 @@ add_executable(vulkanologi
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.h
     ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.cpp
 )
+
+add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at least
+target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ext/glm/glm/glm.hpp)
+target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h)
+
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)

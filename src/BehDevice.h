@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "WindowWrapper.h"
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS  // Version 145 at least
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <map>

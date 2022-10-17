@@ -1,4 +1,3 @@
-#define VULKAN_HPP_NO_STRUCT_CONSTRUCTORS // Version 145 at least
 #include "BehVkInit.h"
 
 vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format, vk::Flags<vk::ImageAspectFlagBits> aspectFlags,

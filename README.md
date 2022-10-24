@@ -99,16 +99,44 @@ Then validating the created DescriptorSets against a provided layout.
 The DescriptorSetLayout could also have a builder
 `.addBinding(uint32_t binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, uint32t_t count = 1)`
 If any binding has > 1 count, then it should be variable length and partially bound.
-Only the last binding may have variable length, so this should also be checked. Maybe it should just be a flag? 
+Only the last binding may have variable length, so this should also be checked. Maybe it should just be a flag?
 [VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT](https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkDescriptorBindingFlagBits.html)
 
 Using a buffer for the other locations might be a possibility to still add all material properties as bindless. But that is to be looked at.
 
+Then the DescriptorBuilder would have
 
-Then the DescriptorBuilder would have 
 ```cpp
 DescriptorBuilder &bindBuffer(uint32_t binding, vk::DescriptorBufferInfo *bufferInfo, vk::DescriptorType type);
 DescriptorBuilder &bindImage(uint32_t binding, vk::DescriptorImageInfo *imageInfo, vk::DescriptorType type);
 DescriptorBuilder &bindImages(uint32_t binding, std::vector<vk::DescriptorImageInfo>& imageInfos, vk::DescriptorType type);
 ```
+
 bindImages would also validate that the length is less than the max set in descriptor builder.
+
+### Handles
+
+To simplify handling of resources it's probably easier if the interface of the renderer has Handles as return values.
+So uploading a mesh returns a `MeshHandle` and similarly for a Materials.
+
+```cpp
+struct MeshHandle {
+  uint64_t handle;
+};
+```
+
+A builder could then be used to get these materials, as there is probably going to be quite a few ways to do it.
+But this might require that the result of the build is a pair of `MeshHandle` and `Optional<MaterialHandle>`.
+Do not really know how nice that would be.
+
+```cpp
+MeshBuilder::begin()
+  .loadObj("filename.obj")
+  .loadMtl() // tinyObj loads the materials if referenced in the obj file
+  .build();
+```
+
+When the ECS system gets added these handles could then be held together in a Mesh Component.
+
+Using would also avoid callbacks as the renderer could just ignore meshes and materials that have not been uploaded yet. 
+This would simplify the interaction model.

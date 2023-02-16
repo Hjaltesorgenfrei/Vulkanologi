@@ -87,7 +87,7 @@ add_executable(vulkanologi
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at least
 target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ext/glm/glm/glm.hpp)
-target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h)
+target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.h)
 
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkanologi shader.frag)

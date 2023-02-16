@@ -1,13 +1,17 @@
-﻿#pragma once
+﻿#ifndef BEHDEVICE_H
+#define BEHDEVICE_H
+#pragma once
 
 #include "WindowWrapper.h"
+#include "BehVkTypes.h"
+#include "Deletionqueue.h"
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <map>
 #include <optional>
 #include <set>
-#include "BehVkTypes.h"
-#include "Deletionqueue.h"
+#include <memory>
+
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -117,3 +121,5 @@ private:
     const std::vector<const char*> deviceExtensions = {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 };
+
+#endif

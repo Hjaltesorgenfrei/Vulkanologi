@@ -1,4 +1,7 @@
-﻿#pragma once
+﻿#ifndef WINDOWWRAPPER_H
+#define WINDOWWRAPPER_H
+#pragma once
+
 #include <utility>
 
 #define GLFW_INCLUDE_VULKAN
@@ -22,3 +25,5 @@ public:
 	[[nodiscard]] bool isFullScreen();
 	void setTitle(const char* title);
 };
+
+#endif

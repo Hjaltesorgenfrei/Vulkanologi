@@ -5,13 +5,21 @@ project(vulkanologi)
 
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
+
+
 if(MSVC)
     if (NOT CMAKE_BUILD_TYPE) # Assume debug if dont have specified. Makes it work for vscode.
         set(CMAKE_BUILD_TYPE "Debug")
     endif()
-    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
+    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR}/build/${CMAKE_BUILD_TYPE}/bin)
 else()
-    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/lib)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/lib)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build/bin)
+    set(BUILD_OUTPUT_PATH ${CMAKE_BINARY_DIR}/build/bin)
 endif()
 
 function(add_shader TARGET SHADER)

@@ -6,7 +6,7 @@ A Vulkan Renderer written in C++ 20. Very much WIP.
 
 To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows> and set the enviroment variable `VULKAN_HOME` to the install location. 
 
-On arch install `sudo pacman -S vulkan-devel`
+On arch install `sudo pacman -S vulkan-devel shaderc`
 
 ## Credits
 

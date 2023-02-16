@@ -30,6 +30,9 @@ class AssetManager {
 
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
+    template <typename T>
+    [[nodiscard]] std::vector<AllocatedBuffer> createBuffers(std::span<T>& data, vk::BufferUsageFlags bufferUsage, int count = 1);
+
    private:
     std::shared_ptr<BehDevice> device;
 
@@ -58,20 +61,22 @@ class AssetManager {
 
 template <typename T>
 inline AllocatedBuffer AssetManager::stageData(std::span<T>& dataToStage) {
-    VkBufferCreateInfo stagingCreate{
+    VkBufferCreateInfo stagingCreate {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = dataToStage.size() * sizeof(T),
-        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT};
+        .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+    };
 
-    VmaAllocationCreateInfo stagingAlloc{
+    VmaAllocationCreateInfo stagingAlloc {
         .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-        .usage = VMA_MEMORY_USAGE_AUTO};
+        .usage = VMA_MEMORY_USAGE_AUTO
+    };
 
     VkBuffer buffer;
     AllocatedBuffer stagingBuffer{};
 
     if (vmaCreateBuffer(device->allocator(), &stagingCreate, &stagingAlloc, &buffer, &stagingBuffer._allocation, nullptr) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to uploadBuffer mesh vertices!");
+        throw std::runtime_error("Failed to create staging buffer!");
     }
     stagingBuffer._buffer = buffer;
 
@@ -82,4 +87,39 @@ inline AllocatedBuffer AssetManager::stageData(std::span<T>& dataToStage) {
     }
     vmaUnmapMemory(device->allocator(), stagingBuffer._allocation);
     return stagingBuffer;
+}
+
+template <typename T>
+inline std::vector<AllocatedBuffer> AssetManager::createBuffers(std::span<T>& data, vk::BufferUsageFlags bufferUsage, int count) {
+    auto stagedBuffer = stageData(data);
+    
+    VkBufferCreateInfo createInfo {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .size = stagedBuffer.buffer.size,
+        .usage = bufferUsage
+    };
+
+    VmaAllocationCreateInfo allocInfo {
+        .usage = VMA_MEMORY_USAGE_AUTO
+    };
+
+    std::vector<AllocatedBuffer> buffers(count);
+
+    for (int i = 0; i < count; i++) {
+        VkBuffer buffer;
+        if (vmaCreateBuffer(device->allocator(), &createInfo, &allocInfo, &buffer, &buffers[i]._allocation, nullptr) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create buffer!");
+        }
+        &buffers[i]._buffer = buffer;
+    }
+
+    device->immediateSubmit([&](auto cmd) {
+        vk::BufferCopy copyRegion{
+            .size = stagedBuffer.buffer.size
+        };
+        for (int i = 0; i < count; i++) {
+            cmd.copyBuffer(stagedBuffer._buffer, buffers[i]._buffer, 1, &copyRegion);
+        }
+    });
+    cleanUpStagingBuffer(stagedBuffer);
 }

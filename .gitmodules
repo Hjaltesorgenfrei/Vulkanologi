@@ -1,21 +1,27 @@
 [submodule "ext/glfw"]
 	path = ext/glfw
 	url = https://github.com/glfw/glfw
+	ignore = dirty
 [submodule "ext/glm"]
 	path = ext/glm
 	url = https://github.com/g-truc/glm
+	ignore = dirty
 [submodule "ext/stb"]
 	path = ext/stb
 	url = https://github.com/nothings/stb
+	ignore = dirty
 [submodule "ext/tinyobjloader"]
 	path = ext/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader
+	ignore = dirty
 [submodule "ext/VulkanMemoryAllocator"]
 	path = ext/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+	ignore = dirty
 [submodule "ext/imgui"]
 	path = ext/imgui
 	url = https://github.com/ocornut/imgui
+	ignore = dirty
 [submodule "ext/ImGuizmo"]
 	path = ext/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo

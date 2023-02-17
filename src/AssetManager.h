@@ -72,13 +72,11 @@ inline AllocatedBuffer AssetManager::stageData(std::span<T>& dataToStage) {
         .usage = VMA_MEMORY_USAGE_AUTO
     };
 
-    VkBuffer buffer;
     AllocatedBuffer stagingBuffer{};
 
-    if (vmaCreateBuffer(device->allocator(), &stagingCreate, &stagingAlloc, &buffer, &stagingBuffer._allocation, nullptr) != VK_SUCCESS) {
+    if (vmaCreateBuffer(device->allocator(), &stagingCreate, &stagingAlloc, reinterpret_cast<VkBuffer *>(&stagingBuffer._buffer), &stagingBuffer._allocation, nullptr) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create staging buffer!");
     }
-    stagingBuffer._buffer = buffer;
 
     void* data;
     vmaMapMemory(device->allocator(), stagingBuffer._allocation, &data);
@@ -106,11 +104,9 @@ inline std::vector<AllocatedBuffer> AssetManager::createBuffers(std::span<T>& da
     std::vector<AllocatedBuffer> buffers(count);
 
     for (int i = 0; i < count; i++) {
-        VkBuffer buffer;
-        if (vmaCreateBuffer(device->allocator(), &createInfo, &allocInfo, &buffer, &buffers[i]._allocation, nullptr) != VK_SUCCESS) {
+        if (vmaCreateBuffer(device->allocator(), &createInfo, &allocInfo, reinterpret_cast<VkBuffer*>(&buffers[i]._buffer), &buffers[i]._allocation, nullptr) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create buffer!");
         }
-        &buffers[i]._buffer = buffer;
     }
 
     device->immediateSubmit([&](auto cmd) {

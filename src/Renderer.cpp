@@ -18,6 +18,8 @@
 
 #define VMA_IMPLEMENTATION
 
+int PARTICLE_COUNT = 256 * 4;
+
 #include "vk_mem_alloc.h"
 
 #include "backends/imgui_impl_glfw.h"
@@ -553,7 +555,7 @@ void Renderer::createComputeShaderBuffers() {
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
     // Initial particle positions on a circle
-    std::vector<Particle> particles(250);
+    std::vector<Particle> particles(PARTICLE_COUNT);
     for (auto& particle : particles) {
         float r = 0.25f * sqrt(rndDist(rndEngine));
         float theta = rndDist(rndEngine) * 2 * 3.14159265358979323846;
@@ -925,13 +927,13 @@ void Renderer::createComputeDescriptorSets() {
         vk::DescriptorBufferInfo lastFrameStorageBuffer {
             .buffer = shaderStorageBuffers[(i - 1) % swapChainImages.size()]->_buffer,
             .offset = 0,
-            .range = sizeof(Particle) * 250
+            .range = sizeof(Particle) * PARTICLE_COUNT
         };
 
         vk::DescriptorBufferInfo thisFrameStorageBuffer {
             .buffer = shaderStorageBuffers[i]->_buffer,
             .offset = 0,
-            .range = sizeof(Particle) * 250
+            .range = sizeof(Particle) * PARTICLE_COUNT
         };
 
         std::array<vk::WriteDescriptorSet, 3> descriptorWrites {
@@ -1085,6 +1087,7 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
         commandBuffers[index].draw(6, 1, 0, 0);
 
         computePipeline->bind(commandBuffers[index], vk::PipelineBindPoint::eCompute);
+        // This has to happen on a different command buffer and probably before the draw.
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);

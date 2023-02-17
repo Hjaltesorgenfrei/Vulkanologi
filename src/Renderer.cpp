@@ -37,8 +37,10 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createRenderPass();
         createGlobalDescriptorSetLayout();
         createMaterialDescriptorSetLayout();
+        createComputeDescriptorSetLayout();
         createGraphicsPipelineLayout();
         createBillboardPipelineLayout();
+        createComputePipelineLayout();
         createPipelines();
         createCommandPool();
         initImgui();
@@ -120,9 +122,9 @@ void Renderer::createSwapChain() {
 
 
     QueueFamilyIndices indices = device->queueFamilies();
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    uint32_t queueFamilyIndices[] = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value()};
 
-    if (indices.graphicsFamily != indices.presentFamily) {
+    if (indices.graphicsAndComputeFamily != indices.presentFamily) {
         createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -404,7 +406,19 @@ void Renderer::createMaterialDescriptorSetLayout() {
             .build(materialDescriptorSetLayout);
 
     if (!success) {
-        throw std::runtime_error("Failed to create Material descriptor set layout");
+        throw std::runtime_error("Failed to create material descriptor set layout");
+    }
+}
+
+void Renderer::createComputeDescriptorSetLayout() {
+    auto success = DescriptorSetLayoutBuilder::begin(&descriptorLayoutCache)
+        .addBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eCompute)
+        .addBinding(1, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+        .addBinding(2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute)
+        .build(computeDescriptorSetLayout);
+
+    if (!success) {
+        throw std::runtime_error("Failed to create compute descriptor set layout");
     }
 }
 
@@ -455,10 +469,30 @@ void Renderer::createBillboardPipelineLayout() {
     }
 }
 
+void Renderer::createComputePipelineLayout() {
+    std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {computeDescriptorSetLayout, uboDescriptorSetLayout};
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+        .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+        .pSetLayouts = descriptorSetLayouts.data()
+    };
+
+    try {
+        computePipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
+        mainDeletionQueue.push_function([&]() {
+            device->device().destroyPipelineLayout(computePipelineLayout);
+        });
+    }
+    catch (vk::SystemError &err) {
+        throw std::runtime_error(std::string("failed to create compute pipeline layout!") + err.what());
+    }
+}
+
 void Renderer::createPipelines() {
     createGraphicsPipeline();
     createBillboardPipeline();
     createWireframePipeline();
+    createComputePipeline();
 }
 
 void Renderer::createGraphicsPipeline() {
@@ -497,6 +531,13 @@ void Renderer::createWireframePipeline() {
     pipelineConfig.polygonMode = vk::PolygonMode::eLine;
 
     wireframePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
+}
+
+void Renderer::createComputePipeline() {
+    PipelineConfigurationInfo pipelineConfig{};
+    pipelineConfig.pipelineLayout;
+
+    pipelineConfig.addShader("shaders/particles.comp.spv", vk::ShaderStageFlagBits::eCompute);
 }
 
 vk::ShaderModule Renderer::createShaderModule(const std::vector<char> &code) {
@@ -583,7 +624,7 @@ void Renderer::createCommandPool() {
     QueueFamilyIndices queueFamilyIndices = device->queueFamilies();
     const vk::CommandPoolCreateInfo poolInfo{
             .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
-            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
+            .queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily.value()
     };
 
     const vk::CommandPoolCreateInfo transferPoolInfo{

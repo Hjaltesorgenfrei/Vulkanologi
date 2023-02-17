@@ -20,12 +20,12 @@ const bool enableValidationLayers = true;
 #endif
 
 struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> graphicsAndComputeFamily;
     std::optional<uint32_t> presentFamily;
     std::optional<uint32_t> transferFamily;
 
     [[nodiscard]] bool isComplete() const {
-        return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
+        return graphicsAndComputeFamily.has_value() && presentFamily.has_value() && transferFamily.has_value();
     }
 };
 
@@ -103,6 +103,7 @@ private:
 
     vk::Queue _presentQueue;
     vk::Queue _graphicsQueue;
+    vk::Queue _computeQueue;
 
     vk::Queue _transferQueue;
     UploadContext _uploadContext;

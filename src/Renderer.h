@@ -69,6 +69,7 @@ private:
 
     vk::DescriptorSetLayout materialDescriptorSetLayout;
     vk::DescriptorSetLayout uboDescriptorSetLayout;
+    vk::DescriptorSetLayout computeDescriptorSetLayout;
     std::vector<vk::DescriptorSet> descriptorSets;
     vk::DescriptorPool descriptorPool;
     vk::RenderPass renderPass;
@@ -78,6 +79,7 @@ private:
 
     vk::PipelineLayout pipelineLayout;
     vk::PipelineLayout billboardPipelineLayout;
+    vk::PipelineLayout computePipelineLayout;
 
     std::unique_ptr<BehPipeline> graphicsPipeline;
     std::unique_ptr<BehPipeline> billboardPipeline;
@@ -119,14 +121,17 @@ private:
     void createRenderPass();
     void createGlobalDescriptorSetLayout();
     void createMaterialDescriptorSetLayout();
+    void createComputeDescriptorSetLayout();
 
     void createGraphicsPipelineLayout();
     void createBillboardPipelineLayout();
+    void createComputePipelineLayout();
 
     void createPipelines();
     void createGraphicsPipeline();
     void createBillboardPipeline();
 	void createWireframePipeline();
+    void createComputePipeline();
 
 	vk::ShaderModule createShaderModule(const std::vector<char>& code);
 

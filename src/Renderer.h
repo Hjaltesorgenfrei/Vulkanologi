@@ -84,6 +84,7 @@ private:
     std::unique_ptr<BehPipeline> graphicsPipeline;
     std::unique_ptr<BehPipeline> billboardPipeline;
     std::unique_ptr<BehPipeline> wireframePipeline;
+    std::unique_ptr<BehPipeline> computePipeline;
 
     vk::CommandPool commandPool;
     vk::CommandPool transferCommandPool;
@@ -105,6 +106,7 @@ private:
     vk::ImageView colorImageView;
 
     std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
+    std::vector<vk::DescriptorSet> computeDescriptorSets;
 
     size_t currentFrame = 0;
 
@@ -135,7 +137,7 @@ private:
 	void createWireframePipeline();
     void createComputePipeline();
 
-    void initComputeShaderBuffers();
+    void createComputeShaderBuffers();
 
     void createFramebuffers();
 
@@ -156,6 +158,7 @@ private:
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
+    void createComputeDescriptorSets();
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
     void createCommandBuffers();

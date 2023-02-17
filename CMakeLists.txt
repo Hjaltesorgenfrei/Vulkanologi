@@ -101,5 +101,6 @@ add_shader(vulkanologi shader_unlit.frag)
 add_shader(vulkanologi shader_unlit.vert)
 add_shader(vulkanologi point_light.frag)
 add_shader(vulkanologi point_light.vert)
+add_shader(vulkanologi particles.comp)
 
 add_dependencies(vulkanologi copy-runtime-files)

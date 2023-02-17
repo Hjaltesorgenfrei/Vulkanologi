@@ -37,4 +37,7 @@ private:
     vk::Pipeline pipeline;
 
     vk::ShaderModule createShaderModule(const std::vector<char> &code);
+
+    void createGraphicsPipeline(PipelineConfigurationInfo &config,
+                           std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageCreateInfos);
 };

@@ -50,11 +50,12 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createDepthResources();
         createFramebuffers();
         createUniformBuffers();
+        createComputeShaderBuffers();
         createDescriptorPool();
         createDescriptorSets();
+        createComputeDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
-        initComputeShaderBuffers();
     }
     catch (const std::exception &e) {
         cleanup();
@@ -538,12 +539,15 @@ void Renderer::createWireframePipeline() {
 
 void Renderer::createComputePipeline() {
     PipelineConfigurationInfo pipelineConfig{};
-    pipelineConfig.pipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.pipelineLayout = computePipelineLayout;
+    pipelineConfig.extent = swapChainExtent;
 
     pipelineConfig.addShader("shaders/particles.comp.spv", vk::ShaderStageFlagBits::eCompute);
+    computePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
-void Renderer::initComputeShaderBuffers() {
+void Renderer::createComputeShaderBuffers() {
     // Initialize particles
     std::default_random_engine rndEngine((unsigned)time(nullptr));
     std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
@@ -561,7 +565,7 @@ void Renderer::initComputeShaderBuffers() {
     }
 
     auto usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    shaderStorageBuffers = assetManager.createBuffers(static_cast<std::span<Particle>>(particles), usage, MAX_FRAMES_IN_FLIGHT);
+    shaderStorageBuffers = assetManager.createBuffers(static_cast<std::span<Particle>>(particles), usage, swapChainImages.size());
 }
 
 void Renderer::createFramebuffers() {
@@ -830,7 +834,7 @@ void Renderer::createUniformBuffers() {
 }
 
 void Renderer::createDescriptorPool() {
-    std::array<vk::DescriptorPoolSize, 2> poolSizes{
+    std::array<vk::DescriptorPoolSize, 3> poolSizes{
             vk::DescriptorPoolSize{
                     .type = vk::DescriptorType::eUniformBuffer,
                     .descriptorCount = static_cast<uint32_t>(swapChainImages.size())
@@ -838,6 +842,10 @@ void Renderer::createDescriptorPool() {
             vk::DescriptorPoolSize{
                     .type = vk::DescriptorType::eCombinedImageSampler,
                     .descriptorCount = static_cast<uint32_t>(swapChainImages.size())
+            },
+            vk::DescriptorPoolSize{
+                .type = vk::DescriptorType::eStorageBuffer,
+                .descriptorCount = static_cast<uint32_t>(swapChainImages.size() * 2)
             }
     };
 
@@ -886,6 +894,71 @@ void Renderer::createDescriptorSets() {
                         .descriptorType = vk::DescriptorType::eUniformBuffer,
                         .pBufferInfo = &bufferInfo,
                 }
+        };
+
+        device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
+                                              0, nullptr);
+    }
+}
+
+void Renderer::createComputeDescriptorSets() {
+    std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), computeDescriptorSetLayout);
+    vk::DescriptorSetAllocateInfo allocInfo{
+        .descriptorPool = descriptorPool,
+        .descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()),
+        .pSetLayouts = layouts.data()
+    };
+
+    computeDescriptorSets.resize(swapChainImages.size());
+    if (device->device().allocateDescriptorSets(&allocInfo, computeDescriptorSets.data()) != vk::Result::eSuccess) {
+        throw std::runtime_error("Failed to create Descriptor sets!");
+    }
+
+
+    for (size_t i = 0; i < swapChainImages.size(); i++) {
+        vk::DescriptorBufferInfo bufferInfo {
+            .buffer = uniformBuffers[i]._buffer,
+            .offset = 0,
+            .range = sizeof(GlobalUbo)
+        };
+
+        vk::DescriptorBufferInfo lastFrameStorageBuffer {
+            .buffer = shaderStorageBuffers[(i - 1) % swapChainImages.size()]->_buffer,
+            .offset = 0,
+            .range = sizeof(Particle) * 250
+        };
+
+        vk::DescriptorBufferInfo thisFrameStorageBuffer {
+            .buffer = shaderStorageBuffers[i]->_buffer,
+            .offset = 0,
+            .range = sizeof(Particle) * 250
+        };
+
+        std::array<vk::WriteDescriptorSet, 3> descriptorWrites {
+            vk::WriteDescriptorSet {
+                .dstSet = computeDescriptorSets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eUniformBuffer,
+                .pBufferInfo = &bufferInfo,
+            },
+            vk::WriteDescriptorSet {
+                .dstSet = computeDescriptorSets[i],
+                .dstBinding = 1,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .pBufferInfo = &lastFrameStorageBuffer
+            },
+            vk::WriteDescriptorSet {
+                .dstSet = computeDescriptorSets[i],
+                .dstBinding = 2,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = vk::DescriptorType::eStorageBuffer,
+                .pBufferInfo = &thisFrameStorageBuffer
+            }
         };
 
         device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
@@ -1010,6 +1083,8 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
         commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
                                                  &descriptorSets[index], 0, nullptr);
         commandBuffers[index].draw(6, 1, 0, 0);
+
+        computePipeline->bind(commandBuffers[index], vk::PipelineBindPoint::eCompute);
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);

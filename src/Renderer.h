@@ -104,6 +104,8 @@ private:
     AllocatedImage colorImage;
     vk::ImageView colorImageView;
 
+    std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
+
     size_t currentFrame = 0;
 
     void initImgui();
@@ -133,7 +135,7 @@ private:
 	void createWireframePipeline();
     void createComputePipeline();
 
-	vk::ShaderModule createShaderModule(const std::vector<char>& code);
+    void initComputeShaderBuffers();
 
     void createFramebuffers();
 

@@ -14,6 +14,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <random>
 
 #define VMA_IMPLEMENTATION
 
@@ -22,6 +23,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "BehFrameInfo.h"
+#include "Particle.h"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {
@@ -52,6 +54,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+        initComputeShaderBuffers();
     }
     catch (const std::exception &e) {
         cleanup();
@@ -540,21 +543,25 @@ void Renderer::createComputePipeline() {
     pipelineConfig.addShader("shaders/particles.comp.spv", vk::ShaderStageFlagBits::eCompute);
 }
 
-vk::ShaderModule Renderer::createShaderModule(const std::vector<char> &code) {
-    const vk::ShaderModuleCreateInfo createInfo{
-            .codeSize = code.size(),
-            .pCode = reinterpret_cast<const uint32_t *>(code.data())
-    };
+void Renderer::initComputeShaderBuffers() {
+    // Initialize particles
+    std::default_random_engine rndEngine((unsigned)time(nullptr));
+    std::uniform_real_distribution<float> rndDist(0.0f, 1.0f);
 
-    vk::ShaderModule shaderModule;
-    try {
-        shaderModule = device->device().createShaderModule(createInfo);
-    }
-    catch (vk::SystemError &err) {
-        throw std::runtime_error(std::string("Failed to create shader module!") + err.what());
+    // Initial particle positions on a circle
+    std::vector<Particle> particles(250);
+    for (auto& particle : particles) {
+        float r = 0.25f * sqrt(rndDist(rndEngine));
+        float theta = rndDist(rndEngine) * 2 * 3.14159265358979323846;
+        float x = r * cos(theta) * swapChainExtent.height / swapChainExtent.width;
+        float y = r * sin(theta);
+        particle.position = glm::vec2(x, y);
+        particle.velocity = glm::normalize(glm::vec2(x,y)) * 0.00025f;
+        particle.color = glm::vec4(rndDist(rndEngine), rndDist(rndEngine), rndDist(rndEngine), 1.0f);
     }
 
-    return shaderModule;
+    auto usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
+    shaderStorageBuffers = assetManager.createBuffers(static_cast<std::span<Particle>>(particles), usage, MAX_FRAMES_IN_FLIGHT);
 }
 
 void Renderer::createFramebuffers() {

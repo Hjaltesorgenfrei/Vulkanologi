@@ -89,11 +89,14 @@ private:
     vk::CommandPool commandPool;
     vk::CommandPool transferCommandPool;
     std::vector<vk::CommandBuffer> commandBuffers;
+    std::vector<vk::CommandBuffer> computeCommandBuffers;
 
     std::vector<vk::Semaphore> imageAvailableSemaphores;
     std::vector<vk::Semaphore> renderFinishedSemaphores;
     std::vector<vk::Fence> inFlightFences;
     std::vector<vk::Fence> imagesInFlight;
+    std::vector<vk::Fence> computeInFlightFences;
+    std::vector<vk::Semaphore> computeFinishedSemaphores;
 
     std::vector<std::shared_ptr<UploadedTexture>> textures;
 
@@ -163,9 +166,11 @@ private:
 
     void createCommandBuffers();
     void recordCommandBuffer(uint32_t index, FrameInfo& frameInfo);
+    void recordComputeCommandBuffer(uint32_t index, FrameInfo &info);
 
     void createSyncObjects();
     void updateUniformBuffer(uint32_t currentImage, FrameInfo& frameInfo);
 
     void cleanup();
+
 };

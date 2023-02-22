@@ -979,6 +979,7 @@ void Renderer::copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::Device
 
 void Renderer::createCommandBuffers() {
     commandBuffers.resize(swapChainImages.size());
+    computeCommandBuffers.resize(swapChainImages.size());
 
     vk::CommandBufferAllocateInfo allocateInfo{
             .commandPool = commandPool,
@@ -988,12 +989,39 @@ void Renderer::createCommandBuffers() {
 
     try {
         commandBuffers = device->device().allocateCommandBuffers(allocateInfo);
+        computeCommandBuffers = device->device().allocateCommandBuffers(allocateInfo);
         mainDeletionQueue.push_function([&]() {
             device->device().freeCommandBuffers(commandPool, commandBuffers);
+            device->device().freeCommandBuffers(commandPool, computeCommandBuffers);
         });
     }
     catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("failed to allocate command buffers") + err.what());
+    }
+}
+
+void Renderer::recordComputeCommandBuffer(uint32_t index, FrameInfo &info) {
+    auto commandBuffer = computeCommandBuffers[index];
+    vk::CommandBufferBeginInfo beginInfo{};
+
+    try {
+        commandBuffer.begin(beginInfo);
+    }
+    catch (vk::SystemError &err) {
+        throw std::runtime_error(std::string("failed to begin recording compute command buffer!") + err.what());
+    }
+
+    computePipeline->bind(commandBuffer, vk::PipelineBindPoint::eCompute);
+
+    commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, computePipelineLayout, 0, 1, &computeDescriptorSets[currentFrame], 0, nullptr);
+
+    commandBuffer.dispatch(PARTICLE_COUNT / 256, 1, 1);
+
+    try {
+        commandBuffer.end();
+    }
+    catch (vk::SystemError &err) {
+        throw std::runtime_error(std::string("failed to record compute command buffer!") + err.what());
     }
 }
 
@@ -1085,9 +1113,6 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
         commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
                                                  &descriptorSets[index], 0, nullptr);
         commandBuffers[index].draw(6, 1, 0, 0);
-
-        computePipeline->bind(commandBuffers[index], vk::PipelineBindPoint::eCompute);
-        // This has to happen on a different command buffer and probably before the draw.
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);
@@ -1107,6 +1132,8 @@ void Renderer::createSyncObjects() {
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
     imagesInFlight.resize(swapChainImages.size(), nullptr);
+    computeInFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+    computeFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 
     vk::SemaphoreCreateInfo semaphoreInfo{};
 
@@ -1116,11 +1143,15 @@ void Renderer::createSyncObjects() {
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             imageAvailableSemaphores[i] = device->device().createSemaphore(semaphoreInfo);
             renderFinishedSemaphores[i] = device->device().createSemaphore(semaphoreInfo);
+            computeFinishedSemaphores[i] = device->device().createSemaphore(semaphoreInfo);
             inFlightFences[i] = device->device().createFence(fenceInfo);
+            computeInFlightFences[i] = device->device().createFence(fenceInfo);
             mainDeletionQueue.push_function([&, i]() {
                 device->device().destroySemaphore(renderFinishedSemaphores[i]);
                 device->device().destroySemaphore(imageAvailableSemaphores[i]);
+                device->device().destroySemaphore(computeFinishedSemaphores[i]);
                 device->device().destroyFence(inFlightFences[i]);
+                device->device().destroyFence(computeInFlightFences[i]);
             });
         }
     }
@@ -1197,6 +1228,8 @@ int Renderer::drawFrame(FrameInfo &frameInfo) {
     vk::Semaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
 
     updateUniformBuffer(imageIndex, frameInfo);
+
+    recordComputeCommandBuffer(imageIndex, frameInfo);
 
     recordCommandBuffer(imageIndex, frameInfo);
 

@@ -93,7 +93,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [x] Never delete resources (images, views, framebuffers) in the resize. Instead put it in a delayed-deletion-queue. This will delete it when its no longer being used in a couple of frames
   - [x] use imageless framebuffer
   - [x] If the items in 4 and 5 are implemented, the resize function will not need to call vkDeviceWaitIdle()
-- [ ] Implement Compute shaders <https://github.com/Overv/VulkanTutorial/pull/320>
+- [x] Implement Compute shaders <https://github.com/Overv/VulkanTutorial/pull/320>
 - [ ] Delete `Renderer::uploadBuffer` it should be handled by `AssetManager`
 - [ ] Create multiple vk::Framebuffer swapChainFramebuffers.
 

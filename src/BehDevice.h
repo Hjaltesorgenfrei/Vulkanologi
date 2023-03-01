@@ -55,6 +55,7 @@ public:
     vk::Instance instance() { return _instance; }
     vk::Queue graphicsQueue() {return _graphicsQueue; }
     vk::Queue presentQueue() {return _presentQueue; }
+    vk::Queue computeQueue() {return _computeQueue; }
     vk::SampleCountFlagBits msaaSamples() { return _msaaSamples; }
     VmaAllocator allocator() { return _allocator; }
 

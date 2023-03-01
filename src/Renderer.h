@@ -165,11 +165,11 @@ private:
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
     void createCommandBuffers();
-    void recordCommandBuffer(uint32_t index, FrameInfo& frameInfo);
-    void recordComputeCommandBuffer(uint32_t index, FrameInfo &info);
+    void recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t index, FrameInfo &frameInfo);
+    void recordComputeCommandBuffer(vk::CommandBuffer &commandBuffer, FrameInfo &frameInfo);
 
     void createSyncObjects();
-    void updateUniformBuffer(uint32_t currentImage, FrameInfo& frameInfo);
+    void updateUniformBuffer(size_t currentImage, FrameInfo& frameInfo);
 
     void cleanup();
 

@@ -1000,8 +1000,7 @@ void Renderer::createCommandBuffers() {
     }
 }
 
-void Renderer::recordComputeCommandBuffer(uint32_t index, FrameInfo &info) {
-    auto commandBuffer = computeCommandBuffers[index];
+void Renderer::recordComputeCommandBuffer(vk::CommandBuffer &commandBuffer, FrameInfo &frameInfo) {
     vk::CommandBufferBeginInfo beginInfo{};
 
     try {
@@ -1025,11 +1024,11 @@ void Renderer::recordComputeCommandBuffer(uint32_t index, FrameInfo &info) {
     }
 }
 
-void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
+void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t index, FrameInfo &frameInfo) {
     vk::CommandBufferBeginInfo beginInfo{};
 
     try {
-        commandBuffers[index].begin(beginInfo);
+        commandBuffer.begin(beginInfo);
     }
     catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("failed to begin recording command buffer!") + err.what());
@@ -1044,7 +1043,7 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
             .extent = swapChainExtent
     };
 
-    commandBuffers[index].setScissor(0, 1, &scissor);
+    commandBuffer.setScissor(0, 1, &scissor);
 
     vk::Viewport viewport{
             .x = 0.0f,
@@ -1055,7 +1054,7 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
             .maxDepth = 1.0f
     };
 
-    commandBuffers[index].setViewport(0, 1, &viewport);
+    commandBuffer.setViewport(0, 1, &viewport);
 
     std::vector<vk::ImageView> attachments {
             colorImageView,
@@ -1080,47 +1079,47 @@ void Renderer::recordCommandBuffer(uint32_t index, FrameInfo &frameInfo) {
             .pClearValues = clearValues.data()
     };
 
-    commandBuffers[index].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+    commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
     {
         //Add commands to buffer
         if (rendererMode == NORMAL) {
-            graphicsPipeline->bind(commandBuffers[index]);
+            graphicsPipeline->bind(commandBuffer);
         } else if (rendererMode == WIREFRAME) {
-            wireframePipeline->bind(commandBuffers[index]);
+            wireframePipeline->bind(commandBuffer);
         }
-        commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1,
-                                                 &descriptorSets[index], 0, nullptr);
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1,
+                                                 &descriptorSets[currentFrame], 0, nullptr);
 
         for (const auto &model: frameInfo.objects) {
             vk::Buffer vertexBuffers[] = {model->mesh->_vertexBuffer._buffer};
             vk::DeviceSize offsets[] = {0};
-            commandBuffers[index].bindVertexBuffers(0, 1, vertexBuffers, offsets);
+            commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-            commandBuffers[index].bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
+            commandBuffer.bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
 
-            commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1,
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1,
                                                      &model->material.textureSet, 0, nullptr);
 
             MeshPushConstants constants = model->transformMatrix;
-            commandBuffers[index].pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+            commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
                                                 sizeof(MeshPushConstants), &constants);
 
-            commandBuffers[index].drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
+            commandBuffer.drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
         }
 
         // Point lights
-        billboardPipeline->bind(commandBuffers[index]);
-        commandBuffers[index].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
-                                                 &descriptorSets[index], 0, nullptr);
-        commandBuffers[index].draw(6, 1, 0, 0);
+        billboardPipeline->bind(commandBuffer);
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
+                                                 &descriptorSets[currentFrame], 0, nullptr);
+        commandBuffer.draw(6, 1, 0, 0);
     }
 
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[index]);
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
-    commandBuffers[index].endRenderPass();
+    commandBuffer.endRenderPass();
 
     try {
-        commandBuffers[index].end();
+        commandBuffer.end();
     }
     catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("failed to record command buffer!") + err.what());
@@ -1160,7 +1159,7 @@ void Renderer::createSyncObjects() {
     }
 }
 
-void Renderer::updateUniformBuffer(uint32_t currentImage, FrameInfo &frameInfo) {
+void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
     GlobalUbo ubo{
             .view = frameInfo.camera.viewMatrix(),
             .proj = frameInfo.camera.getCameraProjection(static_cast<float>(swapChainExtent.width),
@@ -1177,6 +1176,32 @@ void Renderer::updateUniformBuffer(uint32_t currentImage, FrameInfo &frameInfo) 
 }
 
 int Renderer::drawFrame(FrameInfo &frameInfo) {
+
+    while (device->device().waitForFences(computeInFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
+           == vk::Result::eTimeout) {
+        // Wait
+    }
+
+    updateUniformBuffer(currentFrame, frameInfo);
+
+    device->device().resetFences(computeInFlightFences[currentFrame]);
+
+    computeCommandBuffers[currentFrame].reset();
+    recordComputeCommandBuffer(computeCommandBuffers[currentFrame], frameInfo);
+
+    vk::SubmitInfo computeSubmitInfo{
+            .commandBufferCount = 1,
+            .pCommandBuffers = &computeCommandBuffers[currentFrame],
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores = &computeFinishedSemaphores[currentFrame],
+    };
+
+    try {
+        device->computeQueue().submit(computeSubmitInfo, computeInFlightFences[currentFrame]);
+    }
+    catch (vk::SystemError &err) {
+        throw std::runtime_error(std::string("failed to submit compute command buffer") + err.what());
+    }
 
     while (device->device().waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
            == vk::Result::eTimeout) {
@@ -1212,38 +1237,31 @@ int Renderer::drawFrame(FrameInfo &frameInfo) {
         throw std::runtime_error(std::string("failed to acquire swap chain image!") + err.what());
     }
 
-    if (imagesInFlight[imageIndex]) {
-        while (device->device().waitForFences(imagesInFlight[imageIndex], VK_TRUE, std::numeric_limits<uint64_t>::max())
-               == vk::Result::eTimeout) {
-            // Wait
-        }
+    while (device->device().waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max())
+            == vk::Result::eTimeout) {
+        // Wait
     }
-
-    imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
     ImGui::Render();
 
-    vk::Semaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
-    vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-    vk::Semaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+    std::vector<vk::Semaphore> waitSemaphores = {computeFinishedSemaphores[currentFrame], imageAvailableSemaphores[currentFrame] };
+    std::vector<vk::PipelineStageFlags> waitStages = {vk::PipelineStageFlagBits::eVertexInput, vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    std::vector<vk::Semaphore> signalSemaphores = {renderFinishedSemaphores[currentFrame]};
 
-    updateUniformBuffer(imageIndex, frameInfo);
-
-    recordComputeCommandBuffer(imageIndex, frameInfo);
-
-    recordCommandBuffer(imageIndex, frameInfo);
+    commandBuffers[currentFrame].reset();
+    recordCommandBuffer(commandBuffers[currentFrame], imageIndex, frameInfo);
 
     vk::SubmitInfo submitInfo{
 
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = waitSemaphores,
-            .pWaitDstStageMask = waitStages,
+            .waitSemaphoreCount = static_cast<uint32_t>(waitSemaphores.size()),
+            .pWaitSemaphores = waitSemaphores.data(),
+            .pWaitDstStageMask = waitStages.data(),
 
             .commandBufferCount = 1,
-            .pCommandBuffers = &commandBuffers[imageIndex],
+            .pCommandBuffers = &commandBuffers[currentFrame],
 
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores = signalSemaphores,
+            .signalSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()),
+            .pSignalSemaphores = signalSemaphores.data(),
 
     };
 
@@ -1254,14 +1272,13 @@ int Renderer::drawFrame(FrameInfo &frameInfo) {
     }
     catch (vk::SystemError &err) {
         throw std::runtime_error(std::string("failed to submit draw command buffer") + err.what());
-
     }
 
     vk::SwapchainKHR swapChains[] = {swapChain};
     const vk::PresentInfoKHR presentInfo{
 
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = signalSemaphores,
+            .waitSemaphoreCount = static_cast<uint32_t>(signalSemaphores.size()),
+            .pWaitSemaphores = signalSemaphores.data(),
 
             .swapchainCount = 1,
             .pSwapchains = swapChains,

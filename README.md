@@ -2,6 +2,8 @@
 
 A Vulkan Renderer written in C++ 20. Very much WIP.
 
+![Readme Image](docs/readme.png)
+
 ## Building
 
 To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows> and set the enviroment variable `VULKAN_HOME` to the install location. 

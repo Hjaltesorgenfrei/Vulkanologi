@@ -134,7 +134,7 @@ void App::drawLoop() {
 
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     renderer->uploadMeshes(objects);
 

@@ -31,7 +31,7 @@ class AssetManager {
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
     template <typename T>
-    [[nodiscard]] std::vector<std::shared_ptr<AllocatedBuffer>> createBuffers(std::span<T> data, vk::BufferUsageFlags bufferUsage, int count = 1);
+    [[nodiscard]] std::vector<std::shared_ptr<AllocatedBuffer>> createBuffers(std::span<T> data, vk::BufferUsageFlags bufferUsage, size_t count = 1);
 
    private:
     std::shared_ptr<BehDevice> device;
@@ -88,7 +88,7 @@ inline AllocatedBuffer AssetManager::stageData(std::span<T>& dataToStage) {
 }
 
 template <typename T>
-inline std::vector<std::shared_ptr<AllocatedBuffer>> AssetManager::createBuffers(std::span<T> data, vk::BufferUsageFlags bufferUsage, int count) {
+inline std::vector<std::shared_ptr<AllocatedBuffer>> AssetManager::createBuffers(std::span<T> data, vk::BufferUsageFlags bufferUsage, size_t count) {
     auto stagedBuffer = stageData(data);
     auto size = data.size() * sizeof(T);
     

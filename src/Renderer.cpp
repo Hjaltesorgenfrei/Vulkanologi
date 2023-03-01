@@ -558,7 +558,7 @@ void Renderer::createComputeShaderBuffers() {
     std::vector<Particle> particles(PARTICLE_COUNT);
     for (auto& particle : particles) {
         float r = 0.25f * sqrt(rndDist(rndEngine));
-        float theta = rndDist(rndEngine) * 2 * 3.14159265358979323846;
+        float theta = rndDist(rndEngine) * 2 * 3.14159265358979323846f;
         float x = r * cos(theta) * swapChainExtent.height / swapChainExtent.width;
         float y = r * sin(theta);
         particle.position = glm::vec2(x, y);
@@ -1278,7 +1278,7 @@ int Renderer::drawFrame(FrameInfo &frameInfo) {
             default:
                 throw std::runtime_error("failed to present swap chain image!");  // an unexpected result is returned!
         }
-    } catch (vk::OutOfDateKHRError &err) {
+    } catch (vk::OutOfDateKHRError) {
         return 1;
     }
 

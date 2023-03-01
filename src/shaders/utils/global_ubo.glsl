@@ -5,4 +5,5 @@ struct GlobalUbo {
     vec4 ambientLightColor; // w is intensity
     vec4 lightPosition; // w is ignored
     vec4 lightColor; // w is intensity
+    float deltaTime;
 };

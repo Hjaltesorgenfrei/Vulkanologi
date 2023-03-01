@@ -279,7 +279,7 @@ bool DescriptorSetLayoutBuilder::validate() {
 
     for (size_t i = 0; i < bindings.size(); i++) {
         const auto &binding = bindings[i];
-        if (i + 1 < bindings.size() && bindings[i].binding <= binding.binding) {
+        if (i + 1 < bindings.size() && bindings[i + 1].binding <= binding.binding) {
             std::cerr
                     << "Please add your bindings in order. This check might be removed later if I sort the order later.\n";
             result = false;

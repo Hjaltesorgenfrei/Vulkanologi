@@ -137,7 +137,7 @@ void BehDevice::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(_physicalDevice, _surface);
 
     std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value(),
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsAndComputeFamily.value(), indices.presentFamily.value(),
                                               indices.transferFamily.value()};
 
     float queuePriority = 1.0f;
@@ -195,7 +195,8 @@ void BehDevice::createLogicalDevice() {
         throw std::runtime_error(std::string("Failed to create logical device!") + err.what());
     }
 
-    _device.getQueue(indices.graphicsFamily.value(), 0, &_graphicsQueue);
+    _device.getQueue(indices.graphicsAndComputeFamily.value(), 0, &_graphicsQueue);
+    _device.getQueue(indices.graphicsAndComputeFamily.value(), 0, &_computeQueue);
     _device.getQueue(indices.presentFamily.value(), 0, &_presentQueue);
     _device.getQueue(indices.transferFamily.value(), 0, &_transferQueue);
 }
@@ -217,7 +218,7 @@ void BehDevice::createUploadContext() {
     QueueFamilyIndices queueFamilyIndices = findQueueFamilies(_physicalDevice, _surface);
 
     const vk::CommandPoolCreateInfo uploadPoolInfo{
-            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
+            .queueFamilyIndex = queueFamilyIndices.graphicsAndComputeFamily.value()
     };
 
     try {
@@ -456,8 +457,8 @@ QueueFamilyIndices BehDevice::findQueueFamilies(vk::PhysicalDevice device, vk::S
     for (const auto &queueFamily: queueFamilies) {
         // documentation of VkQueueFamilyProperties states that "Each queue family must support at least one queue".
 
-        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
-            indices.graphicsFamily = i;
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+            indices.graphicsAndComputeFamily = i;
         }
 
         if (device.getSurfaceSupportKHR(i, surface)) {

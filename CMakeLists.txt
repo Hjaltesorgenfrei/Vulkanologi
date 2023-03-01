@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 project(vulkanologi)
 
@@ -97,9 +97,12 @@ target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
+add_shader(vulkanologi particle.frag)
+add_shader(vulkanologi particle.vert)
 add_shader(vulkanologi shader_unlit.frag)
 add_shader(vulkanologi shader_unlit.vert)
 add_shader(vulkanologi point_light.frag)
 add_shader(vulkanologi point_light.vert)
+add_shader(vulkanologi particles.comp)
 
 add_dependencies(vulkanologi copy-runtime-files)

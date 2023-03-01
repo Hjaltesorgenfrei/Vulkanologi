@@ -46,7 +46,7 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 			texture->mipLevels);
 	copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
 
-	cleanUpStagingBuffer(stagingBuffer);
+    cleanUpBuffer(stagingBuffer);
 
 	generateMipmaps(texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
@@ -91,7 +91,7 @@ void AssetManager::createTextureSampler(const std::shared_ptr<UploadedTexture>& 
 }
 
 
-void AssetManager::cleanUpStagingBuffer(AllocatedBuffer buffer) {
+void AssetManager::cleanUpBuffer(AllocatedBuffer buffer) {
 	vmaDestroyBuffer(device->allocator(), buffer._buffer, buffer._allocation);
 }
 

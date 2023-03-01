@@ -2,6 +2,8 @@
 
 A Vulkan Renderer written in C++ 20. Very much WIP.
 
+![Readme Image](docs/readme.png)
+
 ## Building
 
 To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows> and set the enviroment variable `VULKAN_HOME` to the install location. 
@@ -92,6 +94,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [x] use imageless framebuffer
   - [x] If the items in 4 and 5 are implemented, the resize function will not need to call vkDeviceWaitIdle()
 - [ ] Implement Compute shaders <https://github.com/Overv/VulkanTutorial/pull/320>
+- [ ] Delete `Renderer::uploadBuffer` it should be handled by `AssetManager`
+- [ ] Create multiple vk::Framebuffer swapChainFramebuffers.
 
 ### Descriptor Layout Idea
 

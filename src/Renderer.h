@@ -69,6 +69,7 @@ private:
 
     vk::DescriptorSetLayout materialDescriptorSetLayout;
     vk::DescriptorSetLayout uboDescriptorSetLayout;
+    vk::DescriptorSetLayout computeDescriptorSetLayout;
     std::vector<vk::DescriptorSet> descriptorSets;
     vk::DescriptorPool descriptorPool;
     vk::RenderPass renderPass;
@@ -78,19 +79,25 @@ private:
 
     vk::PipelineLayout pipelineLayout;
     vk::PipelineLayout billboardPipelineLayout;
+    vk::PipelineLayout computePipelineLayout;
 
     std::unique_ptr<BehPipeline> graphicsPipeline;
     std::unique_ptr<BehPipeline> billboardPipeline;
     std::unique_ptr<BehPipeline> wireframePipeline;
+    std::unique_ptr<BehPipeline> particlePipeline;
+    std::unique_ptr<BehPipeline> computePipeline;
 
     vk::CommandPool commandPool;
     vk::CommandPool transferCommandPool;
     std::vector<vk::CommandBuffer> commandBuffers;
+    std::vector<vk::CommandBuffer> computeCommandBuffers;
 
     std::vector<vk::Semaphore> imageAvailableSemaphores;
     std::vector<vk::Semaphore> renderFinishedSemaphores;
     std::vector<vk::Fence> inFlightFences;
     std::vector<vk::Fence> imagesInFlight;
+    std::vector<vk::Fence> computeInFlightFences;
+    std::vector<vk::Semaphore> computeFinishedSemaphores;
 
     std::vector<std::shared_ptr<UploadedTexture>> textures;
 
@@ -101,6 +108,9 @@ private:
 
     AllocatedImage colorImage;
     vk::ImageView colorImageView;
+
+    std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
+    std::vector<vk::DescriptorSet> computeDescriptorSets;
 
     size_t currentFrame = 0;
 
@@ -119,16 +129,20 @@ private:
     void createRenderPass();
     void createGlobalDescriptorSetLayout();
     void createMaterialDescriptorSetLayout();
+    void createComputeDescriptorSetLayout();
 
     void createGraphicsPipelineLayout();
     void createBillboardPipelineLayout();
+    void createComputePipelineLayout();
 
     void createPipelines();
     void createGraphicsPipeline();
     void createBillboardPipeline();
+    void createParticlePipeline();
 	void createWireframePipeline();
+    void createComputePipeline();
 
-	vk::ShaderModule createShaderModule(const std::vector<char>& code);
+    void createComputeShaderBuffers();
 
     void createFramebuffers();
 
@@ -149,13 +163,16 @@ private:
     void createUniformBuffers();
     void createDescriptorPool();
     void createDescriptorSets();
+    void createComputeDescriptorSets();
     void copyBuffer(vk::Buffer srcBuffer, vk::Buffer dstBuffer, vk::DeviceSize size);
 
     void createCommandBuffers();
-    void recordCommandBuffer(uint32_t index, FrameInfo& frameInfo);
+    void recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t index, FrameInfo &frameInfo);
+    void recordComputeCommandBuffer(vk::CommandBuffer &commandBuffer, FrameInfo &frameInfo);
 
     void createSyncObjects();
-    void updateUniformBuffer(uint32_t currentImage, FrameInfo& frameInfo);
+    void updateUniformBuffer(size_t currentImage, FrameInfo& frameInfo);
 
     void cleanup();
+
 };

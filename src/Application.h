@@ -35,6 +35,6 @@ private:
 
     void drawLoop();
 
-    int drawFrame();
+    int drawFrame(double delta);
 
 };

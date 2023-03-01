@@ -98,7 +98,7 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
-int App::drawFrame() {
+int App::drawFrame(double delta) {
     // std::lock_guard<std::mutex> lockGuard(rendererMutex);
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -113,6 +113,7 @@ int App::drawFrame() {
     FrameInfo frameInfo{};
     frameInfo.objects = objects;
     frameInfo.camera = camera;
+    frameInfo.deltaTime = delta;
 
     auto result = renderer->drawFrame(frameInfo);
     ImGui::EndFrame();
@@ -120,12 +121,17 @@ int App::drawFrame() {
 }
 
 void App::drawLoop() {
+    auto timeStart = std::chrono::high_resolution_clock::now();
     while (!window->windowShouldClose()) {
+        auto now = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double, std::milli> delta = now - timeStart;
+        timeStart = now;
+        window->setTitle(std::to_string(delta.count()).c_str());
         if (updateWindowSize) {
             renderer->recreateSwapchain();
             updateWindowSize = false;
         }
-        auto result = drawFrame();
+        auto result = drawFrame(delta.count());
         if (result == 1) {
             renderer->recreateSwapchain();
         }

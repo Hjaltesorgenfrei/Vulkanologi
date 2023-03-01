@@ -14,6 +14,7 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
 
     std::vector<vk::PipelineShaderStageCreateInfo> shaderStageCreateInfos;
     std::vector<vk::ShaderModule> shaderModules;
+    bool isComputePipeline = false;
     for (const auto& [filepath, stage] : config.shaders) {
         auto vertShaderCode = readFile(filepath);
         shaderModules.push_back(createShaderModule(vertShaderCode));
@@ -23,69 +24,87 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
                 .pName = "main"
         };
         shaderStageCreateInfos.push_back(shaderStageCreateInfo);
+        isComputePipeline |= stage == vk::ShaderStageFlagBits::eCompute;
     }
 
+    if (isComputePipeline) {
+        vk::ComputePipelineCreateInfo pipelineInfo{
+            .stage = shaderStageCreateInfos[0],
+            .layout = config.pipelineLayout
+        };
+
+        auto result = device->device().createComputePipeline(nullptr, pipelineInfo);
+        if (result.result != vk::Result::eSuccess) {
+            throw std::runtime_error("Failed to create compute pipeline!");
+        }
+        pipeline = result.value;
+    }
+    else {
+        createGraphicsPipeline(config, shaderStageCreateInfos);
+    }
+
+    for(const auto& shaderModule : shaderModules) {
+        device->device().destroyShaderModule(shaderModule);
+    }
+}
+
+void BehPipeline::createGraphicsPipeline(PipelineConfigurationInfo &config, std::vector<vk::PipelineShaderStageCreateInfo>& shaderStageCreateInfos) {
     vk::PipelineVertexInputStateCreateInfo vertexInputInfo {
-            .vertexBindingDescriptionCount = static_cast<uint32_t>(config.bindingDescriptions.size()),
-            .pVertexBindingDescriptions = config.bindingDescriptions.data(),
-            .vertexAttributeDescriptionCount = static_cast<uint32_t>(config.attributeDescriptions.size()),
-            .pVertexAttributeDescriptions = config.attributeDescriptions.data(),
+        .vertexBindingDescriptionCount = static_cast<uint32_t>(config.bindingDescriptions.size()),
+        .pVertexBindingDescriptions = config.bindingDescriptions.data(),
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(config.attributeDescriptions.size()),
+        .pVertexAttributeDescriptions = config.attributeDescriptions.data(),
     };
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
-            .topology = vk::PrimitiveTopology::eTriangleList,
-            .primitiveRestartEnable = VK_FALSE
+        .topology = config.topology,
+        .primitiveRestartEnable = VK_FALSE
     };
 
     vk::PipelineRasterizationStateCreateInfo rasterizer {
-            .depthClampEnable = VK_FALSE,
-            .rasterizerDiscardEnable = VK_FALSE,
-            .polygonMode = config.polygonMode,
-            .cullMode = vk::CullModeFlagBits::eBack,
-            .frontFace = vk::FrontFace::eCounterClockwise,
-            .depthBiasEnable = VK_FALSE,
-            .depthBiasConstantFactor = 0.0f,
-            .depthBiasClamp = 0.0f,
-            .depthBiasSlopeFactor = 0.0f,
-            .lineWidth = 1.0f,
+        .depthClampEnable = VK_FALSE,
+        .rasterizerDiscardEnable = VK_FALSE,
+        .polygonMode = config.polygonMode,
+        .cullMode = vk::CullModeFlagBits::eBack,
+        .frontFace = vk::FrontFace::eCounterClockwise,
+        .depthBiasEnable = VK_FALSE,
+        .depthBiasConstantFactor = 0.0f,
+        .depthBiasClamp = 0.0f,
+        .depthBiasSlopeFactor = 0.0f,
+        .lineWidth = 1.0f,
     };
 
 
     vk::PipelineMultisampleStateCreateInfo multisampling {
-            .rasterizationSamples = device->msaaSamples(),
-            .sampleShadingEnable = VK_TRUE,
-            .minSampleShading = 0.2f,
-            .pSampleMask = nullptr,
-            .alphaToCoverageEnable = VK_FALSE,
-            .alphaToOneEnable = VK_FALSE,
+        .rasterizationSamples = device->msaaSamples(),
+        .sampleShadingEnable = VK_TRUE,
+        .minSampleShading = 0.2f,
+        .pSampleMask = nullptr,
+        .alphaToCoverageEnable = VK_FALSE,
+        .alphaToOneEnable = VK_FALSE,
     };
-
-
-    vk::PipelineColorBlendAttachmentState colorBlendAttachment {
-            .blendEnable = VK_FALSE,
-            .colorWriteMask = vk::ColorComponentFlagBits::eR
-                              | vk::ColorComponentFlagBits::eG
-                              | vk::ColorComponentFlagBits::eB
-                              | vk::ColorComponentFlagBits::eA,
-    };
-
 
 
     vk::PipelineColorBlendStateCreateInfo colorBlending {
-            .logicOpEnable = VK_FALSE,
-            .logicOp = vk::LogicOp::eCopy,
-            .attachmentCount = 1,
-            .pAttachments = &colorBlendAttachment,
-            .blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
+        .logicOpEnable = VK_FALSE,
+        .logicOp = vk::LogicOp::eCopy,
+        .attachmentCount = 1,
+        .pAttachments = &config.colorBlendAttachment,
+        .blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
     };
 
-    vk::PipelineDepthStencilStateCreateInfo depthStencil {
+    vk::PipelineDepthStencilStateCreateInfo depthStencil;
+
+    if (config.topology != vk::PrimitiveTopology::ePointList) {
+        depthStencil = {
             .depthTestEnable = VK_TRUE,
             .depthWriteEnable = VK_TRUE,
             .depthCompareOp = vk::CompareOp::eLess,
             .depthBoundsTestEnable = VK_FALSE,
             .stencilTestEnable = VK_FALSE
-    };
+        };
+    }
+
 
     std::vector<vk::DynamicState> dynamicStates {
         vk::DynamicState::eScissor,
@@ -98,44 +117,40 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
     };
 
     vk::PipelineViewportStateCreateInfo viewportState {
-            .viewportCount = 1,
-            .scissorCount = 1,
+        .viewportCount = 1,
+        .scissorCount = 1,
     };
 
     vk::GraphicsPipelineCreateInfo pipelineInfo {
-            // Reference programmable stages
-            .stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size()),
+        // Reference programmable stages
+        .stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size()),
 
-            // Fixed Function stages
-            .pStages = shaderStageCreateInfos.data(),
-            .pVertexInputState = &vertexInputInfo,
-            .pInputAssemblyState = &inputAssembly,
-            .pViewportState = &viewportState,
-            .pRasterizationState = &rasterizer,
-            .pMultisampleState = &multisampling,
-            .pDepthStencilState = &depthStencil,
-            .pColorBlendState = &colorBlending,
-            .pDynamicState = &dynamicStateCreateInfo,
+        // Fixed Function stages
+        .pStages = shaderStageCreateInfos.data(),
+        .pVertexInputState = &vertexInputInfo,
+        .pInputAssemblyState = &inputAssembly,
+        .pViewportState = &viewportState,
+        .pRasterizationState = &rasterizer,
+        .pMultisampleState = &multisampling,
+        .pDepthStencilState = &depthStencil,
+        .pColorBlendState = &colorBlending,
+        .pDynamicState = &dynamicStateCreateInfo,
 
-            // A vulkan handle, not a struct pointer
-            .layout = config.pipelineLayout,
+        // A vulkan handle, not a struct pointer
+        .layout = config.pipelineLayout,
 
-            .renderPass = config.renderPass,
-            .subpass = config.subpass,
+        .renderPass = config.renderPass,
+        .subpass = config.subpass,
 
-            .basePipelineHandle = nullptr,
-            .basePipelineIndex = -1,
+        .basePipelineHandle = nullptr,
+        .basePipelineIndex = -1,
     };
 
     auto result = device->device().createGraphicsPipeline(nullptr, pipelineInfo);
     if (result.result != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create pipeline!");
+        throw std::runtime_error("Failed to create graphics pipeline!");
     }
     pipeline = result.value;
-
-    for(const auto& shaderModule : shaderModules) {
-        device->device().destroyShaderModule(shaderModule);
-    }
 }
 
 vk::ShaderModule BehPipeline::createShaderModule(const std::vector<char>& code) {
@@ -177,6 +192,11 @@ bool PipelineConfigurationInfo::validate() {
             return false;
         }
         currentShaders = currentShaders | stage;
+    }
+
+    if (currentShaders & vk::ShaderStageFlagBits::eCompute && shaders.size() > 1) {
+        std::cerr << "You can only have one compute shader in a pipeline";
+        return false;
     }
 
     if (!pipelineLayout) {

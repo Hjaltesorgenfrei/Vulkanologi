@@ -1,3 +1,4 @@
+#pragma once
 #ifndef VULKANOLOGI_PARTICLE_H
 #define VULKANOLOGI_PARTICLE_H
 
@@ -9,7 +10,7 @@ struct Particle {
     glm::vec2 velocity;
     glm::vec4 color;
 
-    static std::vector<vk::VertexInputBindingDescription> getBindingDescription() {
+    static std::vector<vk::VertexInputBindingDescription> getBindingDescriptions() {
         return {
             vk::VertexInputBindingDescription{
                 .binding = 0,
@@ -28,9 +29,9 @@ struct Particle {
                 .offset = offsetof(Particle, position)
             },
             vk::VertexInputAttributeDescription{
-                .location = 0,
-                .binding = 1,
-                .format = vk::Format::eR32G32Sfloat,
+                .location = 1,
+                .binding = 0,
+                .format = vk::Format::eR32G32B32A32Sfloat,
                 .offset = offsetof(Particle, color)
             },
         };

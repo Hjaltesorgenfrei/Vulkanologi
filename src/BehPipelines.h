@@ -13,6 +13,15 @@ struct PipelineConfigurationInfo {
     vk::Extent2D extent{};
     vk::PipelineLayout pipelineLayout = nullptr;
     vk::RenderPass renderPass = nullptr;
+    vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
+
+    vk::PipelineColorBlendAttachmentState colorBlendAttachment {
+        .blendEnable = VK_FALSE,
+        .colorWriteMask = vk::ColorComponentFlagBits::eR
+                          | vk::ColorComponentFlagBits::eG
+                          | vk::ColorComponentFlagBits::eB
+                          | vk::ColorComponentFlagBits::eA,
+    };
 
     uint32_t subpass = 0;
 

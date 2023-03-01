@@ -97,6 +97,8 @@ target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
+add_shader(vulkanologi particle.frag)
+add_shader(vulkanologi particle.vert)
 add_shader(vulkanologi shader_unlit.frag)
 add_shader(vulkanologi shader_unlit.vert)
 add_shader(vulkanologi point_light.frag)

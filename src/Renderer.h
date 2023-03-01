@@ -84,6 +84,7 @@ private:
     std::unique_ptr<BehPipeline> graphicsPipeline;
     std::unique_ptr<BehPipeline> billboardPipeline;
     std::unique_ptr<BehPipeline> wireframePipeline;
+    std::unique_ptr<BehPipeline> particlePipeline;
     std::unique_ptr<BehPipeline> computePipeline;
 
     vk::CommandPool commandPool;
@@ -137,6 +138,7 @@ private:
     void createPipelines();
     void createGraphicsPipeline();
     void createBillboardPipeline();
+    void createParticlePipeline();
 	void createWireframePipeline();
     void createComputePipeline();
 

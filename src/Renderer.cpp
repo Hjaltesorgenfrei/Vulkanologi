@@ -497,6 +497,7 @@ void Renderer::createComputePipelineLayout() {
 void Renderer::createPipelines() {
     createGraphicsPipeline();
     createBillboardPipeline();
+    createParticlePipeline();
     createWireframePipeline();
     createComputePipeline();
 }
@@ -523,6 +524,30 @@ void Renderer::createBillboardPipeline() {
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
     billboardPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
+}
+
+void Renderer::createParticlePipeline() {
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    pipelineConfig.attributeDescriptions = Particle::getAttributeDescriptions();
+    pipelineConfig.bindingDescriptions = Particle::getBindingDescriptions();
+    pipelineConfig.addShader("shaders/particle.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/particle.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.topology = vk::PrimitiveTopology::ePointList;
+    pipelineConfig.colorBlendAttachment = {
+            .blendEnable = VK_TRUE,
+            .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+            .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .colorBlendOp = vk::BlendOp::eAdd,
+            .srcAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+            .alphaBlendOp = vk::BlendOp::eSubtract,
+            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
+    };
+    pipelineConfig.pipelineLayout = billboardPipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
+    particlePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 void Renderer::createWireframePipeline() {
@@ -1112,6 +1137,12 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
                                                  &descriptorSets[currentFrame], 0, nullptr);
         commandBuffer.draw(6, 1, 0, 0);
+
+        particlePipeline->bind(commandBuffer);
+        
+        vk::DeviceSize offsets[] = {0};
+        commandBuffer.bindVertexBuffers(0, 1, &shaderStorageBuffers[currentFrame]->_buffer, offsets);
+        commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -1166,6 +1197,7 @@ void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
                                                          static_cast<float>(swapChainExtent.height))
     };
     ubo.projView = ubo.proj * ubo.view;
+    ubo.deltaTime = frameInfo.deltaTime;
 
     void *data;
     vmaMapMemory(device->allocator(), uniformBuffers[currentImage]._allocation, &data);

@@ -57,7 +57,7 @@ void BehPipeline::createGraphicsPipeline(PipelineConfigurationInfo &config, std:
     };
 
     vk::PipelineInputAssemblyStateCreateInfo inputAssembly {
-        .topology = vk::PrimitiveTopology::eTriangleList,
+        .topology = config.topology,
         .primitiveRestartEnable = VK_FALSE
     };
 
@@ -85,31 +85,26 @@ void BehPipeline::createGraphicsPipeline(PipelineConfigurationInfo &config, std:
     };
 
 
-    vk::PipelineColorBlendAttachmentState colorBlendAttachment {
-        .blendEnable = VK_FALSE,
-        .colorWriteMask = vk::ColorComponentFlagBits::eR
-                          | vk::ColorComponentFlagBits::eG
-                          | vk::ColorComponentFlagBits::eB
-                          | vk::ColorComponentFlagBits::eA,
-    };
-
-
-
     vk::PipelineColorBlendStateCreateInfo colorBlending {
         .logicOpEnable = VK_FALSE,
         .logicOp = vk::LogicOp::eCopy,
         .attachmentCount = 1,
-        .pAttachments = &colorBlendAttachment,
+        .pAttachments = &config.colorBlendAttachment,
         .blendConstants = std::array<float, 4>{0.0f, 0.0f, 0.0f, 0.0f}
     };
 
-    vk::PipelineDepthStencilStateCreateInfo depthStencil {
-        .depthTestEnable = VK_TRUE,
-        .depthWriteEnable = VK_TRUE,
-        .depthCompareOp = vk::CompareOp::eLess,
-        .depthBoundsTestEnable = VK_FALSE,
-        .stencilTestEnable = VK_FALSE
-    };
+    vk::PipelineDepthStencilStateCreateInfo depthStencil;
+
+    if (config.topology != vk::PrimitiveTopology::ePointList) {
+        depthStencil = {
+            .depthTestEnable = VK_TRUE,
+            .depthWriteEnable = VK_TRUE,
+            .depthCompareOp = vk::CompareOp::eLess,
+            .depthBoundsTestEnable = VK_FALSE,
+            .stencilTestEnable = VK_FALSE
+        };
+    }
+
 
     std::vector<vk::DynamicState> dynamicStates {
         vk::DynamicState::eScissor,

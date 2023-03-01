@@ -1,6 +1,6 @@
 # Caldera
 
-A Vulkan Renderer written in C++ 20. Very much WIP.
+A Vulkan Renderer written in C++ 23. Very much WIP.
 
 ![Readme Image](docs/readme.png)
 

@@ -95,7 +95,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [x] If the items in 4 and 5 are implemented, the resize function will not need to call vkDeviceWaitIdle()
 - [x] Implement Compute shaders <https://github.com/Overv/VulkanTutorial/pull/320>
 - [x] Delete `Renderer::uploadBuffer` it should be handled by `AssetManager`
-- [ ] Create multiple vk::Framebuffer swapChainFramebuffers.
+- [x] Create multiple vk::Framebuffer swapChainFramebuffers.
+  - No dont do that, i made the change because it is imageless now.
 
 ### Descriptor Layout Idea
 

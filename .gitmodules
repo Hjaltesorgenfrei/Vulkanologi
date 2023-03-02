@@ -25,3 +25,4 @@
 [submodule "ext/ImGuizmo"]
 	path = ext/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo
+	ignore = dirty

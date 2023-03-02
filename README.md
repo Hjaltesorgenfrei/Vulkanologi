@@ -50,16 +50,18 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - Compression is needed, probably KTX.
   - [x] Textures are uploaded multiple times.
 - [x] Add wireframe mode which can be switched to.
-- [ ] Change from using a single primary buffer to multiple secondary buffers
+- [ ] Change from using a single primary command buffer to multiple secondary command buffers
   - There are resources for how to do this at:
     - <https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/>
     - <https://github.com/KhronosGroup/Vulkan-Samples/tree/master/samples/performance/command_buffer_usage>
     - <https://vkguide.dev/docs/extra-chapter/multithreading/>
+  - These secondary command buffers could be recorded in parellel in systems.
 - [ ] Stop blocking when uploading textures, there is currently a wait on idle which is unnecessary.
   - Should probably also use the transfer queue.
   - Usage of transfer queue is only possible for some commands.
     - Therefore, a dedicated upload command is needed, which is separate from the mip map calculation.
     - Through another possibility is using multiple graphics queues. But the transfer queue might be faster so I need to look in to that.
+  - Could be done in the asset manager and the handle could be checked to see if they are ready.
 - [ ] Create an Asset Library that makes resources ready for the engine. Should include loading and storing of binary data. Reading the data is the responsibility of the program.
   - <https://vkguide.dev/docs/extra-chapter/asset_system/>
   - [ ] Meshes
@@ -67,7 +69,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - [ ] MipMaps
 - [x] Add a deletion queue instead of cleanup.
 - [ ] Update to use Synchro2. <https://www.khronos.org/blog/vulkan-timeline-semaphores>
-- [ ] Incorporate changes found by Charles
+- [x] Incorporate changes found by Charles
   - <https://github.com/Overv/VulkanTutorial/issues/202>
   - <https://github.com/Overv/VulkanTutorial/pull/255>
 - [x] Fix controls after adding Imgui

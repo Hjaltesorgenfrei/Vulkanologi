@@ -830,18 +830,7 @@ void Renderer::createDescriptorPool() {
 }
 
 void Renderer::createDescriptorSets() {
-    std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), uboDescriptorSetLayout);
-    vk::DescriptorSetAllocateInfo allocInfo{
-            .descriptorPool = descriptorPool,
-            .descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()),
-            .pSetLayouts = layouts.data()
-    };
-
     descriptorSets.resize(swapChainImages.size());
-    if (device->device().allocateDescriptorSets(&allocInfo, descriptorSets.data()) != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create Descriptor sets!");
-    }
-
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         vk::DescriptorBufferInfo bufferInfo{
@@ -850,35 +839,18 @@ void Renderer::createDescriptorSets() {
                 .range = sizeof(GlobalUbo)
         };
 
-        std::array<vk::WriteDescriptorSet, 1> descriptorWrites{
-                vk::WriteDescriptorSet{
-                        .dstSet = descriptorSets[i],
-                        .dstBinding = 0,
-                        .dstArrayElement = 0,
-                        .descriptorCount = 1,
-                        .descriptorType = vk::DescriptorType::eUniformBuffer,
-                        .pBufferInfo = &bufferInfo,
-                }
-        };
+        auto result = DescriptorSetBuilder::begin(uboDescriptorSetLayout, &descriptorAllocator)
+            .bindBuffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer)
+            .build(descriptorSets[i]);
 
-        device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
-                                              0, nullptr);
+        if (!result) {
+            throw std::runtime_error("Failed to create descriptor set!");
+        }
     }
 }
 
 void Renderer::createComputeDescriptorSets() {
-    std::vector<vk::DescriptorSetLayout> layouts(swapChainImages.size(), computeDescriptorSetLayout);
-    vk::DescriptorSetAllocateInfo allocInfo{
-        .descriptorPool = descriptorPool,
-        .descriptorSetCount = static_cast<uint32_t>(swapChainImages.size()),
-        .pSetLayouts = layouts.data()
-    };
-
     computeDescriptorSets.resize(swapChainImages.size());
-    if (device->device().allocateDescriptorSets(&allocInfo, computeDescriptorSets.data()) != vk::Result::eSuccess) {
-        throw std::runtime_error("Failed to create Descriptor sets!");
-    }
-
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         vk::DescriptorBufferInfo bufferInfo {
@@ -899,35 +871,15 @@ void Renderer::createComputeDescriptorSets() {
             .range = sizeof(Particle) * PARTICLE_COUNT
         };
 
-        std::array<vk::WriteDescriptorSet, 3> descriptorWrites {
-            vk::WriteDescriptorSet {
-                .dstSet = computeDescriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eUniformBuffer,
-                .pBufferInfo = &bufferInfo,
-            },
-            vk::WriteDescriptorSet {
-                .dstSet = computeDescriptorSets[i],
-                .dstBinding = 1,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .pBufferInfo = &lastFrameStorageBuffer
-            },
-            vk::WriteDescriptorSet {
-                .dstSet = computeDescriptorSets[i],
-                .dstBinding = 2,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = vk::DescriptorType::eStorageBuffer,
-                .pBufferInfo = &thisFrameStorageBuffer
-            }
-        };
+        auto result = DescriptorSetBuilder::begin(computeDescriptorSetLayout, &descriptorAllocator)
+            .bindBuffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer)
+            .bindBuffer(1, &lastFrameStorageBuffer, vk::DescriptorType::eStorageBuffer)
+            .bindBuffer(2, &thisFrameStorageBuffer, vk::DescriptorType::eStorageBuffer)
+            .build(computeDescriptorSets[i]);
 
-        device->device().updateDescriptorSets(static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(),
-                                              0, nullptr);
+        if (!result) {
+            throw std::runtime_error("Failed to create descriptor set!");
+        }
     }
 }
 

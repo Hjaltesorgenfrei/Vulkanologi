@@ -30,8 +30,8 @@ struct Mesh {
 	std::vector<Vertex> _vertices;
 	std::vector<uint32_t> _indices;
 	std::vector<std::string> _texturePaths; // TODO: Fix this, it's not a good spot to have it saved.
-	AllocatedBuffer _vertexBuffer;
-	AllocatedBuffer _indexBuffer;
+	std::shared_ptr<AllocatedBuffer> _vertexBuffer;
+	std::shared_ptr<AllocatedBuffer> _indexBuffer;
 
 	static std::shared_ptr<Mesh> LoadFromObj(const char* filename);
 };

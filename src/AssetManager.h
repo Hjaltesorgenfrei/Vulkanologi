@@ -33,6 +33,12 @@ class AssetManager {
     template <typename T>
     [[nodiscard]] std::vector<std::shared_ptr<AllocatedBuffer>> createBuffers(std::span<T> data, vk::BufferUsageFlags bufferUsage, size_t count = 1);
 
+    template <typename T>
+    [[nodiscard]] std::shared_ptr<AllocatedBuffer> createBuffer(std::span<T> data, vk::BufferUsageFlags bufferUsage) 
+    {
+        return createBuffers<T>(data, bufferUsage, 1)[0];
+    }
+
    private:
     std::shared_ptr<BehDevice> device;
 
@@ -95,7 +101,7 @@ inline std::vector<std::shared_ptr<AllocatedBuffer>> AssetManager::createBuffers
     VkBufferCreateInfo createInfo {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
-        .usage = static_cast<VkBufferUsageFlags>(bufferUsage)
+        .usage = static_cast<VkBufferUsageFlags>(bufferUsage | vk::BufferUsageFlagBits::eTransferDst)
     };
 
     VmaAllocationCreateInfo allocInfo {

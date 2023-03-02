@@ -592,7 +592,7 @@ void Renderer::createComputeShaderBuffers() {
     }
 
     auto usage = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst;
-    shaderStorageBuffers = assetManager.createBuffers(static_cast<std::span<Particle>>(particles), usage, swapChainImages.size());
+    shaderStorageBuffers = assetManager.createBuffers<Particle>(particles, usage, swapChainImages.size());
 }
 
 void Renderer::createFramebuffers() {
@@ -766,72 +766,10 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 
 void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &objects) {
     for (const auto &model: objects) {
-        model->mesh->_vertexBuffer = uploadBuffer(model->mesh->_vertices,
-                                                  VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        model->mesh->_indexBuffer = uploadBuffer(model->mesh->_indices,
-                                                 VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-        mainDeletionQueue.push_function([&, model]() {
-            vmaDestroyBuffer(device->allocator(), model->mesh->_vertexBuffer._buffer,
-                             model->mesh->_vertexBuffer._allocation);
-            vmaDestroyBuffer(device->allocator(), model->mesh->_indexBuffer._buffer,
-                             model->mesh->_indexBuffer._allocation);
-        });
+        model->mesh->_vertexBuffer = assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+        model->mesh->_indexBuffer = assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
         model->material = createMaterial(model->mesh->_texturePaths);
     }
-}
-
-template<typename T>
-AllocatedBuffer Renderer::uploadBuffer(std::vector<T> &meshData, VkBufferUsageFlags usage) {
-    VkBufferCreateInfo stagingCreate{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = meshData.size() * sizeof(T),
-            .usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-    };
-
-    VmaAllocationCreateInfo stagingAlloc{
-            .flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-            .usage = VMA_MEMORY_USAGE_AUTO
-    };
-
-    VkBuffer stagingBuffer;
-    VmaAllocation stagingAllocation;
-
-    if (vmaCreateBuffer(device->allocator(), &stagingCreate, &stagingAlloc, &stagingBuffer, &stagingAllocation,
-                        nullptr) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to uploadBuffer mesh vertices!");
-    }
-
-    void *data;
-    vmaMapMemory(device->allocator(), stagingAllocation, &data);
-    {
-        memcpy(data, meshData.data(), meshData.size() * sizeof(T));
-    }
-    vmaUnmapMemory(device->allocator(), stagingAllocation);
-
-    VkBufferCreateInfo bufferCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = meshData.size() * sizeof(T),
-            .usage = usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT
-    };
-
-    VmaAllocationCreateInfo vmaAllocInfo{
-            .usage = VMA_MEMORY_USAGE_GPU_ONLY
-    };
-
-    VkBuffer buffer;
-
-    AllocatedBuffer allocatedBuffer{};
-
-    if (vmaCreateBuffer(device->allocator(), &bufferCreateInfo, &vmaAllocInfo, &buffer, &allocatedBuffer._allocation,
-                        nullptr) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to upload buffer!");
-    }
-    allocatedBuffer._buffer = buffer;
-
-    copyBuffer(stagingBuffer, buffer, meshData.size() * sizeof(T));
-
-    vmaDestroyBuffer(device->allocator(), stagingBuffer, stagingAllocation);
-    return allocatedBuffer;
 }
 
 void Renderer::createUniformBuffers() {
@@ -1116,11 +1054,11 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
                                                  &descriptorSets[currentFrame], 0, nullptr);
 
         for (const auto &model: frameInfo.objects) {
-            vk::Buffer vertexBuffers[] = {model->mesh->_vertexBuffer._buffer};
+            vk::Buffer vertexBuffers[] = {model->mesh->_vertexBuffer->_buffer};
             vk::DeviceSize offsets[] = {0};
             commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-            commandBuffer.bindIndexBuffer(model->mesh->_indexBuffer._buffer, 0, vk::IndexType::eUint32);
+            commandBuffer.bindIndexBuffer(model->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1,
                                                      &model->material.textureSet, 0, nullptr);

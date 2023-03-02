@@ -155,9 +155,6 @@ private:
     bool hasStencilComponent(vk::Format format);
     vk::Format findSupportedFormat(const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features);
 
-    template <typename T>
-    AllocatedBuffer uploadBuffer(std::vector<T>& meshData, VkBufferUsageFlags usage);
-
     void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 
     void createUniformBuffers();

@@ -2,6 +2,8 @@
 
 #include <utility>
 
+auto apiVersion = VK_API_VERSION_1_2;
+
 BehDevice::BehDevice(std::shared_ptr<WindowWrapper> window) : window{std::move(window)} {
     createInstance();
     createSurface();
@@ -51,7 +53,7 @@ void BehDevice::createInstance() {
             .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
             .pEngineName = "No Engine",
             .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-            .apiVersion = VK_API_VERSION_1_2
+            .apiVersion = apiVersion
     };
 
     vk::InstanceCreateInfo createInfo{
@@ -203,9 +205,11 @@ void BehDevice::createLogicalDevice() {
 
 void BehDevice::createAllocator() {
     VmaAllocatorCreateInfo allocatorInfo{
+            .flags = VmaAllocatorCreateFlagBits::VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT,
             .physicalDevice = _physicalDevice,
             .device = _device,
-            .instance = _instance
+            .instance = _instance,
+            .vulkanApiVersion = apiVersion
     };
     vmaCreateAllocator(&allocatorInfo, &_allocator);
     mainDeletionQueue.push_function([&]() {
@@ -255,6 +259,7 @@ std::vector<const char *> BehDevice::getRequiredExtensions() {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
+    extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
     return extensions;
 }

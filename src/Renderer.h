@@ -39,6 +39,7 @@ class Renderer {
     void uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects);
     Material createMaterial(std::vector<std::string>& texturePaths);
     void recreateSwapchain();
+    uint64_t getMemoryUsage();
     RendererMode rendererMode = RendererMode::NORMAL;
 
 private:

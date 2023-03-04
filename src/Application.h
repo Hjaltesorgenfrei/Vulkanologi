@@ -21,7 +21,7 @@ private:
     bool updateWindowSize = false;
 
 	void mainLoop();
-    void processPressedKeys(double delta);
+    void processPressedKeys(float delta);
     void setupCallBacks();
     void drawImGuizmo(glm::mat4* matrix);
 
@@ -35,6 +35,6 @@ private:
 
     void drawLoop();
 
-    int drawFrame(double delta);
+    int drawFrame(float delta);
 
 };

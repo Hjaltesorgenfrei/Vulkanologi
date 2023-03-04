@@ -98,7 +98,11 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
-int App::drawFrame(double delta) {
+float bytesToMegaBytes(uint64_t bytes) {
+    return bytes / 1024.0f / 1024.0f;
+}
+
+int App::drawFrame(float delta) {
     // std::lock_guard<std::mutex> lockGuard(rendererMutex);
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -108,6 +112,16 @@ int App::drawFrame(double delta) {
         auto lastModel = objects.back(); // Just a testing statement
         drawImGuizmo(&lastModel->transformMatrix.model);
     }
+
+
+    auto memoryUsage = renderer->getMemoryUsage();
+    // Make a imgui window to show the frame time
+    ImGui::Begin("Debug Info");
+    ImGui::Text("Frame Time: %f", delta);
+    ImGui::Text("FPS: %f", 1000.0 / delta);
+    ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+    ImGui::End();
+    
 
     //ImGui::ShowDemoWindow();
     FrameInfo frameInfo{};
@@ -124,7 +138,7 @@ void App::drawLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> delta = now - timeStart;
+        std::chrono::duration<float, std::milli> delta = now - timeStart;
         timeStart = now;
         window->setTitle(std::to_string(delta.count()).c_str());
         if (updateWindowSize) {
@@ -140,7 +154,7 @@ void App::drawLoop() {
 
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     renderer->uploadMeshes(objects);
 
@@ -148,7 +162,7 @@ void App::mainLoop() {
 
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double, std::milli> delta = now - timeStart;
+        std::chrono::duration<float, std::milli> delta = now - timeStart;
         timeStart = now;
 		glfwPollEvents();
         processPressedKeys(delta.count());
@@ -167,9 +181,9 @@ void App::drawImGuizmo(glm::mat4* matrix) {
     ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], ImGuizmo::TRANSLATE, ImGuizmo::WORLD, &(*matrix)[0][0]);
 }
 
-void App::processPressedKeys(double delta) {
+void App::processPressedKeys(float delta) {
     auto glfw_window = window->getGLFWwindow();
-    float cameraSpeed = 0.005f * static_cast<float>(delta);
+    float cameraSpeed = 0.005f * delta;
     if (shiftPressed) {
         cameraSpeed *= 4;
     }

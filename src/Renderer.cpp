@@ -188,6 +188,15 @@ void Renderer::recreateSwapchain() {
     std::cout << "Recreated swapchain in " << delta.count() << "ms" << std::endl;
 }
 
+uint64_t Renderer::getMemoryUsage()
+{
+    VmaTotalStatistics vmaStats;
+    vmaCalculateStatistics(device->allocator(), &vmaStats);
+    uint64_t total = 0, used = 0;
+
+    return vmaStats.total.statistics.allocationBytes;
+}
+
 vk::SurfaceFormatKHR
 Renderer::chooseSwapSurfaceFormat(const std::vector<struct vk::SurfaceFormatKHR> &availableFormats) {
     for (const auto &availableFormat: availableFormats) {

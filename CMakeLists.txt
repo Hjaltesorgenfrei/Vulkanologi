@@ -74,6 +74,30 @@ include_directories(ext/imgui)
 
 include_directories(ext/ImGuizmo)
 
+# libktx
+add_compile_definitions(KHRONOS_STATIC) # Version 145 at least
+
+set(KTX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/ktx)
+
+set(KTX_SOURCES
+    ${KTX_DIR}/lib/texture.c
+    ${KTX_DIR}/lib/hashlist.c
+    ${KTX_DIR}/lib/checkheader.c
+    ${KTX_DIR}/lib/swap.c
+    ${KTX_DIR}/lib/memstream.c
+    ${KTX_DIR}/lib/filestream.c
+)
+set(KTX_INCLUDE
+    ${KTX_DIR}/include
+    ${KTX_DIR}/lib
+    ${KTX_DIR}/other_include
+    ${KTX_DIR}/utils
+)
+
+add_library(ktx ${KTX_SOURCES})
+
+target_include_directories(ktx PUBLIC ${KTX_INCLUDE})
+
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(vulkanologi
@@ -94,7 +118,7 @@ add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at leas
 target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ext/glm/glm/glm.hpp)
 target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.h)
 
-target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan)
+target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
 add_shader(vulkanologi particle.frag)

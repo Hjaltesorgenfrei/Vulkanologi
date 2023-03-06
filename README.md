@@ -48,6 +48,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] Current memory usage is crazy, figure out what is causing that.
     - Around 349mb for 'lost_empire-RGB.png'.
     - Compression is needed, probably KTX.
+    - It can be added by following the information in <https://github.com/KhronosGroup/Vulkan-Samples/blob/main/third_party/CMakeLists.txt>
   - [x] Textures are uploaded multiple times.
 - [x] Add wireframe mode which can be switched to.
 - [ ] Change from using a single primary command buffer to multiple secondary command buffers
@@ -99,6 +100,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Delete `Renderer::uploadBuffer` it should be handled by `AssetManager`
 - [x] Create multiple vk::Framebuffer swapChainFramebuffers.
   - No dont do that, i made the change because it is imageless now.
+- [ ] Move cmake for third party to the folder containing them.
 
 ### Descriptor Layout Idea
 

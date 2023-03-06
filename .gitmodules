@@ -26,3 +26,7 @@
 	path = ext/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo
 	ignore = dirty
+[submodule "ext/ktx"]
+	path = ext/ktx
+	url = https://github.com/KhronosGroup/KTX-Software
+	ignore = dirty

@@ -44,8 +44,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - [x] UniformBuffer still uses manual buffer creation. They should be moved over.
     - [x] It's possible to load an array of textures, this should make it easier to load different textures
       - <https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe>
-- [ ] Load Lost Empire
-  - [ ] Current memory usage is crazy, figure out what is causing that.
+- [x] Load Lost Empire
+  - [x] Current memory usage is crazy, figure out what is causing that.
     - Around 349mb for 'lost_empire-RGB.png'.
     - Compression is needed, probably KTX.
     - It can be added by following the information in <https://github.com/KhronosGroup/Vulkan-Samples/blob/main/third_party/CMakeLists.txt>

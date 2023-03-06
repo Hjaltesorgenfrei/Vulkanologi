@@ -29,5 +29,6 @@ struct UploadedTexture {
     AllocatedImage textureImage;
     vk::DeviceMemory textureImageMemory;
 	vk::ImageView textureImageView;
+    vk::Format textureImageFormat;
 	vk::Sampler textureSampler;
 };

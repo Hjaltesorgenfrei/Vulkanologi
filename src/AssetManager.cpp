@@ -2,11 +2,54 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <ktx.h>
 
 std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& filename) {
 	if (uploadedTextures.find(filename) == uploadedTextures.end()) {
 		auto texture = std::make_shared<UploadedTexture>();
-		createTextureImage(filename.c_str(), texture);
+		if (filename.ends_with(".ktx")) {
+			ktxTexture2 *ktx_texture;
+			auto result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, (ktxTexture**)&ktx_texture);
+			if (result != KTX_SUCCESS) {
+				throw std::runtime_error("Failed to load ktx texture image!");
+			}
+
+			ktx_transcode_fmt_e target_format = KTX_TTF_BC7_RGBA;
+			if (ktxTexture2_NeedsTranscoding(ktx_texture)) {
+				ktxTexture2_TranscodeBasis(ktx_texture, target_format, 0);
+			}
+			texture->textureImageFormat = (vk::Format) ktx_texture->vkFormat;
+			std::span<ktx_uint8_t> dataSpan{ktx_texture->pData, static_cast<size_t>(ktx_texture->dataSize)};
+			
+			auto stagingBuffer = stageData(dataSpan);
+			texture->mipLevels = ktx_texture->numLevels;
+
+			texture->textureImage = createImage(
+				ktx_texture->baseWidth,
+				ktx_texture->baseHeight,
+				texture->mipLevels,
+				vk::SampleCountFlagBits::e1,
+				texture->textureImageFormat,
+				vk::ImageTiling::eOptimal,
+				vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+
+			transitionImageLayout(
+				texture->textureImage._image,
+				texture->textureImageFormat,
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::eTransferDstOptimal,
+				texture->mipLevels);
+
+			copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, ktx_texture->baseWidth, ktx_texture->baseHeight);
+
+    		cleanUpBuffer(stagingBuffer);
+			deletionQueue.push_function([&, texture]() {
+				vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
+			});
+		}
+		else {
+			createTextureImage(filename.c_str(), texture);
+		}
 		createTextureImageView(texture);
 		createTextureSampler(texture);
 		uploadedTextures[filename] = texture;
@@ -30,17 +73,19 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 
 	stbi_image_free(pixels);
 
+	texture->textureImageFormat = vk::Format::eR8G8B8A8Srgb;
+
 	texture->textureImage = createImage(
 			texWidth,
 			texHeight,
 			texture->mipLevels,
 			vk::SampleCountFlagBits::e1,
-			vk::Format::eR8G8B8A8Srgb,
+			texture->textureImageFormat,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
 	transitionImageLayout(
 			texture->textureImage._image,
-			vk::Format::eR8G8B8A8Srgb,
+			texture->textureImageFormat,
 			vk::ImageLayout::eUndefined,
 			vk::ImageLayout::eTransferDstOptimal,
 			texture->mipLevels);
@@ -48,14 +93,14 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 
     cleanUpBuffer(stagingBuffer);
 
-	generateMipmaps(texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, texWidth, texHeight, texture->mipLevels);
+	generateMipmaps(texture->textureImage._image, texture->textureImageFormat, texWidth, texHeight, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
 		vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
 	});
 }
 
 void AssetManager::createTextureImageView(const std::shared_ptr<UploadedTexture>& texture) {
-	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
+	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, texture->textureImageFormat, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
 	deletionQueue.push_function([&, texture]() {
 		device->device().destroyImageView(texture->textureImageView);
 	});

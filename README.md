@@ -101,6 +101,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Create multiple vk::Framebuffer swapChainFramebuffers.
   - No dont do that, i made the change because it is imageless now.
 - [ ] Move cmake for third party to the folder containing them.
+- [ ] Fix sync issues <https://github.com/Overv/VulkanTutorial/issues/276>
 
 ### Descriptor Layout Idea
 

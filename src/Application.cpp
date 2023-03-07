@@ -116,9 +116,22 @@ int App::drawFrame(float delta) {
 
     auto memoryUsage = renderer->getMemoryUsage();
     // Make a imgui window to show the frame time
+
+    // Save average of last 10 frames
+    static const int frameCount = 30;
+    static float frameTimes[frameCount] = {0};
+    static int frameTimeIndex = 0;
+    frameTimes[frameTimeIndex] = delta;
+    frameTimeIndex = (frameTimeIndex + 1) % frameCount;
+    float averageFrameTime = 0;
+    for (int i = 0; i < frameCount; i++) {
+        averageFrameTime += frameTimes[i];
+    }
+    averageFrameTime /= frameCount;
+
     ImGui::Begin("Debug Info");
-    ImGui::Text("Frame Time: %f", delta);
-    ImGui::Text("FPS: %f", 1000.0 / delta);
+    ImGui::Text("Frame Time: %f", averageFrameTime);
+    ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
     ImGui::End();
     

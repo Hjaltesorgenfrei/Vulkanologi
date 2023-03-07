@@ -50,7 +50,7 @@ if (NOT WIN32)
     add_definitions(-DVK_USE_PLATFORM_XLIB_KHR)
 endif()
 
-add_subdirectory(ext)
+add_subdirectory(third_party)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
@@ -59,7 +59,7 @@ add_executable(vulkanologi
 )
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at least
-target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ext/glm/glm/glm.hpp)
+target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp third_party/glm/glm/glm.hpp)
 target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.h)
 
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx imgui stb)

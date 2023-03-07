@@ -1,32 +1,32 @@
 [submodule "ext/glfw"]
-	path = ext/glfw
+	path = third_party/glfw
 	url = https://github.com/glfw/glfw
 	ignore = dirty
 [submodule "ext/glm"]
-	path = ext/glm
+	path = third_party/glm
 	url = https://github.com/g-truc/glm
 	ignore = dirty
 [submodule "ext/stb"]
-	path = ext/stb
+	path = third_party/stb
 	url = https://github.com/nothings/stb
 	ignore = dirty
 [submodule "ext/tinyobjloader"]
-	path = ext/tinyobjloader
+	path = third_party/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader
 	ignore = dirty
 [submodule "ext/VulkanMemoryAllocator"]
-	path = ext/VulkanMemoryAllocator
+	path = third_party/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 	ignore = dirty
 [submodule "ext/imgui"]
-	path = ext/imgui
+	path = third_party/imgui
 	url = https://github.com/ocornut/imgui
 	ignore = dirty
 [submodule "ext/ImGuizmo"]
-	path = ext/ImGuizmo
+	path = third_party/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo
 	ignore = dirty
 [submodule "ext/ktx"]
-	path = ext/ktx
+	path = third_party/ktx
 	url = https://github.com/KhronosGroup/KTX-Software
 	ignore = dirty

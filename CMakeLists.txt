@@ -5,8 +5,6 @@ project(vulkanologi)
 
 # add_compile_options(-Wall -Wextra -pedantic -Werror)
 
-
-
 if(MSVC)
     if (NOT CMAKE_BUILD_TYPE) # Assume debug if dont have specified. Makes it work for vscode.
         set(CMAKE_BUILD_TYPE "Debug")
@@ -52,133 +50,19 @@ if (NOT WIN32)
     add_definitions(-DVK_USE_PLATFORM_XLIB_KHR)
 endif()
 
-# Build GLFW
-set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only")
-set(GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only")
-add_subdirectory(ext/glfw)
-
-# GLM
-add_subdirectory(ext/glm)
-
-# STB
-include_directories(ext/stb)
-
-# tinyobjloader
-add_subdirectory(ext/tinyobjloader)
-
-# VMA
-add_subdirectory(ext/VulkanMemoryAllocator)
-
-# Imgui
-include_directories(ext/imgui)
-
-include_directories(ext/ImGuizmo)
-
-# libktx
-# add_compile_definitions(KHRONOS_STATIC) 
-
-set(KTX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ext/ktx)
-
-set(KTX_SOURCES  
-    ${KTX_DIR}/lib/checkheader.c
-    ${KTX_DIR}/lib/dfdutils/createdfd.c
-    ${KTX_DIR}/lib/dfdutils/colourspaces.c
-    ${KTX_DIR}/lib/dfdutils/dfd.h
-    ${KTX_DIR}/lib/dfdutils/dfd2vk.inl
-    ${KTX_DIR}/lib/dfdutils/interpretdfd.c
-    ${KTX_DIR}/lib/dfdutils/printdfd.c
-    ${KTX_DIR}/lib/dfdutils/queries.c
-    ${KTX_DIR}/lib/dfdutils/vk2dfd.c
-    ${KTX_DIR}/lib/etcdec.cxx
-    ${KTX_DIR}/lib/etcunpack.cxx
-    ${KTX_DIR}/lib/filestream.c
-    ${KTX_DIR}/lib/filestream.h
-    ${KTX_DIR}/lib/formatsize.h
-    ${KTX_DIR}/lib/hashlist.c
-    ${KTX_DIR}/lib/info.c
-    ${KTX_DIR}/lib/ktxint.h
-    ${KTX_DIR}/lib/memstream.c
-    ${KTX_DIR}/lib/memstream.h
-    ${KTX_DIR}/lib/strings.c
-    ${KTX_DIR}/lib/swap.c
-    ${KTX_DIR}/lib/uthash.h
-    ${KTX_DIR}/lib/texture.c
-    ${KTX_DIR}/lib/texture.h
-
-    # Basis Universal
-    ${KTX_DIR}/lib/basis_sgd.h
-    ${KTX_DIR}/lib/basis_transcode.cpp
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_containers.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_containers_impl.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_file_headers.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder_internal.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder_uastc.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder.cpp
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu.h
-    ${KTX_DIR}/lib/basisu/zstd/zstd.c
-   
-    # KT1
-    ${KTX_DIR}/lib/texture1.c
-    ${KTX_DIR}/lib/texture1.h
-
-    # KTX2
-    ${KTX_DIR}/lib/texture2.c
-    ${KTX_DIR}/lib/texture2.h
-
-    # Vulkan support
-    ${KTX_DIR}/lib/vk_format.h
-    ${KTX_DIR}/lib/vkformat_check.c
-    ${KTX_DIR}/lib/vkformat_enum.h
-    ${KTX_DIR}/lib/vkformat_str.c
-    ${KTX_DIR}/lib/vk_funcs.c
-    ${KTX_DIR}/lib/vk_funcs.h
-    ${KTX_DIR}/lib/vkloader.c    
-)
-
-set(KTX_INCLUDE_DIRS
-    ${KTX_DIR}/include
-    ${KTX_DIR}/lib
-    ${KTX_DIR}/utils
-    ${KTX_DIR}/lib/basisu/zstd
-    ${KTX_DIR}/lib/basisu/transcoder
-    ${KTX_DIR}/other_include
-)
-
-add_library(ktx ${KTX_SOURCES})
-target_include_directories(ktx PUBLIC ${KTX_INCLUDE_DIRS})
-
-target_compile_definitions(ktx PUBLIC LIBKTX)
-if (WIN32)
-#target_compile_definitions(ktx PUBLIC "KTX_API=__declspec(dllexport)")
-add_compile_definitions(KHRONOS_STATIC) 
-endif()
-target_compile_definitions(ktx PUBLIC KTX_FEATURE_WRITE=0)
-target_compile_definitions(ktx PUBLIC BASISD_SUPPORT_KTX2_ZSTD=0)
-target_compile_definitions(ktx PUBLIC BASISU_NO_ITERATOR_DEBUG_LEVEL)
-target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
+add_subdirectory(ext)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(vulkanologi
     ${SOURCES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_tables.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_demo.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_draw.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/imgui_widgets.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_vulkan.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/imgui/backends/imgui_impl_glfw.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/ext/ImGuizmo/ImGuizmo.cpp
 )
 
 add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at least
 target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ext/glm/glm/glm.hpp)
 target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.h)
 
-target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx)
+target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx imgui stb)
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
 add_shader(vulkanologi particle.frag)

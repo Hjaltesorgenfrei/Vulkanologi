@@ -41,6 +41,7 @@ class Renderer {
     void recreateSwapchain();
     uint64_t getMemoryUsage();
     RendererMode rendererMode = RendererMode::NORMAL;
+    bool shouldDrawComputeParticles = false;
 
 private:
     std::shared_ptr<WindowWrapper> window;

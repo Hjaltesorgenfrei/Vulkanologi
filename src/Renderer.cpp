@@ -775,6 +775,14 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 
 void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &objects) {
     for (const auto &model: objects) {
+        if (model->mesh->_texturePaths.empty())
+        {
+            // Use the default texture
+            model->mesh->_texturePaths.emplace_back("resources/no_texture.png");
+            for (auto& vertice : model->mesh->_vertices) {
+                vertice.materialIndex = 0; // We are only uploading one texture, so we dont want to index out of it
+            }
+        }
         model->mesh->_vertexBuffer = assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
         model->mesh->_indexBuffer = assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
         model->material = createMaterial(model->mesh->_texturePaths);
@@ -1037,11 +1045,13 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
                                                  &descriptorSets[currentFrame], 0, nullptr);
         commandBuffer.draw(6, 1, 0, 0);
 
-        particlePipeline->bind(commandBuffer);
-        
-        vk::DeviceSize offsets[] = {0};
-        commandBuffer.bindVertexBuffers(0, 1, &shaderStorageBuffers[currentFrame]->_buffer, offsets);
-        commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
+        if (shouldDrawComputeParticles) {
+            particlePipeline->bind(commandBuffer);
+            
+            vk::DeviceSize offsets[] = {0};
+            commandBuffer.bindVertexBuffers(0, 1, &shaderStorageBuffers[currentFrame]->_buffer, offsets);
+            commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
+        }
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

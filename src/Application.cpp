@@ -8,6 +8,7 @@
 
 #include "Renderer.h"
 #include "Application.h"
+#include "ShapeExperiment.h"
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
@@ -167,8 +168,9 @@ void App::drawLoop() {
 
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
     renderer->uploadMeshes(objects);
 
     std::thread drawThread([&](){drawLoop();});

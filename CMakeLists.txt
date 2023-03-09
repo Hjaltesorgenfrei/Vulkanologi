@@ -63,6 +63,7 @@ target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulk
 target_precompile_headers(vulkanologi PRIVATE src/BehDevice.h src/WindowWrapper.h)
 
 target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx imgui stb)
+
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)
 add_shader(vulkanologi particle.frag)

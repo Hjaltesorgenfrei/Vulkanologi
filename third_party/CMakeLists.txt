@@ -10,7 +10,7 @@ add_subdirectory(glm)
 
 # STB
 add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
+target_include_directories(stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
 
 # tinyobjloader
 add_subdirectory(tinyobjloader)
@@ -23,8 +23,8 @@ include_directories(imgui)
 
 include_directories(ImGuizmo)
 
-set(IMGUI_DIR "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
-set(IMGUIZMO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo")
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
+set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo)
 
 set(IMGUI_FILES
     ${IMGUI_DIR}/imgui.h
@@ -42,7 +42,7 @@ set(IMGUI_FILES
 add_library(imgui STATIC ${IMGUI_FILES})
 
 target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUIZMO_DIR})
-
+target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # Ktx
 set(KTX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ktx)
@@ -116,11 +116,8 @@ set(KTX_INCLUDE_DIRS
 add_library(ktx ${KTX_SOURCES})
 target_include_directories(ktx PUBLIC ${KTX_INCLUDE_DIRS})
 
+target_compile_definitions(ktx PUBLIC KHRONOS_STATIC) 
 target_compile_definitions(ktx PUBLIC LIBKTX)
-if (WIN32)
-#target_compile_definitions(ktx PUBLIC "KTX_API=__declspec(dllexport)")
-add_compile_definitions(KHRONOS_STATIC) 
-endif()
 target_compile_definitions(ktx PUBLIC KTX_FEATURE_WRITE=0)
 target_compile_definitions(ktx PUBLIC BASISD_SUPPORT_KTX2_ZSTD=0)
 target_compile_definitions(ktx PUBLIC BASISU_NO_ITERATOR_DEBUG_LEVEL)

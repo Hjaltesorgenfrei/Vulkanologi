@@ -156,6 +156,7 @@ void BehDevice::createLogicalDevice() {
     vk::PhysicalDeviceFeatures deviceFeatures{
             .sampleRateShading = VK_TRUE,
             .fillModeNonSolid = VK_TRUE,
+            .wideLines = VK_TRUE,
             .samplerAnisotropy = VK_TRUE,
     };
 

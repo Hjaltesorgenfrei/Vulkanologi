@@ -508,6 +508,7 @@ void Renderer::createPipelines() {
     createBillboardPipeline();
     createParticlePipeline();
     createWireframePipeline();
+    createLinePipeline();
     createComputePipeline();
 }
 
@@ -571,6 +572,26 @@ void Renderer::createWireframePipeline() {
     pipelineConfig.polygonMode = vk::PolygonMode::eLine;
 
     wireframePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
+}
+
+void Renderer::createLinePipeline() {
+    lineVertexBuffer = assetManager.allocatePersistentBuffer<Point>(10000, vk::BufferUsageFlagBits::eVertexBuffer);
+    lineIndexBuffer = assetManager.allocatePersistentBuffer<uint32_t>(10000 * 2, vk::BufferUsageFlagBits::eIndexBuffer);
+
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    pipelineConfig.attributeDescriptions = Point::getAttributeDescriptions();
+    pipelineConfig.bindingDescriptions = Point::getBindingDescriptions();
+    pipelineConfig.addShader("shaders/shader_unlit_line.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/shader_unlit_line.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.pipelineLayout = billboardPipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
+
+    pipelineConfig.polygonMode = vk::PolygonMode::eLine;
+    pipelineConfig.topology = vk::PrimitiveTopology::eLineList;
+
+    linePipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 void Renderer::createComputePipeline() {
@@ -1052,6 +1073,41 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
             commandBuffer.bindVertexBuffers(0, 1, &shaderStorageBuffers[currentFrame]->_buffer, offsets);
             commandBuffer.draw(PARTICLE_COUNT, 1, 0, 0);
         }
+
+        //  Draw Lines
+        linePipeline->bind(commandBuffer);
+        
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,
+                                                 &descriptorSets[currentFrame], 0, nullptr);
+        
+        vk::DeviceSize offsets[] = {0};
+
+        commandBuffer.bindVertexBuffers(0, 1, &lineVertexBuffer->_buffer._buffer, offsets);
+
+        commandBuffer.bindIndexBuffer(lineIndexBuffer->_buffer._buffer, 0, vk::IndexType::eUint32);
+
+        size_t vertexOffset = 0, indexOffset = 0;
+        for (const auto &path : frameInfo.paths) {
+            for (const auto &point : path.getPoints()) {
+                lineVertexBuffer->_data[vertexOffset++] = point;
+            }
+            for (const auto &index : path.getIndices()) {
+                lineIndexBuffer->_data[indexOffset++] = index;
+            }
+
+            auto indexBackCount = static_cast<uint32_t>(indexOffset - path.getIndices().size());
+            auto vertexBackCount = static_cast<int32_t>(vertexOffset - path.getPoints().size());
+
+
+            commandBuffer.drawIndexed(
+                static_cast<uint32_t>(path.getIndices().size()), 
+                1, 
+                indexBackCount, 
+                vertexBackCount, 
+                0
+            );
+        }
+
     }
 
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

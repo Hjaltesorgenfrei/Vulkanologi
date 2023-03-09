@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 #include "BehCamera.h"
 #include "RenderObject.h"
+#include "Path.h"
 
 struct GlobalUbo {
     glm::mat4 view;
@@ -17,5 +18,6 @@ struct GlobalUbo {
 struct FrameInfo {
     BehCamera camera;
     std::vector<std::shared_ptr<RenderObject>> objects{};
+    std::vector<Path> paths{};
     float deltaTime = 0.16f;
 };

@@ -13,6 +13,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "ImGuizmo.h"
+#include "Path.h"
 
 
 void App::run() {
@@ -103,6 +104,18 @@ float bytesToMegaBytes(uint64_t bytes) {
     return bytes / 1024.0f / 1024.0f;
 }
 
+Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
+    Path path(true);
+    for (int i = 0; i < segments; i++) {
+        float angle = (float)i / (float)segments * 2.0f * 3.14159265359f;
+        glm::vec3 point = center + glm::vec3(cos(angle) * radius, sin(angle) * radius, 0);
+        path.addPoint({point, glm::vec3(1, 1, 1), glm::vec3(0, 1, 0)});
+    }
+    return path;
+}
+
+int segmentCount = 50;
+
 int App::drawFrame(float delta) {
     // std::lock_guard<std::mutex> lockGuard(rendererMutex);
     ImGui_ImplVulkan_NewFrame();
@@ -134,6 +147,7 @@ int App::drawFrame(float delta) {
     ImGui::Text("Frame Time: %f", averageFrameTime);
     ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+    ImGui::SliderInt("Segment Count", &segmentCount, 1, 100);
     ImGui::End();
     
 
@@ -142,6 +156,9 @@ int App::drawFrame(float delta) {
     frameInfo.objects = objects;
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
+
+    auto path = circleAroundPoint({0, 0, 0}, 2, segmentCount);
+    frameInfo.paths.emplace_back(path);
 
     auto result = renderer->drawFrame(frameInfo);
     ImGui::EndFrame();

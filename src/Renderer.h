@@ -18,6 +18,7 @@
 #include "BehDescriptors.h"
 #include "BehPipelines.h"
 #include "BehFrameInfo.h"
+#include "Path.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -87,6 +88,7 @@ private:
     std::unique_ptr<BehPipeline> billboardPipeline;
     std::unique_ptr<BehPipeline> wireframePipeline;
     std::unique_ptr<BehPipeline> particlePipeline;
+    std::unique_ptr<BehPipeline> linePipeline;
     std::unique_ptr<BehPipeline> computePipeline;
 
     vk::CommandPool commandPool;
@@ -107,6 +109,9 @@ private:
     vk::ImageView depthImageView;
 
     std::vector<AllocatedBuffer> uniformBuffers;
+
+    std::shared_ptr<PersistentBuffer<Point>> lineVertexBuffer;
+    std::shared_ptr<PersistentBuffer<uint32_t>> lineIndexBuffer;
 
     AllocatedImage colorImage;
     vk::ImageView colorImageView;
@@ -142,6 +147,7 @@ private:
     void createBillboardPipeline();
     void createParticlePipeline();
 	void createWireframePipeline();
+	void createLinePipeline();
     void createComputePipeline();
 
     void createComputeShaderBuffers();

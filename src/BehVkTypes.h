@@ -9,6 +9,12 @@ struct AllocatedBuffer {
     VmaAllocation _allocation;
 };
 
+template <typename T>
+struct PersistentBuffer {
+    AllocatedBuffer _buffer;
+    T* _data;
+};
+
 struct AllocatedImage {
     vk::Image _image;
     VmaAllocation _allocation;

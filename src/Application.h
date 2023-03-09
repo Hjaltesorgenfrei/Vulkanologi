@@ -16,7 +16,6 @@ private:
     std::shared_ptr<BehDevice> device;
     std::vector<std::shared_ptr<RenderObject>> objects;
     BehCamera camera{};
-    bool mouseCaptured = false;
     bool showImguizmo = true;
     bool updateWindowSize = false;
 

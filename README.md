@@ -102,7 +102,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - No dont do that, i made the change because it is imageless now.
 - [x] Move cmake for third party to the folder containing them.
 - [ ] Fix sync issues <https://github.com/Overv/VulkanTutorial/issues/276>
-- [ ] Fix cursor jumping bug due to ImGui getting input from another thread than GLFW. Need to sync IO somehow, someone on the Vulkan Discord Suggested modeling it as Producer/Consumer problem.
+- [x] Fix cursor jumping bug due to ImGui getting input from another thread than GLFW. Need to sync IO somehow, someone on the Vulkan Discord Suggested modeling it as Producer/Consumer problem.
+  - Might not be worth it to have more threads as they still need to sync.
 
 ### Descriptor Layout Idea
 

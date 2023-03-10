@@ -165,13 +165,20 @@ int App::drawFrame(float delta) {
     return result;
 }
 
-void App::drawLoop() {
+void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
-    while (!window->windowShouldClose()) {
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
+    renderer->uploadMeshes(objects);
+
+	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float, std::milli> delta = now - timeStart;
         timeStart = now;
-
+		glfwPollEvents();
+        processPressedKeys(delta.count());
+        
         if (updateWindowSize) {
             renderer->recreateSwapchain();
             updateWindowSize = false;
@@ -180,26 +187,7 @@ void App::drawLoop() {
         if (result == 1) {
             renderer->recreateSwapchain();
         }
-    }
-}
-
-void App::mainLoop() {
-    auto timeStart = std::chrono::high_resolution_clock::now();
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
-    renderer->uploadMeshes(objects);
-
-    std::thread drawThread([&](){drawLoop();});
-
-	while (!window->windowShouldClose()) {
-        auto now = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float, std::milli> delta = now - timeStart;
-        timeStart = now;
-		glfwPollEvents();
-        processPressedKeys(delta.count());
 	}
-    drawThread.join();
 }
 
 void App::drawImGuizmo(glm::mat4* matrix) {

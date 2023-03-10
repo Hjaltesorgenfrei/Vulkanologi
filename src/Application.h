@@ -18,6 +18,7 @@ private:
     BehCamera camera{};
     bool showImguizmo = true;
     bool updateWindowSize = false;
+    bool cursorHidden = false;
 
 	void mainLoop();
     void processPressedKeys(float delta);
@@ -28,7 +29,8 @@ private:
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);
     static void cursorEnterCallback(GLFWwindow *window, int enter);
     static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
-    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+    void SetCursorHidden(bool hidden);
 
     bool shiftPressed = false;
 

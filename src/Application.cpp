@@ -40,7 +40,7 @@ void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
 
 void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+    if (app->cursorHidden) {
         auto xPos = static_cast<float>(xPosIn);
         auto yPos = static_cast<float>(yPosIn);
         app->camera.newCursorPos(xPos, yPos);
@@ -61,14 +61,16 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
-        if (glfwGetInputMode(window, GLFW_CURSOR) != GLFW_CURSOR_DISABLED) {
+        if (!app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             app->camera.resetCursorPos();
+            app->cursorHidden = true;
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
-        if (glfwGetInputMode(window, GLFW_CURSOR) == GLFW_CURSOR_DISABLED) {
+        if (app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            app->cursorHidden = false;
         }
     }
 }

@@ -161,6 +161,7 @@ inline std::shared_ptr<PersistentBuffer<T>> AssetManager::allocatePersistentBuff
     });
 
     buffer->_data = reinterpret_cast<T*>(allocInfo.pMappedData);
+    buffer->_count = count;
     
     return buffer;
 }

@@ -1080,10 +1080,10 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
         size_t vertexOffset = 0, indexOffset = 0;
         for (const auto &path : frameInfo.paths) {
             for (const auto &point : path.getPoints()) {
-                lineVertexBuffer->_data[vertexOffset++] = point;
+                lineVertexBuffer->at(vertexOffset++) = point;
             }
             for (const auto &index : path.getIndices()) {
-                lineIndexBuffer->_data[indexOffset++] = index;
+                lineIndexBuffer->at(indexOffset++) = index;
             }
 
             auto indexBackCount = static_cast<uint32_t>(indexOffset - path.getIndices().size());
@@ -1154,8 +1154,7 @@ void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
     };
     ubo.projView = ubo.proj * ubo.view;
     ubo.deltaTime = frameInfo.deltaTime;
-
-    uniformBuffers[currentImage]->_data[0] = ubo;
+    uniformBuffers[currentImage]->at(0) = ubo;
 }
 
 int Renderer::drawFrame(FrameInfo &frameInfo) {

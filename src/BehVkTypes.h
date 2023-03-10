@@ -12,6 +12,18 @@ struct AllocatedBuffer {
 template <typename T>
 struct PersistentBuffer : AllocatedBuffer {
     T* _data;
+    size_t _count;
+
+    inline T& at(size_t i) {
+        if (i > _count) {
+            throw std::out_of_range("PersistentBuffer index out of range");
+        }
+        return _data[i];
+    }
+
+    T& operator [](size_t i) {
+        at(i);
+    }
 };
 
 struct AllocatedImage {

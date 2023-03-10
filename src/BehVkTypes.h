@@ -10,8 +10,7 @@ struct AllocatedBuffer {
 };
 
 template <typename T>
-struct PersistentBuffer {
-    AllocatedBuffer _buffer;
+struct PersistentBuffer : AllocatedBuffer {
     T* _data;
 };
 

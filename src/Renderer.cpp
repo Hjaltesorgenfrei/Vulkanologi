@@ -823,16 +823,7 @@ void Renderer::createUniformBuffers() {
     };
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
-        VkBuffer buffer;
-        VmaAllocation allocation{};
-        if (vmaCreateBuffer(device->allocator(), &create, &allocCreate, &buffer, &allocation, nullptr) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to upload buffer!");
-        }
-        uniformBuffers[i]._buffer = buffer;
-        uniformBuffers[i]._allocation = allocation;
-        mainDeletionQueue.push_function([&, i]() {
-            vmaDestroyBuffer(device->allocator(), uniformBuffers[i]._buffer, uniformBuffers[i]._allocation);
-        });
+        uniformBuffers[i] = assetManager.allocatePersistentBuffer<GlobalUbo>(1, vk::BufferUsageFlagBits::eUniformBuffer);
     }
 }
 
@@ -872,7 +863,7 @@ void Renderer::createDescriptorSets() {
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         vk::DescriptorBufferInfo bufferInfo{
-                .buffer = uniformBuffers[i]._buffer,
+                .buffer = uniformBuffers[i]->_buffer,
                 .offset = 0,
                 .range = sizeof(GlobalUbo)
         };
@@ -892,7 +883,7 @@ void Renderer::createComputeDescriptorSets() {
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
         vk::DescriptorBufferInfo bufferInfo {
-            .buffer = uniformBuffers[i]._buffer,
+            .buffer = uniformBuffers[i]->_buffer,
             .offset = 0,
             .range = sizeof(GlobalUbo)
         };
@@ -1082,9 +1073,9 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
         
         vk::DeviceSize offsets[] = {0};
 
-        commandBuffer.bindVertexBuffers(0, 1, &lineVertexBuffer->_buffer._buffer, offsets);
+        commandBuffer.bindVertexBuffers(0, 1, &lineVertexBuffer->_buffer, offsets);
 
-        commandBuffer.bindIndexBuffer(lineIndexBuffer->_buffer._buffer, 0, vk::IndexType::eUint32);
+        commandBuffer.bindIndexBuffer(lineIndexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
         size_t vertexOffset = 0, indexOffset = 0;
         for (const auto &path : frameInfo.paths) {
@@ -1164,12 +1155,7 @@ void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
     ubo.projView = ubo.proj * ubo.view;
     ubo.deltaTime = frameInfo.deltaTime;
 
-    void *data;
-    vmaMapMemory(device->allocator(), uniformBuffers[currentImage]._allocation, &data);
-    {
-        memcpy(data, &ubo, sizeof(ubo));
-    }
-    vmaUnmapMemory(device->allocator(), uniformBuffers[currentImage]._allocation);
+    uniformBuffers[currentImage]->_data[0] = ubo;
 }
 
 int Renderer::drawFrame(FrameInfo &frameInfo) {

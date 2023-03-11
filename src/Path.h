@@ -10,8 +10,8 @@
 
 struct Point {
     glm::vec3 position;
+    glm::vec3 normal;
     glm::vec3 color;
-    glm::vec3 up;
 
     static std::vector<vk::VertexInputBindingDescription> getBindingDescriptions() {
         return {
@@ -35,14 +35,14 @@ struct Point {
                 .location = 1,
                 .binding = 0,
                 .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(Point, color)
+                .offset = offsetof(Point, normal)
             },
             vk::VertexInputAttributeDescription{
                 .location = 2,
                 .binding = 0,
                 .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(Point, up)
-            },
+                .offset = offsetof(Point, color)
+            }
         };
     }
 };

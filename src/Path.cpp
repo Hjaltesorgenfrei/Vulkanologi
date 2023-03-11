@@ -89,9 +89,9 @@ Path linePath(glm::vec3 start, glm::vec3 end, glm::vec3 color)
 {
     Path path;
 
-    glm::vec3 up = glm::vec3(0, 1, 0);
-    path.addPoint({ start, color, up });
-    path.addPoint({ end, color, up });
+    glm::vec3 normal = glm::vec3(0, 1, 0);
+    path.addPoint({ start, normal, color });
+    path.addPoint({ end, normal, color  });
 
     return path;
 }

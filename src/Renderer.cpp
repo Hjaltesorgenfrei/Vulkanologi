@@ -587,6 +587,7 @@ void Renderer::createLinePipeline() {
     pipelineConfig.pipelineLayout = billboardPipelineLayout;
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
+    pipelineConfig.lineWidth = 2.0f;
 
     pipelineConfig.polygonMode = vk::PolygonMode::eLine;
     pipelineConfig.topology = vk::PrimitiveTopology::eLineList;

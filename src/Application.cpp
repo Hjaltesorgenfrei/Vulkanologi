@@ -14,6 +14,7 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "ImGuizmo.h"
 #include "Path.h"
+#include "Spline.h"
 
 
 void App::run() {
@@ -114,8 +115,6 @@ Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
     return path;
 }
 
-int segmentCount = 50;
-
 int App::drawFrame(float delta) {
     // std::lock_guard<std::mutex> lockGuard(rendererMutex);
     ImGui_ImplVulkan_NewFrame();
@@ -143,11 +142,15 @@ int App::drawFrame(float delta) {
     }
     averageFrameTime /= frameCount;
 
+    static int resolution = 10;
+    static int segments = 50;
+
     ImGui::Begin("Debug Info");
     ImGui::Text("Frame Time: %f", averageFrameTime);
     ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
-    ImGui::SliderInt("Segment Count", &segmentCount, 1, 100);
+    ImGui::SliderInt("Resolution", &resolution, 1, 10);
+    ImGui::SliderInt("Segments", &segments, 2, 50);
     ImGui::End();
     
 
@@ -157,8 +160,17 @@ int App::drawFrame(float delta) {
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
 
-    auto path = circleAroundPoint({0, 0, 0}, 2, segmentCount);
+
+    auto path = cubicPath(glm::vec3{0, 0, 0}, 
+        glm::vec3{2, 0, 0}, 
+        glm::vec3{2, 2, 0}, 
+        glm::vec3{0, 2, 0}, 
+        segments, 
+        resolution, glm::vec3{1, 0, 0});
     frameInfo.paths.emplace_back(path);
+    for (const auto point : path.getPoints()) {
+        frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
+    }
 
     auto result = renderer->drawFrame(frameInfo);
     ImGui::EndFrame();
@@ -168,7 +180,7 @@ int App::drawFrame(float delta) {
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
     renderer->uploadMeshes(objects);
 

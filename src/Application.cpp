@@ -128,15 +128,6 @@ int App::drawFrame(float delta) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    auto static startControlPoint = Point({0, 0, 0}, {0, 1, 0}, {0, 1, 0});
-    auto static pointMatrix = glm::mat4(1.0f);
-
-    if (showImguizmo && !objects.empty()) {
-        auto lastModel = objects.back(); // Just a testing statement
-        drawImGuizmo(&pointMatrix);
-    }
-
-
     auto memoryUsage = renderer->getMemoryUsage();
     // Make a imgui window to show the frame time
 
@@ -170,11 +161,17 @@ int App::drawFrame(float delta) {
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
 
+    static ControlPoint start;
+    static ControlPoint end;
 
-    auto path = cubicPath(startControlPoint.transform(pointMatrix), 
-        glm::vec3{2, 0, 0}, 
-        glm::vec3{2, 2, 0}, 
-        glm::vec3{0, 2, 0}, 
+    if (showImguizmo && !objects.empty()) {
+        auto lastModel = objects.back(); // Just a testing statement
+        drawImGuizmo(&start.transform);
+    }
+
+    auto path = cubicPath(
+        start,
+        end,
         segments, 
         resolution, glm::vec3{1, 0, 0});
     frameInfo.paths.emplace_back(path);
@@ -220,7 +217,7 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
     proj[1][1] *= -1; // ImGuizmo Expects the opposite
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::WORLD, &(*matrix)[0][0]);
+    return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &(*matrix)[0][0]);
 }
 
 void App::processPressedKeys(float delta) {

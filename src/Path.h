@@ -45,14 +45,6 @@ struct Point {
             }
         };
     }
-
-    Point transform(glm::mat4 matrix) {
-        Point newPoint;
-        newPoint.position = glm::vec3(matrix * glm::vec4(position, 1.0f));
-        newPoint.normal = glm::vec3(matrix * glm::vec4(normal, 0.0f));
-        newPoint.color = color;
-        return newPoint;
-    }
 };
 
 class Path {

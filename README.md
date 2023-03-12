@@ -108,6 +108,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Might be possible to add normals from both ends and then interpolate between the two linearly along the path.
   - <https://gamedev.stackexchange.com/questions/94098/controlling-roll-rotation-when-travelling-along-bezier-curves>
   - Will probably be a trade off between given the user control and how jank it can look if they mess it up.
+- [ ] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
 
 ### Descriptor Layout Idea
 

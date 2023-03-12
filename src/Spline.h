@@ -8,6 +8,45 @@
 #include <utility>
 #include "Path.h"
 
+class ControlPoint {
+
+public:
+    Point point() const {
+        Point newPoint;
+        newPoint.position = glm::vec3(transform * glm::vec4(_point.position, 1.0f));
+        newPoint.normal = glm::vec3(transform * glm::vec4(_point.normal, 0.0f));
+        newPoint.color = _point.color;
+        return newPoint;
+    }
+
+    void setPoint(Point point) {
+        _point = point;
+    }
+
+    glm::vec3 forward() const {
+        return glm::vec3(transform * glm::vec4(_forward, 0.0f));
+    }
+
+    glm::vec3 forwardWorld() const {
+        return point().position + forward();
+    }
+
+    glm::vec3 backwardWorld() const {
+        return point().position - forward();
+    }
+
+    void setForward(glm::vec3 forward) {
+        _forward = forward;
+    }
+
+    glm::mat4 transform = glm::mat4(1.0f);
+
+private:
+    Point _point = { glm::vec3(0.0f), glm::vec3(0, 1, 0), glm::vec3(1.0f) };
+    glm::vec3 _forward = {1.0f, 0.f, 0.f}; // Is mirrored if the points is not a end point
+
+};
+
 inline glm::vec3 lerp(glm::vec3 a, glm::vec3 b, float t)
 {
     return glm::mix(a, b, t);
@@ -145,11 +184,11 @@ inline std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b
     return points;
 }
 
-Path cubicPath(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution, glm::vec3 color)
+Path cubicPathVecs(Point a, glm::vec3 b, glm::vec3 c, Point d, int segments, int resolution, glm::vec3 color)
 {
     Path path;
-    auto points = evenPointsAlongCubicCurve(a.position, b, c, d, segments, resolution);
-    auto frames = generateRMFrames(a, b, c, d, segments, resolution);
+    auto points = evenPointsAlongCubicCurve(a.position, b, c, d.position, segments, resolution);
+    auto frames = generateRMFrames(a, b, c, d.position, segments, resolution);
 
     for (int i = 0; i < points.size(); i++)
     {
@@ -165,6 +204,11 @@ Path cubicPath(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int
     }
 
     return path;  
+}
+
+Path cubicPath(ControlPoint a, ControlPoint b, int segments, int resolution, glm::vec3 color) {
+    
+    return cubicPathVecs(a.point(), a.forwardWorld(), b.backwardWorld(), b.point(), segments, resolution, color);
 }
 
 #endif

@@ -10,9 +10,6 @@
 #include "Application.h"
 #include "ShapeExperiment.h"
 
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "ImGuizmo.h"
 #include "Path.h"
 #include "Spline.h"
 
@@ -99,6 +96,16 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     if(key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE) {
         app->shiftPressed = false;
     }
+    // Set to translate mode on z, rotate on x, scale on c
+    if(key == GLFW_KEY_Z && action != GLFW_RELEASE) {
+        app->currentGizmoOperation = ImGuizmo::TRANSLATE;
+    }
+    if(key == GLFW_KEY_X && action != GLFW_RELEASE) {
+        app->currentGizmoOperation = ImGuizmo::ROTATE;
+    }
+    if(key == GLFW_KEY_C && action != GLFW_RELEASE) {
+        app->currentGizmoOperation = ImGuizmo::SCALE;
+    }
 }
 
 float bytesToMegaBytes(uint64_t bytes) {
@@ -121,9 +128,12 @@ int App::drawFrame(float delta) {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    auto static startControlPoint = Point({0, 0, 0}, {0, 1, 0}, {0, 1, 0});
+    auto static pointMatrix = glm::mat4(1.0f);
+
     if (showImguizmo && !objects.empty()) {
         auto lastModel = objects.back(); // Just a testing statement
-        drawImGuizmo(&lastModel->transformMatrix.model);
+        drawImGuizmo(&pointMatrix);
     }
 
 
@@ -161,7 +171,7 @@ int App::drawFrame(float delta) {
     frameInfo.deltaTime = delta;
 
 
-    auto path = cubicPath(glm::vec3{0, 0, 0}, 
+    auto path = cubicPath(startControlPoint.transform(pointMatrix), 
         glm::vec3{2, 0, 0}, 
         glm::vec3{2, 2, 0}, 
         glm::vec3{0, 2, 0}, 
@@ -202,7 +212,7 @@ void App::mainLoop() {
 	}
 }
 
-void App::drawImGuizmo(glm::mat4* matrix) {
+bool App::drawImGuizmo(glm::mat4* matrix) {
     ImGuizmo::BeginFrame();
     ImGuizmo::Enable(true);
     auto [width, height] = window->getFramebufferSize();
@@ -210,7 +220,7 @@ void App::drawImGuizmo(glm::mat4* matrix) {
     proj[1][1] *= -1; // ImGuizmo Expects the opposite
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], ImGuizmo::TRANSLATE, ImGuizmo::WORLD, &(*matrix)[0][0]);
+    return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::WORLD, &(*matrix)[0][0]);
 }
 
 void App::processPressedKeys(float delta) {

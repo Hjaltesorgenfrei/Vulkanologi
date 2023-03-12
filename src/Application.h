@@ -1,6 +1,10 @@
 #pragma once
 #include "Renderer.h"
 
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+#include "ImGuizmo.h"
+
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -19,11 +23,12 @@ private:
     bool showImguizmo = true;
     bool updateWindowSize = false;
     bool cursorHidden = false;
+    ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
     void processPressedKeys(float delta);
     void setupCallBacks();
-    void drawImGuizmo(glm::mat4* matrix);
+    bool drawImGuizmo(glm::mat4* matrix);
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);

@@ -104,6 +104,10 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Fix sync issues <https://github.com/Overv/VulkanTutorial/issues/276>
 - [x] Fix cursor jumping bug due to ImGui getting input from another thread than GLFW. Need to sync IO somehow, someone on the Vulkan Discord Suggested modeling it as Producer/Consumer problem.
   - Might not be worth it to have more threads as they still need to sync.
+- [ ] Add a way to control spline normal from both ends.
+  - Might be possible to add normals from both ends and then interpolate between the two linearly along the path.
+  - <https://gamedev.stackexchange.com/questions/94098/controlling-roll-rotation-when-travelling-along-bezier-curves>
+  - Will probably be a trade off between given the user control and how jank it can look if they mess it up.
 
 ### Descriptor Layout Idea
 

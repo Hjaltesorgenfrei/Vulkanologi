@@ -4,6 +4,7 @@
 #define _SPLINE_H_
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <vector>
 #include <utility>
 #include "Path.h"
@@ -130,6 +131,12 @@ inline FrenetFrame frenetFrame(glm::vec3 start, glm::vec3 c1, glm::vec3 c2, glm:
     return FrenetFrame{ cubicCurve(start, c1, c2, end, t), a, r, normal };
 }
 
+inline glm::mat4 frenetFrameMatrix(FrenetFrame frame) {
+    auto m = glm::mat4(1.f);
+    m[3] = glm::vec4(frame.o, 1.f);
+    return m;
+}
+
 // C++ translation of https://pomax.github.io/bezierinfo/#pointvectors3d
 
 inline std::vector<FrenetFrame> generateRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
@@ -207,8 +214,13 @@ Path cubicPathVecs(Point a, glm::vec3 b, glm::vec3 c, Point d, int segments, int
 }
 
 Path cubicPath(ControlPoint a, ControlPoint b, int segments, int resolution, glm::vec3 color) {
-    
     return cubicPathVecs(a.point(), a.forwardWorld(), b.backwardWorld(), b.point(), segments, resolution, color);
+}
+
+glm::mat4 moveAlongCubicPath(ControlPoint a, ControlPoint b, int segments, int resolution, float t) {
+    auto frames = generateRMFrames(a.point(), a.forwardWorld(), b.backwardWorld(), b.point().position, segments, resolution);
+    auto frame = frames[(int)(t * (float)frames.size()) % frames.size()];
+    return frenetFrameMatrix(frame);
 }
 
 #endif

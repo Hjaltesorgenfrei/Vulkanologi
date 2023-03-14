@@ -145,6 +145,7 @@ int App::drawFrame(float delta) {
 
     static int resolution = 10;
     static int segments = 50;
+    static float along = 0.f;
 
     ImGui::Begin("Debug Info");
     ImGui::Text("Frame Time: %f", averageFrameTime);
@@ -152,6 +153,7 @@ int App::drawFrame(float delta) {
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
     ImGui::SliderInt("Resolution", &resolution, 1, 10);
     ImGui::SliderInt("Segments", &segments, 2, 50);
+    ImGui::SliderFloat("Along", &along, 0.f, 0.99f);
     ImGui::End();
     
 
@@ -177,6 +179,18 @@ int App::drawFrame(float delta) {
     frameInfo.paths.emplace_back(path);
     for (const auto point : path.getPoints()) {
         frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
+    }
+    for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, segments, resolution)) {
+        auto start = frame.o;
+        auto rightVector = glm::normalize(frame.r);
+        auto end = frame.o + frame.t * 0.25f;
+        auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
+        auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
+        frameInfo.paths.emplace_back(linePath(start, end, {0, 1, 0}));
+        // Make a arrow at the end
+        frameInfo.paths.emplace_back(linePath(end, right, {0, 1, 0}));
+        frameInfo.paths.emplace_back(linePath(end, left, {0, 1, 0}));
+        frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
     }
 
     auto result = renderer->drawFrame(frameInfo);

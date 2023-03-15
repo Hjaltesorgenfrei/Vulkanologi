@@ -131,9 +131,20 @@ inline FrenetFrame frenetFrame(glm::vec3 start, glm::vec3 c1, glm::vec3 c2, glm:
     return FrenetFrame{ cubicCurve(start, c1, c2, end, t), a, r, normal };
 }
 
+inline glm::mat4 rotationMatrix(glm::vec3 direction, glm::vec3 up) {
+    auto z = glm::normalize(direction);
+    auto x = glm::normalize(glm::cross(up, z));
+    auto y = glm::normalize(glm::cross(z, x));
+    return glm::mat4(x.x, x.y, x.z, 0.f,
+        y.x, y.y, y.z, 0.f,
+        z.x, z.y, z.z, 0.f,
+        0.f, 0.f, 0.f, 1.f);
+}
+
 inline glm::mat4 frenetFrameMatrix(FrenetFrame frame) {
     auto m = glm::mat4(1.f);
     m[3] = glm::vec4(frame.o, 1.f);
+    m = m * rotationMatrix(frame.t, frame.n);
     return m;
 }
 

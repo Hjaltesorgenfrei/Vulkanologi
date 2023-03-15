@@ -153,9 +153,12 @@ int App::drawFrame(float delta) {
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
     ImGui::SliderInt("Resolution", &resolution, 1, 10);
     ImGui::SliderInt("Segments", &segments, 2, 50);
-    ImGui::SliderFloat("Along", &along, 0.f, 0.99f);
     ImGui::End();
     
+    along += 0.01f;
+    if (along > 2.f) {
+        along = 0.f;
+    }
 
     //ImGui::ShowDemoWindow();
     FrameInfo frameInfo{};
@@ -166,9 +169,16 @@ int App::drawFrame(float delta) {
     static ControlPoint start;
     static ControlPoint end;
 
-    if (showImguizmo && !objects.empty()) {
-        auto lastModel = objects.back(); // Just a testing statement
+    if (showImguizmo) {
         drawImGuizmo(&start.transform);
+    }
+
+    if (!objects.empty()) {
+        auto lastModel = objects.back(); // Just a testing statement
+        if (along > 1.f)
+            lastModel->transformMatrix.model = moveAlongCubicPath(end, start, segments, resolution, along - 1.f);
+        else
+            lastModel->transformMatrix.model = moveAlongCubicPath(start, end, segments, resolution, along);
     }
 
     auto path = cubicPath(
@@ -201,8 +211,8 @@ int App::drawFrame(float delta) {
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     renderer->uploadMeshes(objects);
 
 	while (!window->windowShouldClose()) {

@@ -88,7 +88,7 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
 		app->renderer->rendererMode = WIREFRAME;
 	}
     if(key == GLFW_KEY_E && action == GLFW_PRESS) {
-        app->showImguizmo = !app->showImguizmo;
+        app->showDebugInfo = !app->showDebugInfo;
     }
     if(key == GLFW_KEY_LEFT_SHIFT && action != GLFW_RELEASE) {
         app->shiftPressed = true;
@@ -146,14 +146,6 @@ int App::drawFrame(float delta) {
     static int resolution = 10;
     static int segments = 50;
     static float along = 0.f;
-
-    ImGui::Begin("Debug Info");
-    ImGui::Text("Frame Time: %f", averageFrameTime);
-    ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
-    ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
-    ImGui::SliderInt("Resolution", &resolution, 1, 10);
-    ImGui::SliderInt("Segments", &segments, 2, 50);
-    ImGui::End();
     
     along += 0.01f;
     if (along > 2.f) {
@@ -169,8 +161,38 @@ int App::drawFrame(float delta) {
     static ControlPoint start;
     static ControlPoint end;
 
-    if (showImguizmo) {
+    if (showDebugInfo) {
+        ImGui::Begin("Debug Info");
+        ImGui::Text("Frame Time: %f", averageFrameTime);
+        ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
+        ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+        ImGui::SliderInt("Resolution", &resolution, 1, 10);
+        ImGui::SliderInt("Segments", &segments, 2, 50);
+        ImGui::End();
+
         drawImGuizmo(&start.transform);
+
+        auto path = cubicPath(
+            start,
+            end,
+            segments, 
+            resolution, glm::vec3{1, 0, 0});
+        frameInfo.paths.emplace_back(path);
+        for (const auto point : path.getPoints()) {
+            frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
+        }
+        for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, segments, resolution)) {
+            auto start = frame.o;
+            auto rightVector = glm::normalize(frame.r);
+            auto end = frame.o + frame.t * 0.25f;
+            auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
+            auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
+            frameInfo.paths.emplace_back(linePath(start, end, {0, 1, 0}));
+            // Make a arrow at the end
+            frameInfo.paths.emplace_back(linePath(end, right, {0, 1, 0}));
+            frameInfo.paths.emplace_back(linePath(end, left, {0, 1, 0}));
+            frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
+        }
     }
 
     if (!objects.empty()) {
@@ -179,28 +201,6 @@ int App::drawFrame(float delta) {
             lastModel->transformMatrix.model = moveAlongCubicPath(end, start, segments, resolution, along - 1.f);
         else
             lastModel->transformMatrix.model = moveAlongCubicPath(start, end, segments, resolution, along);
-    }
-
-    auto path = cubicPath(
-        start,
-        end,
-        segments, 
-        resolution, glm::vec3{1, 0, 0});
-    frameInfo.paths.emplace_back(path);
-    for (const auto point : path.getPoints()) {
-        frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
-    }
-    for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, segments, resolution)) {
-        auto start = frame.o;
-        auto rightVector = glm::normalize(frame.r);
-        auto end = frame.o + frame.t * 0.25f;
-        auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
-        auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
-        frameInfo.paths.emplace_back(linePath(start, end, {0, 1, 0}));
-        // Make a arrow at the end
-        frameInfo.paths.emplace_back(linePath(end, right, {0, 1, 0}));
-        frameInfo.paths.emplace_back(linePath(end, left, {0, 1, 0}));
-        frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
     }
 
     auto result = renderer->drawFrame(frameInfo);

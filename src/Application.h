@@ -20,7 +20,7 @@ private:
     std::shared_ptr<BehDevice> device;
     std::vector<std::shared_ptr<RenderObject>> objects;
     BehCamera camera{};
-    bool showImguizmo = true;
+    bool showDebugInfo = true;
     bool updateWindowSize = false;
     bool cursorHidden = false;
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;

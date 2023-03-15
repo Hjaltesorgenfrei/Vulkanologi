@@ -1,8 +1,12 @@
-# Caldera
+# Shitty Renderer
 
 A Vulkan Renderer written in C++ 23. Very much WIP.
 
 ![Readme Image](docs/readme.png)
+
+Control movement via Splines that minimize rotation via bishops frames!
+
+https://user-images.githubusercontent.com/8939023/225312673-ae9748e1-c363-45c1-ad7c-fdabec51e73d.mp4
 
 ## Building
 
@@ -11,6 +15,10 @@ To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/h
 On arch install `sudo pacman -S vulkan-devel shaderc`
 
 ## Credits
+
+
+
+
 
 Based upon [Vulkan Tutorial](https://vulkan-tutorial.com), inspiration drawn from [Vulkan Guide](https://vkguide.dev/) 
 and [Brendan Galea's YouTube series](https://www.youtube.com/c/BrendanGalea).

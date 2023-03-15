@@ -28,6 +28,16 @@ std::pair<int, int> WindowWrapper::getFramebufferSize() const {
 	return {width, height};
 }
 
+int WindowWrapper::getWidth() const
+{
+    return getFramebufferSize().first;
+}
+
+int WindowWrapper::getHeight() const
+{
+    return getFramebufferSize().second;
+}
+
 GLFWwindow* WindowWrapper::getGLFWwindow() const {
 	return window;
 }

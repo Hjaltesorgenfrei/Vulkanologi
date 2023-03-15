@@ -19,6 +19,8 @@ public:
 	WindowWrapper(const WindowWrapper&) = delete;
 	
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
+	[[nodiscard]] int getWidth() const;
+	[[nodiscard]] int getHeight() const;
 	[[nodiscard]] GLFWwindow* getGLFWwindow() const;
 	[[nodiscard]] bool windowShouldClose() const;
 	void fullscreenWindow();

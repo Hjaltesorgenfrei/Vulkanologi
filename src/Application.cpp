@@ -31,15 +31,15 @@ public:
     }
 
     void reportErrorWarning(const char *warningString) override {
-        std::cout << "Warning: " << warningString << std::endl;
+        std::cerr << "Warning: " << warningString << std::endl;
     }
 
     void draw3dText(const btVector3 &location, const char *textString) override {
-        std::cout << "Text: " << textString << std::endl;
+        std::cerr << "Text: " << textString << std::endl;
     }
 
     void setDebugMode(int debugMode) override {
-        std::cout << "Debug mode: " << debugMode << std::endl;
+        std::cerr << "Debug mode: " << debugMode << std::endl;
     }
 
     int getDebugMode() const override {
@@ -93,6 +93,21 @@ void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     app->camera.resetCursorPos();
 }
 
+void rayTest(btDiscreteDynamicsWorld* dynamicsWorld, const btVector3& rayFromWorld, const btVector3& rayToWorld) {
+    btCollisionWorld::ClosestRayResultCallback rayCallback(rayFromWorld, rayToWorld);
+    dynamicsWorld->rayTest(rayFromWorld, rayToWorld, rayCallback);
+    if (rayCallback.hasHit()) {
+        btVector3 hitPoint = rayCallback.m_hitPointWorld;
+        btVector3 hitNormal = rayCallback.m_hitNormalWorld;
+        const btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
+        if (body) {
+            body->setActivationState(ACTIVE_TAG);
+        }
+    }
+}
+
+std::vector<Path> rays;
+
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -101,12 +116,29 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     }
 
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS) {
+    if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !app->shiftPressed) {
         if (!app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             app->camera.resetCursorPos();
             app->cursorHidden = true;
         }
+    }
+    else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && app->shiftPressed) {
+        // raytest with bullet
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+        auto pos = app->camera.getCameraPosition();
+        auto dir = app->camera.getRayDirection(x, y, app->window->getWidth(), app->window->getHeight());
+        btVector3 rayFromWorld(pos.x, pos.y, pos.z);
+        const int maxRayLength = 1000;
+        btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
+        rayTest(dynamicsWorld, rayFromWorld, rayToWorld);
+
+        glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
+        glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
+        rays.clear();
+        rays.push_back(linePath(rayFromWorldGlm, rayToWorldGlm, glm::vec3(1, 0, 0)));
+
     }
     else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
         if (app->cursorHidden) {
@@ -240,6 +272,8 @@ int App::drawFrame(float delta) {
         dynamicsWorld->debugDrawWorld();
         auto physicsPaths = debugDrawer->paths;
         frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
+
+        frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
     }
 
     if (!objects.empty()) {
@@ -288,6 +322,7 @@ void App::mainLoop() {
         auto myMotionState = new btDefaultMotionState(startTransform);
         auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
         auto body = new btRigidBody(rbInfo);
+        body->setUserIndex(i);
         dynamicsWorld->addRigidBody(body);
     }
 

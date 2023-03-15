@@ -7,7 +7,7 @@ class BehCamera {
 public:
     BehCamera();
 
-    glm::mat4 viewMatrix();
+    glm::mat4 viewMatrix() const;
 
     void moveCameraForward(float speed);
 
@@ -22,6 +22,10 @@ public:
     void resetCursorPos();
 
     void newCursorPos(float xPos, float yPos);
+
+    glm::vec3 getCameraPosition() const;
+
+    glm::vec3 getRayDirection(float xPos, float yPos, float width, float height) const;
 
     glm::mat4 getCameraProjection(float width, float height) const;
 

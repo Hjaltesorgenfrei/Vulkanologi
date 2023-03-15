@@ -14,7 +14,7 @@ BehCamera::BehCamera() {
     setCameraFront();
 }
 
-glm::mat4 BehCamera::viewMatrix() {
+glm::mat4 BehCamera::viewMatrix() const {
     return glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 }
 
@@ -70,6 +70,23 @@ void BehCamera::newCursorPos(float xPos, float yPos) {
         cameraPitch = -89.0f;
 
     setCameraFront();
+}
+
+glm::vec3 BehCamera::getCameraPosition() const
+{
+    return cameraPosition;
+}
+
+glm::vec3 BehCamera::getRayDirection(float xPos, float yPos, float width, float height) const
+{
+    glm::vec4 rayClip = glm::vec4((2.0f * xPos) / width - 1.0f, 1.0f - (2.0f * yPos) / height, -1.0f, 1.0f);
+    auto proj = getCameraProjection(width, height);
+    proj[1][1] *= -1; // Flip it back to the original orientation, as I am doing math I don't understand.
+    // TODO: Figure out why this is necessary. And learn math.
+    glm::vec4 rayEye = glm::inverse(proj) * rayClip;
+    rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+    glm::vec3 rayWorld = glm::normalize(glm::vec3(glm::inverse(viewMatrix()) * rayEye));
+    return rayWorld;
 }
 
 void BehCamera::resetCursorPos() {

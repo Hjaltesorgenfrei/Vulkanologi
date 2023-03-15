@@ -575,8 +575,8 @@ void Renderer::createWireframePipeline() {
 }
 
 void Renderer::createLinePipeline() {
-    lineVertexBuffer = assetManager.allocatePersistentBuffer<Point>(10000, vk::BufferUsageFlagBits::eVertexBuffer);
-    lineIndexBuffer = assetManager.allocatePersistentBuffer<uint32_t>(10000 * 2, vk::BufferUsageFlagBits::eIndexBuffer);
+    lineVertexBuffer = assetManager.allocatePersistentBuffer<Point>(100000, vk::BufferUsageFlagBits::eVertexBuffer);
+    lineIndexBuffer = assetManager.allocatePersistentBuffer<uint32_t>(100000 * 2, vk::BufferUsageFlagBits::eIndexBuffer);
 
     PipelineConfigurationInfo pipelineConfig{};
     BehPipeline::defaultPipelineConfiguration(pipelineConfig);

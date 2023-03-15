@@ -2,31 +2,44 @@
 	path = third_party/glfw
 	url = https://github.com/glfw/glfw
 	ignore = dirty
+	shallow = true
 [submodule "ext/glm"]
 	path = third_party/glm
 	url = https://github.com/g-truc/glm
 	ignore = dirty
+	shallow = true
 [submodule "ext/stb"]
 	path = third_party/stb
 	url = https://github.com/nothings/stb
 	ignore = dirty
+	shallow = true
 [submodule "ext/tinyobjloader"]
 	path = third_party/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader
 	ignore = dirty
+	shallow = true
 [submodule "ext/VulkanMemoryAllocator"]
 	path = third_party/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
 	ignore = dirty
+	shallow = true
 [submodule "ext/imgui"]
 	path = third_party/imgui
 	url = https://github.com/ocornut/imgui
 	ignore = dirty
+	shallow = true
 [submodule "ext/ImGuizmo"]
 	path = third_party/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo
 	ignore = dirty
+	shallow = true
 [submodule "ext/ktx"]
 	path = third_party/ktx
 	url = https://github.com/KhronosGroup/KTX-Software
 	ignore = dirty
+	shallow = true
+[submodule "third_party/bullet3"]
+	path = third_party/bullet3
+	url = https://github.com/bulletphysics/bullet3
+	ignore = dirty
+	shallow = true

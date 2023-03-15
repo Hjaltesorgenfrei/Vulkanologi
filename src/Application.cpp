@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
+// Include bullet
+#include <btBulletDynamicsCommon.h>
 
 #include "Renderer.h"
 #include "Application.h"
@@ -13,6 +15,47 @@
 #include "Path.h"
 #include "Spline.h"
 
+// dynamics world pointer
+btDiscreteDynamicsWorld* dynamicsWorld;
+
+class DebugDrawer : public btIDebugDraw {
+public:
+    void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) override {
+        auto path = linePath(glm::vec3(from.x(), from.y(), from.z()), glm::vec3(to.x(), to.y(), to.z()), glm::vec3(color.x(), color.y(), color.z()));
+        paths.emplace_back(path);
+    }
+
+    void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color) override {
+        auto path = linePath(glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()), glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()) + glm::vec3(normalOnB.x(), normalOnB.y(), normalOnB.z()) * distance, glm::vec3(color.x(), color.y(), color.z()));
+        paths.emplace_back(path);
+    }
+
+    void reportErrorWarning(const char *warningString) override {
+        std::cout << "Warning: " << warningString << std::endl;
+    }
+
+    void draw3dText(const btVector3 &location, const char *textString) override {
+        std::cout << "Text: " << textString << std::endl;
+    }
+
+    void setDebugMode(int debugMode) override {
+        std::cout << "Debug mode: " << debugMode << std::endl;
+    }
+
+    int getDebugMode() const override {
+        return DBG_DrawWireframe;
+    }
+
+    // clear lines
+    void clearLines() override {
+        paths.clear();
+    }
+
+    std::vector<Path> paths;
+
+};
+
+DebugDrawer * debugDrawer;
 
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
@@ -193,6 +236,10 @@ int App::drawFrame(float delta) {
             frameInfo.paths.emplace_back(linePath(end, left, {0, 1, 0}));
             frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
         }
+
+        dynamicsWorld->debugDrawWorld();
+        auto physicsPaths = debugDrawer->paths;
+        frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
     }
 
     if (!objects.empty()) {
@@ -209,6 +256,45 @@ int App::drawFrame(float delta) {
 }
 
 void App::mainLoop() {
+    // make bullet3 physics world
+    auto collisionConfiguration = new btDefaultCollisionConfiguration();
+    auto dispatcher = new btCollisionDispatcher(collisionConfiguration);
+    auto overlappingPairCache = new btDbvtBroadphase();
+    auto solver = new btSequentialImpulseConstraintSolver;
+    dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
+    dynamicsWorld->setGravity(btVector3(0, -10, 0));
+
+    // Create a ground plane
+    auto groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
+    auto groundTransform = btTransform();
+    groundTransform.setIdentity();
+    groundTransform.setOrigin(btVector3(0, -1, 0));
+    auto groundMass = 0.f;
+    auto groundLocalInertia = btVector3(0, 0, 0);
+    auto groundMotionState = new btDefaultMotionState(groundTransform);
+    auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
+    auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
+    dynamicsWorld->addRigidBody(groundRigidBody);
+
+    // add 5 dynamic boxes
+    auto colShape = new btBoxShape(btVector3(1, 1, 1));
+    auto startTransform = btTransform();
+    startTransform.setIdentity();
+    auto mass = 1.f;
+    auto localInertia = btVector3(0, 0, 0);
+    colShape->calculateLocalInertia(mass, localInertia);
+    for (int i = 0; i < 5; i++) {
+        startTransform.setOrigin(btVector3(2 * i, 10, 0));
+        auto myMotionState = new btDefaultMotionState(startTransform);
+        auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
+        auto body = new btRigidBody(rbInfo);
+        dynamicsWorld->addRigidBody(body);
+    }
+
+    // Add debug drawing
+    debugDrawer = new DebugDrawer();
+    dynamicsWorld->setDebugDrawer(debugDrawer);
+
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
@@ -221,6 +307,9 @@ void App::mainLoop() {
         timeStart = now;
 		glfwPollEvents();
         processPressedKeys(delta.count());
+
+        debugDrawer->clearLines();
+        dynamicsWorld->stepSimulation(delta.count() / 1000.f, 10);
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();
@@ -231,6 +320,13 @@ void App::mainLoop() {
             renderer->recreateSwapchain();
         }
 	}
+
+    delete debugDrawer;
+    delete dynamicsWorld;
+    delete solver;
+    delete overlappingPairCache;
+    delete dispatcher;
+    delete collisionConfiguration;
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {

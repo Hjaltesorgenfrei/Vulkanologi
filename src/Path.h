@@ -51,7 +51,7 @@ class Path {
 public:
     Path(bool loop = false);
 
-    const bool loop;
+    bool loop;
 
     void addPoint(Point point);
     Point getPoint(int index);

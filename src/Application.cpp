@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
+#include <entt/entt.hpp>
 
 #include "Renderer.h"
 #include "Application.h"
@@ -13,12 +14,19 @@
 #include "Path.h"
 #include "Spline.h"
 
+entt::registry registry;
+
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
     device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
+
+    // add entities to registry
+    auto entity = registry.create();
+    
+
     mainLoop();
 }
 

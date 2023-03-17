@@ -141,3 +141,6 @@ target_compile_definitions(ktx PUBLIC KTX_FEATURE_WRITE=0)
 target_compile_definitions(ktx PUBLIC BASISD_SUPPORT_KTX2_ZSTD=0)
 target_compile_definitions(ktx PUBLIC BASISU_NO_ITERATOR_DEBUG_LEVEL)
 target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
+
+# EnTT
+add_subdirectory(entt)

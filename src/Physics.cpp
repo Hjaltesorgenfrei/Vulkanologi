@@ -53,7 +53,7 @@ PhysicsWorld::~PhysicsWorld()
     delete collisionConfiguration;
 }
 
-void PhysicsWorld::step(float dt)
+void PhysicsWorld::update(float dt)
 {
     dynamicsWorld->stepSimulation(dt, 10);
 }

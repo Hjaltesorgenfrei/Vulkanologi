@@ -13,7 +13,7 @@ public:
     PhysicsWorld();
     ~PhysicsWorld();
 
-    void step(float dt);
+    void update(float dt);
     
     void addBody(btRigidBody* body);
 

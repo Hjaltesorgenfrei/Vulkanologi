@@ -257,7 +257,7 @@ void App::mainLoop() {
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
         // TODO: Give milliseconds type as argument
-        physicsWorld->step(delta.count() / 1000.f);
+        physicsWorld->update(delta.count() / 1000.f);
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();

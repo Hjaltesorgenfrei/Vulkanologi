@@ -190,8 +190,14 @@ void update(float delta) {
   auto transforms = world->getLatestTransforms();
   aiSystem->update(delta, transforms, jobs);
   objectSystem->update(delta, transforms, jobs);
-  particles->update(delta, transforms, jobs);
+  particleSystem->update(delta, transforms, jobs);
+  world->step(delta, jobs);
   jobs->waitAll(); // Wait for all jobs which the systems create to be done.
 }
 ```
 This means that they all use the same transforms and thereby gives consistent results.
+
+To allow for doing tasks which rely on `btDynamicWorld`, tasks can be dispatched to world which is executed before stepping.
+These tasks would then create messages or call callbacks to give the information back later.
+Tasks could be: CreateBody, DeleteBody or RayTest.
+To make it easy to implement this a callback should probably just be used at the start with documentation saying they are not thread-safe.

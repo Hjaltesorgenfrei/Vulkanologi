@@ -168,3 +168,30 @@ When the ECS system gets added these handles could then be held together in a Me
 
 Using would also avoid callbacks as the renderer could just ignore meshes and materials that have not been uploaded yet. 
 This would simplify the interaction model.
+
+
+### Physics multithreading idea
+
+Need to seperate the physics out to a seperate thread, which means that transforms from previous iteration should be available.
+These can be saved to a data structure and copied to a synced reference when ready.
+Which means that the lock only happens while changing the reference.
+The data should only be the transforms at the start, but might have AABB later for frustrum culling.
+The start up an update should be getting this reference, which probably means keeping it in a shared pointer.
+Probably `atomic<shared_ptr<map<id, transform>>>`, then have the physics compontent just have the id for the index.
+```cpp
+struct PhysicsComponent { // Maybe just Physics? Check what other engines use as naming.
+  uint64_t id; // Maybe typedef this.
+};
+```
+
+Each of the updates that need the transforms can then get it passed it in the call to their update.
+```cpp
+void update(float delta) {
+  auto transforms = world->getLatestTransforms();
+  aiSystem->update(delta, transforms, jobs);
+  objectSystem->update(delta, transforms, jobs);
+  particles->update(delta, transforms, jobs);
+  jobs->waitAll(); // Wait for all jobs which the systems create to be done.
+}
+```
+This means that they all use the same transforms and thereby gives consistent results.

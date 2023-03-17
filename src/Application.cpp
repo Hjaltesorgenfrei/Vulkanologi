@@ -5,8 +5,6 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
-// Include bullet
-#include <btBulletDynamicsCommon.h>
 
 #include "Renderer.h"
 #include "Application.h"
@@ -15,53 +13,12 @@
 #include "Path.h"
 #include "Spline.h"
 
-// dynamics world pointer
-btDiscreteDynamicsWorld* dynamicsWorld;
-
-class DebugDrawer : public btIDebugDraw {
-public:
-    void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) override {
-        auto path = linePath(glm::vec3(from.x(), from.y(), from.z()), glm::vec3(to.x(), to.y(), to.z()), glm::vec3(color.x(), color.y(), color.z()));
-        paths.emplace_back(path);
-    }
-
-    void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color) override {
-        auto path = linePath(glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()), glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()) + glm::vec3(normalOnB.x(), normalOnB.y(), normalOnB.z()) * distance, glm::vec3(color.x(), color.y(), color.z()));
-        paths.emplace_back(path);
-    }
-
-    void reportErrorWarning(const char *warningString) override {
-        std::cerr << "Warning: " << warningString << std::endl;
-    }
-
-    void draw3dText(const btVector3 &location, const char *textString) override {
-        std::cerr << "Text: " << textString << std::endl;
-    }
-
-    void setDebugMode(int debugMode) override {
-        std::cerr << "Debug mode: " << debugMode << std::endl;
-    }
-
-    int getDebugMode() const override {
-        return DBG_DrawWireframe;
-    }
-
-    // clear lines
-    void clearLines() override {
-        paths.clear();
-    }
-
-    std::vector<Path> paths;
-
-};
-
-DebugDrawer * debugDrawer;
-
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
     device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
+    physicsWorld = std::make_unique<PhysicsWorld>();
     mainLoop();
 }
 
@@ -93,19 +50,6 @@ void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     app->camera.resetCursorPos();
 }
 
-void rayTest(btDiscreteDynamicsWorld* dynamicsWorld, const btVector3& rayFromWorld, const btVector3& rayToWorld) {
-    btCollisionWorld::ClosestRayResultCallback rayCallback(rayFromWorld, rayToWorld);
-    dynamicsWorld->rayTest(rayFromWorld, rayToWorld, rayCallback);
-    if (rayCallback.hasHit()) {
-        btVector3 hitPoint = rayCallback.m_hitPointWorld;
-        btVector3 hitNormal = rayCallback.m_hitNormalWorld;
-        const btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
-        if (body) {
-            body->setActivationState(ACTIVE_TAG);
-        }
-    }
-}
-
 std::vector<Path> rays;
 
 void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -132,7 +76,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         btVector3 rayFromWorld(pos.x, pos.y, pos.z);
         const int maxRayLength = 1000;
         btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
-        rayTest(dynamicsWorld, rayFromWorld, rayToWorld);
+        app->physicsWorld->rayTest(rayFromWorld, rayToWorld);
 
         glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
         glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
@@ -269,8 +213,7 @@ int App::drawFrame(float delta) {
             frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
         }
 
-        dynamicsWorld->debugDrawWorld();
-        auto physicsPaths = debugDrawer->paths;
+        auto physicsPaths = physicsWorld->getDebugLines();
         frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
 
         frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
@@ -290,46 +233,6 @@ int App::drawFrame(float delta) {
 }
 
 void App::mainLoop() {
-    // make bullet3 physics world
-    auto collisionConfiguration = new btDefaultCollisionConfiguration();
-    auto dispatcher = new btCollisionDispatcher(collisionConfiguration);
-    auto overlappingPairCache = new btDbvtBroadphase();
-    auto solver = new btSequentialImpulseConstraintSolver;
-    dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    dynamicsWorld->setGravity(btVector3(0, -10, 0));
-
-    // Create a ground plane
-    auto groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
-    auto groundTransform = btTransform();
-    groundTransform.setIdentity();
-    groundTransform.setOrigin(btVector3(0, -1, 0));
-    auto groundMass = 0.f;
-    auto groundLocalInertia = btVector3(0, 0, 0);
-    auto groundMotionState = new btDefaultMotionState(groundTransform);
-    auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
-    auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
-    dynamicsWorld->addRigidBody(groundRigidBody);
-
-    // add 5 dynamic boxes
-    auto colShape = new btBoxShape(btVector3(1, 1, 1));
-    auto startTransform = btTransform();
-    startTransform.setIdentity();
-    auto mass = 1.f;
-    auto localInertia = btVector3(0, 0, 0);
-    colShape->calculateLocalInertia(mass, localInertia);
-    for (int i = 0; i < 5; i++) {
-        startTransform.setOrigin(btVector3(2 * i, 10, 0));
-        auto myMotionState = new btDefaultMotionState(startTransform);
-        auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-        auto body = new btRigidBody(rbInfo);
-        body->setUserIndex(i);
-        dynamicsWorld->addRigidBody(body);
-    }
-
-    // Add debug drawing
-    debugDrawer = new DebugDrawer();
-    dynamicsWorld->setDebugDrawer(debugDrawer);
-
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
@@ -343,8 +246,10 @@ void App::mainLoop() {
 		glfwPollEvents();
         processPressedKeys(delta.count());
 
-        debugDrawer->clearLines();
-        dynamicsWorld->stepSimulation(delta.count() / 1000.f, 10);
+        // TODO: Move this to a physics thread
+        // TODO: Make this a fixed timestep
+        // TODO: Give milliseconds type as argument
+        physicsWorld->step(delta.count() / 1000.f);
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();
@@ -355,13 +260,6 @@ void App::mainLoop() {
             renderer->recreateSwapchain();
         }
 	}
-
-    delete debugDrawer;
-    delete dynamicsWorld;
-    delete solver;
-    delete overlappingPairCache;
-    delete dispatcher;
-    delete collisionConfiguration;
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {

@@ -117,6 +117,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - <https://gamedev.stackexchange.com/questions/94098/controlling-roll-rotation-when-travelling-along-bezier-curves>
   - Will probably be a trade off between given the user control and how jank it can look if they mess it up.
 - [ ] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
+- [ ] Rename files and introduce a namespace.
+  - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
 
 ### Descriptor Layout Idea
 

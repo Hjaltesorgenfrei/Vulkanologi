@@ -34,7 +34,7 @@ PhysicsWorld::PhysicsWorld()
     auto localInertia = btVector3(0, 0, 0);
     colShape->calculateLocalInertia(mass, localInertia);
     for (int i = 0; i < 5; i++) {
-        startTransform.setOrigin(btVector3(2 * i, 10, 0));
+        startTransform.setOrigin(btVector3(static_cast<btScalar>(2 * i), 10, 0));
         auto myMotionState = new btDefaultMotionState(startTransform);
         auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
         auto body = new btRigidBody(rbInfo);

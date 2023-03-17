@@ -80,7 +80,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         double x, y;
         glfwGetCursorPos(window, &x, &y);
         auto pos = app->camera.getCameraPosition();
-        auto dir = app->camera.getRayDirection(x, y, app->window->getWidth(), app->window->getHeight());
+        auto dir = app->camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
         btVector3 rayFromWorld(pos.x, pos.y, pos.z);
         const int maxRayLength = 1000;
         btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
@@ -174,7 +174,7 @@ int App::drawFrame(float delta) {
     static int segments = 50;
     static float along = 0.f;
     
-    along += 0.01f;
+    along += 0.001f * delta;
     if (along > 2.f) {
         along = 0.f;
     }

@@ -8,14 +8,17 @@
 
 #include <glm/gtx/hash.hpp>
 
+
 namespace std {
     template<>
     struct hash<Vertex> {
         size_t operator()(Vertex const &vertex) const {
-            return ((hash<glm::vec3>()(vertex.pos) ^
-                     (hash<glm::vec3>()(vertex.color) << 1)) >>
-                                                             1) ^
-                   (hash<glm::vec2>()(vertex.texCoord) << 1); // TODO: Add the material id here also
+            auto h1 = std::hash<glm::vec3>{}(vertex.pos);
+            auto h2 = std::hash<glm::vec3>{}(vertex.color);
+            auto h3 = std::hash<glm::vec3>{}(vertex.normal);
+            auto h4 = std::hash<glm::vec2>{}(vertex.texCoord);
+            auto h5 = std::hash<uint8_t>{}(vertex.materialIndex);
+            return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4); // TODO: Improve this hash function
         }
     };
 } // namespace std

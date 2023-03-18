@@ -33,6 +33,7 @@ private:
     void processPressedKeys(float delta);
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);
+    std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);

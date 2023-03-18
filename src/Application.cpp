@@ -22,11 +22,7 @@ void App::run() {
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
-
-    // add entities to registry
-    auto entity = registry.create();
-    
-
+  
     mainLoop();
 }
 
@@ -197,7 +193,6 @@ int App::drawFrame(float delta) {
         ImGui::SliderInt("Segments", &segments, 2, 50);
         ImGui::End();
 
-        drawImGuizmo(&start.transform);
 
         auto path = cubicPath(
             start,
@@ -229,10 +224,10 @@ int App::drawFrame(float delta) {
 
     if (!objects.empty()) {
         auto lastModel = objects.back(); // Just a testing statement
-        if (along > 1.f)
-            lastModel->transformMatrix.model = moveAlongCubicPath(end, start, segments, resolution, along - 1.f);
-        else
-            lastModel->transformMatrix.model = moveAlongCubicPath(start, end, segments, resolution, along);
+        drawImGuizmo(&lastModel->transformMatrix.model);
+
+        auto normalPaths = drawNormals(lastModel);
+        frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
     }
 
     auto result = renderer->drawFrame(frameInfo);
@@ -245,6 +240,7 @@ void App::mainLoop() {
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     renderer->uploadMeshes(objects);
 
 	while (!window->windowShouldClose()) {
@@ -279,6 +275,19 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
     return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &(*matrix)[0][0]);
+}
+
+std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
+{
+    auto mesh = object->mesh;
+    auto transform = object->transformMatrix.model;
+    std::vector<Path> paths;
+    for (const auto& vertex : mesh->_vertices) {
+        auto start = transform * glm::vec4(vertex.pos, 1.0f);
+        auto end = start + glm::vec4(vertex.normal, 1.0f) * 0.1f;
+        paths.push_back(linePath(start, end, {0, 0, 1}));
+    }
+    return paths;
 }
 
 void App::processPressedKeys(float delta) {

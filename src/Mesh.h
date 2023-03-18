@@ -19,7 +19,7 @@ struct Vertex {
 	uint8_t materialIndex;
 
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+		return pos == other.pos && color == other.color && normal == other.normal && texCoord == other.texCoord && materialIndex == other.materialIndex;
 	}
 
 	static std::vector<vk::VertexInputBindingDescription> getBindingDescription();

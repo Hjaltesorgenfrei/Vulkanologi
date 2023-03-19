@@ -14,10 +14,11 @@
 
 #include "Path.h"
 #include "Spline.h"
+#include "Components.h"
 
 entt::registry registry;
 
-btRigidBody * testBody;
+entt::entity selectedEntity = entt::null;
 
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
@@ -233,8 +234,11 @@ int App::drawFrame(float delta) {
         frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
     }
 
-    auto transform = testBody->getWorldTransform();
-    auto scale = testBody->getCollisionShape()->getLocalScaling();
+    // Get RigidBody from the entity selectedEntity in the entt::registry
+    auto body = registry.get<RigidBody>(selectedEntity).body;
+
+    auto transform = body->getWorldTransform();
+    auto scale = body->getCollisionShape()->getLocalScaling();
     // convert to glm
     glm::mat4 modelMatrix;
     transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
@@ -253,7 +257,7 @@ int App::drawFrame(float delta) {
             // Add the scale to the current scale
             btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
             newScale *= scale;
-            testBody->getCollisionShape()->setLocalScaling(newScale);
+            body->getCollisionShape()->setLocalScaling(newScale);
         }
     }
 
@@ -261,7 +265,7 @@ int App::drawFrame(float delta) {
         // convert back to bullet
         btTransform newTransform;
         newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-        testBody->setWorldTransform(newTransform);
+        body->setWorldTransform(newTransform);
     }
 
     auto result = renderer->drawFrame(frameInfo);
@@ -286,9 +290,14 @@ void App::mainLoop() {
     startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
     auto myMotionState = new btDefaultMotionState(startTransform);
     auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-    testBody = new btRigidBody(rbInfo);
+    auto testBody = new btRigidBody(rbInfo);
     testBody->setUserIndex(8);
     physicsWorld->addBody(testBody);
+
+    selectedEntity = registry.create();
+    registry.emplace<Transform>(selectedEntity);
+    // registry.emplace<RenderObject>(selectedEntity, createCube(glm::vec3{}), Material{}); // Not supported yet
+    registry.emplace<RigidBody>(selectedEntity, testBody);
 
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();

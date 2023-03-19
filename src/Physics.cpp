@@ -78,7 +78,7 @@ void PhysicsWorld::rayTest(const btVector3 rayFromWorld, const btVector3 rayToWo
         const btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
         if (body) {
             std::cout << "Hit body: " << body->getUserIndex() << std::endl;
-            body->setActivationState(ACTIVE_TAG);
+            body->activate();
         }
     }
 }

@@ -6,6 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <entt/entt.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Renderer.h"
 #include "Application.h"
@@ -15,6 +16,8 @@
 #include "Spline.h"
 
 entt::registry registry;
+
+btRigidBody * testBody;
 
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
@@ -224,10 +227,41 @@ int App::drawFrame(float delta) {
 
     if (!objects.empty()) {
         auto lastModel = objects.back(); // Just a testing statement
-        drawImGuizmo(&lastModel->transformMatrix.model);
+        // drawImGuizmo(&lastModel->transformMatrix.model);
 
         auto normalPaths = drawNormals(lastModel);
         frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
+    }
+
+    auto transform = testBody->getWorldTransform();
+    auto scale = testBody->getCollisionShape()->getLocalScaling();
+    // convert to glm
+    glm::mat4 modelMatrix;
+    transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+
+    if (currentGizmoOperation == ImGuizmo::SCALE) {
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+        auto scaleMatrix = glm::mat4(1.0f);
+        ImGuizmo::BeginFrame();
+        ImGuizmo::Enable(true);
+        auto [width, height] = window->getFramebufferSize();
+        auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+        proj[1][1] *= -1; // ImGuizmo Expects the opposite
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
+            // Add the scale to the current scale
+            btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
+            newScale *= scale;
+            testBody->getCollisionShape()->setLocalScaling(newScale);
+        }
+    }
+
+    else if (drawImGuizmo(&modelMatrix)) {
+        // convert back to bullet
+        btTransform newTransform;
+        newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
+        testBody->setWorldTransform(newTransform);
     }
 
     auto result = renderer->drawFrame(frameInfo);
@@ -242,6 +276,19 @@ void App::mainLoop() {
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     renderer->uploadMeshes(objects);
+
+    auto colShape = new btBoxShape(btVector3(1, 1, 1));
+    auto startTransform = btTransform();
+    startTransform.setIdentity();
+    auto mass = 1.f;
+    auto localInertia = btVector3(0, 0, 0);
+    colShape->calculateLocalInertia(mass, localInertia);
+    startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
+    auto myMotionState = new btDefaultMotionState(startTransform);
+    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
+    testBody = new btRigidBody(rbInfo);
+    testBody->setUserIndex(8);
+    physicsWorld->addBody(testBody);
 
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();

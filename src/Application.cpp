@@ -80,7 +80,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         btVector3 rayFromWorld(pos.x, pos.y, pos.z);
         const int maxRayLength = 1000;
         btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
-        app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](btRigidBody* body, const btVector3& point, const btVector3& normal) {
+        app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](const btCollisionObject* body, const btVector3& point, const btVector3& normal) {
             auto entity = static_cast<entt::entity>(body->getUserIndex());
             app->selectedEntity = entity;
         });
@@ -162,6 +162,7 @@ int App::drawFrame(float delta) {
     static ControlPoint end;
 
     auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
+    auto sensor = registry.try_get<Sensor>(selectedEntity);
 
     if (showDebugInfo) {
         drawFrameDebugInfo(delta);
@@ -240,6 +241,39 @@ int App::drawFrame(float delta) {
         }
 
     }
+    if (sensor != nullptr) {
+        auto body = sensor->ghost;
+        auto transform = body->getWorldTransform();
+        auto scale = body->getCollisionShape()->getLocalScaling();
+        // convert to glm
+        glm::mat4 modelMatrix;
+        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+
+        if (currentGizmoOperation == ImGuizmo::SCALE) {
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+            auto scaleMatrix = glm::mat4(1.0f);
+            ImGuizmo::BeginFrame();
+            ImGuizmo::Enable(true);
+            auto [width, height] = window->getFramebufferSize();
+            auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+            proj[1][1] *= -1; // ImGuizmo Expects the opposite
+            ImGuiIO& io = ImGui::GetIO();
+            ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+            if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
+                // Add the scale to the current scale
+                btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
+                newScale *= scale;
+                body->getCollisionShape()->setLocalScaling(newScale);
+            }
+        }
+
+        else if (drawImGuizmo(&modelMatrix)) {
+            // convert back to bullet
+            btTransform newTransform;
+            newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
+            body->setWorldTransform(newTransform);
+        }
+    }
     
     auto result = renderer->drawFrame(frameInfo);
     ImGui::EndFrame();
@@ -311,11 +345,28 @@ void App::mainLoop() {
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(glm::vec3{}), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
     renderer->uploadMeshes(objects);
+
+    
+    {
+        auto entity = registry.create();
+        entities.push_back(entity);
+        // Create a ghost object using btGhostObject, same way i need to do control points
+        btGhostObject* ghostObject = new btGhostObject();
+        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
+        btConvexShape* sphere = new btSphereShape(1.0f);
+        ghostObject->setCollisionShape(sphere);
+        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+        ghostObject->setUserIndex((int)entity);
+        physicsWorld->addGhost(ghostObject);
+        registry.emplace<Transform>(entity);
+        registry.emplace<Sensor>(entity, ghostObject);
+    }
+
 
     for (int i = 0; i < 5; i++) {
         auto entity = registry.create();

@@ -126,6 +126,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Move loading of models and textures to a class which can have multiple `loaders`.
   - Each loader has a `canHandle` and `handle` method that returns either a material or a mesh depending on the type of loader.
 - [ ] Implement clickable control objects, which don't collide. This should be possible with <https://pybullet.org/Bullet/BulletFull/classbtGhostObject.html#details>
+  - Should be tied together with the spline
+- [ ] Make a component for if a entity is allowed to be manipulated with the gizmo and which ones.
 
 ### Descriptor Layout Idea
 

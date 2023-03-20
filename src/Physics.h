@@ -4,12 +4,13 @@
 #define PHYSICS_H
 
 #include <functional>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <btBulletDynamicsCommon.h>
 #include "Path.h"
 
 class DebugDrawer;
 
-typedef std::function<void(btRigidBody*, const btVector3 hitPoint, const btVector3 hitNormal)> RayCallback;
+typedef std::function<void(const btCollisionObject*, const btVector3 hitPoint, const btVector3 hitNormal)> RayCallback;
 
 class PhysicsWorld {
 public:
@@ -21,6 +22,10 @@ public:
     void addBody(btRigidBody* body);
 
     void removeBody(btRigidBody* body);
+
+    void addGhost(btGhostObject* ghost);
+
+    void removeGhost(btGhostObject* ghost);
 
     void closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback);
 

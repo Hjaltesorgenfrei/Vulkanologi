@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 struct Transform {
     glm::mat4 modelMatrix;
@@ -12,6 +13,10 @@ struct Transform {
 
 struct RigidBody {
     btRigidBody* body;
+};
+
+struct Sensor {
+    btGhostObject* ghost;
 };
 
 #endif

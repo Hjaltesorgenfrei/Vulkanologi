@@ -1,4 +1,7 @@
 #include "Physics.h"
+
+// Include btGhostObject header
+
 #include <iostream>
 
 PhysicsWorld::PhysicsWorld()
@@ -52,6 +55,16 @@ void PhysicsWorld::removeBody(btRigidBody *body)
     dynamicsWorld->removeRigidBody(body);
 }
 
+void PhysicsWorld::addGhost(btGhostObject *ghost)
+{
+    dynamicsWorld->addCollisionObject(ghost, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::SensorTrigger);
+}
+
+void PhysicsWorld::removeGhost(btGhostObject *ghost)
+{
+    dynamicsWorld->removeCollisionObject(ghost);
+}
+
 void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback)
 {
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayFromWorld, rayToWorld);
@@ -59,10 +72,7 @@ void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayT
     if (rayCallback.hasHit()) {
         btVector3 hitPoint = rayCallback.m_hitPointWorld;
         btVector3 hitNormal = rayCallback.m_hitNormalWorld;
-        const btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
-        if (body) {
-            callback(const_cast<btRigidBody*>(body), hitPoint, hitNormal);
-        }
+        callback(rayCallback.m_collisionObject, hitPoint, hitNormal);
     }
 }
 

@@ -83,7 +83,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - <https://github.com/Overv/VulkanTutorial/pull/255>
 - [x] Fix controls after adding Imgui
   - [x] Only capture mouse clicks if not over ui.
-- [ ] Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo
+- [x] ~~Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo~~
+  - I just use a ray to select instead.
 - [ ] Use VMA.hpp instead
 - [ ] Create a style to autoformat with
 - [ ] Move swap chain to its own class
@@ -120,12 +121,16 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Rename files and introduce a namespace.
   - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
 - [ ] Pre-dock debug info in ImGui, probably with a `DockBuilder`.
-- [ ] Size the debug windows to the size of their content. 
+- [ ] Size the debug windows to the size of their content.
+- [ ] Use shared_ptr reference counting in AssetManager to clean up unused assets when space is low.
+- [ ] Move loading of models and textures to a class which can have multiple `loaders`.
+  - Each loader has a `canHandle` and `handle` method that returns either a material or a mesh depending on the type of loader.
+- [ ] Implement clickable control objects, which don't collide. This should be possible with <https://pybullet.org/Bullet/BulletFull/classbtGhostObject.html#details>
 
 ### Descriptor Layout Idea
 
 The DescriptorSet setup could work by creating DescriptorSetLayouts before.
-Then validating the created DescriptorSets against a provided layout. 
+Then validating the created DescriptorSets against a provided layout.
 The DescriptorSetLayout could also have a builder
 `.addBinding(uint32_t binding, vk::DescriptorType type, vk::ShaderStageFlags stageFlags, uint32t_t count = 1)`
 If any binding has > 1 count, then it should be variable length and partially bound.

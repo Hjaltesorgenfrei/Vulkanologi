@@ -9,7 +9,7 @@
 
 #include "Renderer.h"
 #include "Application.h"
-#include "ShapeExperiment.h"
+#include "Cube.h"
 
 #include "Path.h"
 #include "Spline.h"
@@ -196,14 +196,14 @@ int App::drawFrame(float delta) {
         frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
 
         frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
-    }
 
-    if (!objects.empty()) {
-        auto lastModel = objects.back(); // Just a testing statement
-        // drawImGuizmo(&lastModel->transformMatrix.model);
+        if (!objects.empty()) {
+            auto lastModel = objects.back(); // Just a testing statement
+            // drawImGuizmo(&lastModel->transformMatrix.model);
 
-        auto normalPaths = drawNormals(lastModel);
-        frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
+            auto normalPaths = drawNormals(lastModel);
+            frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
+        }
     }
 
     if (rigidBody != nullptr) {
@@ -309,9 +309,12 @@ void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCube(glm::vec3{}), Material{}));
+
+    objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
+
     renderer->uploadMeshes(objects);
 
     for (int i = 0; i < 5; i++) {

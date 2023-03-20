@@ -119,6 +119,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
 - [ ] Rename files and introduce a namespace.
   - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
+- [ ] Pre-dock debug info in ImGui, probably with a `DockBuilder`.
+- [ ] Size the debug windows to the size of their content. 
 
 ### Descriptor Layout Idea
 

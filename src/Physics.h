@@ -3,10 +3,13 @@
 #ifndef PHYSICS_H
 #define PHYSICS_H
 
+#include <functional>
 #include <btBulletDynamicsCommon.h>
 #include "Path.h"
 
 class DebugDrawer;
+
+typedef std::function<void(btRigidBody*, const btVector3 hitPoint, const btVector3 hitNormal)> RayCallback;
 
 class PhysicsWorld {
 public:
@@ -19,7 +22,7 @@ public:
 
     void removeBody(btRigidBody* body);
 
-    void rayTest(const btVector3 rayFromWorld, const btVector3 rayToWorld);
+    void closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback);
 
     std::vector<Path> getDebugLines() const;
 

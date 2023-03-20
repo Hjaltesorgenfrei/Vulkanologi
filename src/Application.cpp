@@ -5,7 +5,6 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
-#include <entt/entt.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Renderer.h"
@@ -16,9 +15,6 @@
 #include "Spline.h"
 #include "Components.h"
 
-entt::registry registry;
-
-entt::entity selectedEntity = entt::null;
 
 void App::run() {
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
@@ -84,7 +80,10 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         btVector3 rayFromWorld(pos.x, pos.y, pos.z);
         const int maxRayLength = 1000;
         btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
-        app->physicsWorld->rayTest(rayFromWorld, rayToWorld);
+        app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](btRigidBody* body, const btVector3& point, const btVector3& normal) {
+            auto entity = static_cast<entt::entity>(body->getUserIndex());
+            app->selectedEntity = entity;
+        });
 
         glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
         glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
@@ -150,36 +149,10 @@ Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
 }
 
 int App::drawFrame(float delta) {
-    // std::lock_guard<std::mutex> lockGuard(rendererMutex);
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    auto memoryUsage = renderer->getMemoryUsage();
-    // Make a imgui window to show the frame time
-
-    // Save average of last 10 frames
-    static const int frameCount = 30;
-    static float frameTimes[frameCount] = {0};
-    static int frameTimeIndex = 0;
-    frameTimes[frameTimeIndex] = delta;
-    frameTimeIndex = (frameTimeIndex + 1) % frameCount;
-    float averageFrameTime = 0;
-    for (int i = 0; i < frameCount; i++) {
-        averageFrameTime += frameTimes[i];
-    }
-    averageFrameTime /= frameCount;
-
-    static int resolution = 10;
-    static int segments = 50;
-    static float along = 0.f;
-    
-    along += 0.001f * delta;
-    if (along > 2.f) {
-        along = 0.f;
-    }
-
-    //ImGui::ShowDemoWindow();
     FrameInfo frameInfo{};
     frameInfo.objects = objects;
     frameInfo.camera = camera;
@@ -188,26 +161,25 @@ int App::drawFrame(float delta) {
     static ControlPoint start;
     static ControlPoint end;
 
-    if (showDebugInfo) {
-        ImGui::Begin("Debug Info");
-        ImGui::Text("Frame Time: %f", averageFrameTime);
-        ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
-        ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
-        ImGui::SliderInt("Resolution", &resolution, 1, 10);
-        ImGui::SliderInt("Segments", &segments, 2, 50);
-        ImGui::End();
+    auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
 
+    if (showDebugInfo) {
+        drawFrameDebugInfo(delta);
+
+        if (rigidBody) {
+            drawRigidBodyDebugInfo(rigidBody);
+        }
 
         auto path = cubicPath(
             start,
             end,
-            segments, 
-            resolution, glm::vec3{1, 0, 0});
+            50, 
+            10, glm::vec3{1, 0, 0});
         frameInfo.paths.emplace_back(path);
         for (const auto point : path.getPoints()) {
             frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
         }
-        for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, segments, resolution)) {
+        for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, 50, 10)) {
             auto start = frame.o;
             auto rightVector = glm::normalize(frame.r);
             auto end = frame.o + frame.t * 0.25f;
@@ -234,43 +206,104 @@ int App::drawFrame(float delta) {
         frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
     }
 
-    // Get RigidBody from the entity selectedEntity in the entt::registry
-    auto body = registry.get<RigidBody>(selectedEntity).body;
+    if (rigidBody != nullptr) {
+        auto body = rigidBody->body;
+        auto transform = body->getWorldTransform();
+        auto scale = body->getCollisionShape()->getLocalScaling();
+        // convert to glm
+        glm::mat4 modelMatrix;
+        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
 
-    auto transform = body->getWorldTransform();
-    auto scale = body->getCollisionShape()->getLocalScaling();
-    // convert to glm
-    glm::mat4 modelMatrix;
-    transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-
-    if (currentGizmoOperation == ImGuizmo::SCALE) {
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-        auto scaleMatrix = glm::mat4(1.0f);
-        ImGuizmo::BeginFrame();
-        ImGuizmo::Enable(true);
-        auto [width, height] = window->getFramebufferSize();
-        auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
-        proj[1][1] *= -1; // ImGuizmo Expects the opposite
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-        if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
-            // Add the scale to the current scale
-            btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
-            newScale *= scale;
-            body->getCollisionShape()->setLocalScaling(newScale);
+        if (currentGizmoOperation == ImGuizmo::SCALE) {
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+            auto scaleMatrix = glm::mat4(1.0f);
+            ImGuizmo::BeginFrame();
+            ImGuizmo::Enable(true);
+            auto [width, height] = window->getFramebufferSize();
+            auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+            proj[1][1] *= -1; // ImGuizmo Expects the opposite
+            ImGuiIO& io = ImGui::GetIO();
+            ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+            if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
+                // Add the scale to the current scale
+                btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
+                newScale *= scale;
+                body->getCollisionShape()->setLocalScaling(newScale);
+            }
         }
-    }
 
-    else if (drawImGuizmo(&modelMatrix)) {
-        // convert back to bullet
-        btTransform newTransform;
-        newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-        body->setWorldTransform(newTransform);
-    }
+        else if (drawImGuizmo(&modelMatrix)) {
+            // convert back to bullet
+            btTransform newTransform;
+            newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
+            body->setWorldTransform(newTransform);
+        }
 
+    }
+    
     auto result = renderer->drawFrame(frameInfo);
     ImGui::EndFrame();
     return result;
+}
+
+void App::drawFrameDebugInfo(float delta)
+{
+    auto memoryUsage = renderer->getMemoryUsage();
+    // Make a imgui window to show the frame time
+
+    // Save average of last 10 frames
+    static const int frameCount = 30;
+    static float frameTimes[frameCount] = {0};
+    static int frameTimeIndex = 0;
+    frameTimes[frameTimeIndex] = delta;
+    frameTimeIndex = (frameTimeIndex + 1) % frameCount;
+    float averageFrameTime = 0;
+    for (int i = 0; i < frameCount; i++) {
+        averageFrameTime += frameTimes[i];
+    }
+    averageFrameTime /= frameCount;
+
+    static int resolution = 10;
+    static int segments = 50;
+
+    ImGui::Begin("Frame Info");
+    ImGui::Text("Frame Time: %f", averageFrameTime);
+    ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
+    ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+    ImGui::End();
+}
+
+void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
+{
+    auto body = rigidBody->body;
+    auto transform = body->getWorldTransform();
+    auto scale = body->getCollisionShape()->getLocalScaling();
+
+    // Show with ImGui
+    ImGui::Begin("Rigid Body Info");
+    ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
+    ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
+    ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+    ImGui::Text("Mass: %f", body->getInvMass());
+    ImGui::Text("Friction: %f", body->getFriction());
+    ImGui::Text("Restitution: %f", body->getRestitution());
+    ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
+    ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
+    ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
+    ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
+    ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
+    ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
+    ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
+    ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
+    ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
+    ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
+    ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
+
+    if (ImGui::Button("Set Active")) {
+        body->activate(true);
+    }
+
+    ImGui::End();
 }
 
 void App::mainLoop() {
@@ -281,24 +314,29 @@ void App::mainLoop() {
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     renderer->uploadMeshes(objects);
 
-    auto colShape = new btBoxShape(btVector3(1, 1, 1));
-    auto startTransform = btTransform();
-    startTransform.setIdentity();
-    auto mass = 1.f;
-    auto localInertia = btVector3(0, 0, 0);
-    colShape->calculateLocalInertia(mass, localInertia);
-    startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
-    auto myMotionState = new btDefaultMotionState(startTransform);
-    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-    auto testBody = new btRigidBody(rbInfo);
-    testBody->setUserIndex(8);
-    physicsWorld->addBody(testBody);
+    for (int i = 0; i < 5; i++) {
+        auto entity = registry.create();
+        entities.push_back(entity);
 
-    selectedEntity = registry.create();
-    registry.emplace<Transform>(selectedEntity);
+        auto colShape = new btBoxShape(btVector3(1, 1, 1));
+        auto startTransform = btTransform();
+        startTransform.setIdentity();
+        auto mass = 1.f;
+        auto localInertia = btVector3(0, 0, 0);
+        colShape->calculateLocalInertia(mass, localInertia);
+        startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
+        auto myMotionState = new btDefaultMotionState(startTransform);
+        auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
+        auto body = new btRigidBody(rbInfo);
+        body->setUserIndex((int)entity);
+        physicsWorld->addBody(body);
+
+        registry.emplace<Transform>(entity);
+        registry.emplace<RigidBody>(entity, body);
+    }
+ 
+
     // registry.emplace<RenderObject>(selectedEntity, createCube(glm::vec3{}), Material{}); // Not supported yet
-    registry.emplace<RigidBody>(selectedEntity, testBody);
-
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float, std::milli> delta = now - timeStart;

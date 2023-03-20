@@ -25,22 +25,6 @@ PhysicsWorld::PhysicsWorld()
     auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
     auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
     addBody(groundRigidBody);
-
-    // add 5 dynamic boxes
-    auto colShape = new btBoxShape(btVector3(1, 1, 1));
-    auto startTransform = btTransform();
-    startTransform.setIdentity();
-    auto mass = 1.f;
-    auto localInertia = btVector3(0, 0, 0);
-    colShape->calculateLocalInertia(mass, localInertia);
-    for (int i = 0; i < 5; i++) {
-        startTransform.setOrigin(btVector3(static_cast<btScalar>(2 * i), 10, 0));
-        auto myMotionState = new btDefaultMotionState(startTransform);
-        auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-        auto body = new btRigidBody(rbInfo);
-        body->setUserIndex(i);
-        addBody(body);
-    }
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -68,7 +52,7 @@ void PhysicsWorld::removeBody(btRigidBody *body)
     dynamicsWorld->removeRigidBody(body);
 }
 
-void PhysicsWorld::rayTest(const btVector3 rayFromWorld, const btVector3 rayToWorld)
+void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback)
 {
     btCollisionWorld::ClosestRayResultCallback rayCallback(rayFromWorld, rayToWorld);
     dynamicsWorld->rayTest(rayFromWorld, rayToWorld, rayCallback);
@@ -77,8 +61,7 @@ void PhysicsWorld::rayTest(const btVector3 rayFromWorld, const btVector3 rayToWo
         btVector3 hitNormal = rayCallback.m_hitNormalWorld;
         const btRigidBody* body = btRigidBody::upcast(rayCallback.m_collisionObject);
         if (body) {
-            std::cout << "Hit body: " << body->getUserIndex() << std::endl;
-            body->activate();
+            callback(const_cast<btRigidBody*>(body), hitPoint, hitNormal);
         }
     }
 }

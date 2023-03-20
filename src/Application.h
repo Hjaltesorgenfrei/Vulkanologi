@@ -1,10 +1,12 @@
 #pragma once
+#include <entt/entt.hpp>
 #include "Renderer.h"
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "ImGuizmo.h"
 #include "Physics.h"
+#include "Components.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -20,6 +22,9 @@ private:
 	std::unique_ptr<Renderer> renderer;
     std::shared_ptr<BehDevice> device;
     std::vector<std::shared_ptr<RenderObject>> objects;
+    entt::entity selectedEntity = entt::null;
+    entt::registry registry;
+    std::vector<entt::entity> entities;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
@@ -44,5 +49,7 @@ private:
     bool shiftPressed = false;
 
     int drawFrame(float delta);
+    void drawFrameDebugInfo(float delta);
+    void drawRigidBodyDebugInfo(RigidBody* rigidBody);
 
 };

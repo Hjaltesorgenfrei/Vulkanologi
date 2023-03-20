@@ -298,6 +298,9 @@ void Renderer::initImgui() {
         device->device().destroyDescriptorPool(imguiPool);
         ImGui_ImplVulkan_Shutdown();
     });
+
+    // Enable docking
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 }
 
 void Renderer::createImageViews() {

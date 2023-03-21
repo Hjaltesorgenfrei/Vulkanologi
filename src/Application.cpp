@@ -158,13 +158,18 @@ int App::drawFrame(float delta) {
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
 
-    static ControlPoint start;
-    static ControlPoint end;
-
     auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
     auto sensor = registry.try_get<Sensor>(selectedEntity);
+    
+    std::vector<ControlPoint> controlPoints;
+
+    registry.view<ControlPoint>().each([&](auto entity, auto& controlPoint) {
+        controlPoints.push_back(controlPoint);
+    });
 
     if (showDebugInfo) {
+        auto start = controlPoints[0];
+        auto end = controlPoints[1];
         drawFrameDebugInfo(delta);
 
         if (rigidBody) {
@@ -352,19 +357,20 @@ void App::mainLoop() {
     renderer->uploadMeshes(objects);
 
     
-    {
+    for (int i = 0; i < 2; i++){
         auto entity = registry.create();
         entities.push_back(entity);
         // Create a ghost object using btGhostObject, same way i need to do control points
         btGhostObject* ghostObject = new btGhostObject();
-        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 0, 0)));
-        btConvexShape* sphere = new btSphereShape(1.0f);
+        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(i), 0, -2)));
+        btConvexShape* sphere = new btSphereShape(0.1f);
         ghostObject->setCollisionShape(sphere);
         ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
         ghostObject->setUserIndex((int)entity);
         physicsWorld->addGhost(ghostObject);
         registry.emplace<Transform>(entity);
         registry.emplace<Sensor>(entity, ghostObject);
+        registry.emplace<ControlPoint>(entity);
     }
 
 
@@ -402,6 +408,20 @@ void App::mainLoop() {
         // TODO: Make this a fixed timestep
         // TODO: Give milliseconds type as argument
         physicsWorld->update(delta.count() / 1000.f);
+
+        auto view = registry.view<const Sensor, ControlPoint>();
+
+        for (auto entity : view) {
+            auto [sensor, controlPoint] = view.get<const Sensor, ControlPoint>(entity);
+            auto body = sensor.ghost;
+            auto scale = body->getCollisionShape()->getLocalScaling();
+            // convert to glm
+            glm::mat4 modelMatrix;
+            auto transform = body->getWorldTransform();
+            transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+            controlPoint.transform = modelMatrix;
+        }
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();

@@ -336,8 +336,8 @@ void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
-    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh(glm::vec3{}), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
@@ -361,7 +361,7 @@ void App::mainLoop() {
         registry.emplace<ControlPointPtr>(entity);
     }
 
-    std::vector<ControlPoint*> controlPoints;
+    std::vector<std::shared_ptr<ControlPoint>> controlPoints;
 
     registry.view<ControlPointPtr>().each([&](auto entity, auto& controlPoint) {
         controlPoints.push_back(controlPoint.controlPoint);

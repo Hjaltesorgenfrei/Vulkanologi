@@ -3,6 +3,7 @@
 #ifndef BEZIER_H
 #define BEZIER_H
 
+#include <memory>
 #include "Path.h"
 
 class ControlPoint
@@ -65,23 +66,23 @@ class Bezier : public Path
 {
 public:
     Bezier(glm::vec3 color);
-    Bezier(std::vector<ControlPoint *> controlPoints, glm::vec3 color);
+    Bezier(std::vector<std::shared_ptr<ControlPoint>> controlPoints, glm::vec3 color);
 
     void recompute() override;
     bool recomputeIfDirty();
 
-    void addPoint(ControlPoint *controlPoint);
-    ControlPoint* getPoint(int index) const;
+    void addPoint(std::shared_ptr<ControlPoint> controlPoint);
+    std::shared_ptr<ControlPoint> getPoint(int index) const;
     size_t getNumPoints();
-    void setPoint(int index, ControlPoint *controlPoint);
+    void setPoint(int index, std::shared_ptr<ControlPoint> controlPoint);
     void removePoint(int index);
-    std::vector<ControlPoint *> const &getControlPoints() const;
+    std::vector<std::shared_ptr<ControlPoint>> const &getControlPoints() const;
 
 protected:
-    std::vector<ControlPoint *> controlPoints;
+    std::vector<std::shared_ptr<ControlPoint>> controlPoints;
     glm::vec3 color;
 
-    std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float>& evenTs);
+    std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float> &evenTs);
 
     std::vector<float> evenTsAlongCubic(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d);
 
@@ -89,7 +90,7 @@ protected:
 
     float estimateArcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d);
 
-    std::vector<FrenetFrame> getRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float>& evenTs);
+    std::vector<FrenetFrame> getRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float> &evenTs);
 };
 
 /* TODO: Add this

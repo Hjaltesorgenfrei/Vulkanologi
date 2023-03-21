@@ -5,7 +5,7 @@ Bezier::Bezier(glm::vec3 color) : color(color)
 {
 }
 
-Bezier::Bezier(std::vector<ControlPoint*> controlPoints, glm::vec3 color) : controlPoints(controlPoints), color(color)
+Bezier::Bezier(std::vector<std::shared_ptr<ControlPoint>> controlPoints, glm::vec3 color) : controlPoints(controlPoints), color(color)
 {
     recompute();
 }
@@ -88,14 +88,14 @@ void Bezier::recompute()
     }
 }
 
-void Bezier::addPoint(ControlPoint* controlPoint)
+void Bezier::addPoint(std::shared_ptr<ControlPoint> controlPoint)
 {
     controlPoint->dirty = true;
     controlPoints.push_back(controlPoint);
     recompute();
 }
 
-ControlPoint* Bezier::getPoint(int index) const
+std::shared_ptr<ControlPoint> Bezier::getPoint(int index) const
 {
     return controlPoints.at(index);
 }
@@ -105,7 +105,7 @@ size_t Bezier::getNumPoints()
     return controlPoints.size();
 }
 
-void Bezier::setPoint(int index, ControlPoint* controlPoint)
+void Bezier::setPoint(int index, std::shared_ptr<ControlPoint> controlPoint)
 {
     controlPoints.at(index) = controlPoint;
 }
@@ -123,7 +123,7 @@ void Bezier::removePoint(int index)
     recompute();
 }
 
-std::vector<ControlPoint*> const &Bezier::getControlPoints() const
+std::vector<std::shared_ptr<ControlPoint>> const &Bezier::getControlPoints() const
 {
     return controlPoints;
 }
@@ -187,7 +187,7 @@ float Bezier::estimateArcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3
 
 bool Bezier::recomputeIfDirty()
 {
-    if (std::any_of(controlPoints.begin(), controlPoints.end(), [](ControlPoint* const &p) { return p->dirty; }))
+    if (std::any_of(controlPoints.begin(), controlPoints.end(), [](std::shared_ptr<ControlPoint> const &p) { return p->dirty; }))
     {
         recompute();
         return true;

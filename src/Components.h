@@ -3,6 +3,7 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include <memory>
 #include <glm/glm.hpp>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -21,20 +22,10 @@ struct Sensor {
 };
 
 struct ControlPointPtr {
-    ControlPoint* const controlPoint;
+    const std::shared_ptr<ControlPoint> controlPoint; 
+    // If this wrapper goes out of scope we don't crash but the points will only be accessible through the owning curve.
 
-    ControlPointPtr() : controlPoint(new ControlPoint()) 
-    {}
-
-    ~ControlPointPtr() {
-        delete controlPoint;
-    }
-
-    // delete copy and move constructors and assign operators
-    ControlPointPtr(ControlPointPtr const&) = delete;             // Copy construct
-    ControlPointPtr(ControlPointPtr&&) = delete;                  // Move construct
-    ControlPointPtr& operator=(ControlPointPtr const&) = delete;  // Copy assign
-    ControlPointPtr& operator=(ControlPointPtr &&) = delete;      // Move assign
+    ControlPointPtr() : controlPoint(std::make_shared<ControlPoint>()) {}
 };
 
 #endif

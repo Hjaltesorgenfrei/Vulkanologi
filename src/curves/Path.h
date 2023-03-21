@@ -47,44 +47,6 @@ struct Point {
     }
 };
 
-class ControlPoint {
-public:
-    Point point() const {
-        Point newPoint;
-        newPoint.position = glm::vec3(transform * glm::vec4(_point.position, 1.0f));
-        newPoint.normal = glm::vec3(transform * glm::vec4(_point.normal, 0.0f));
-        newPoint.color = _point.color;
-        return newPoint;
-    }
-
-    void setPoint(Point point) {
-        _point = point;
-    }
-
-    glm::vec3 forward() const {
-        return glm::vec3(transform * glm::vec4(_forward, 0.0f));
-    }
-
-    glm::vec3 forwardWorld() const {
-        return point().position + forward();
-    }
-
-    glm::vec3 backwardWorld() const {
-        return point().position - forward();
-    }
-
-    void setForward(glm::vec3 forward) {
-        _forward = forward;
-    }
-
-    glm::mat4 transform = glm::mat4(1.0f);
-
-private:
-    Point _point = { glm::vec3(0.0f), glm::vec3(0, 1, 0), glm::vec3(1.0f) };
-    glm::vec3 _forward = {1.0f, 0.f, 0.f}; // Is mirrored if the points is not a end point
-
-};
-
 struct FrenetFrame
 {
     glm::vec3 o; // origin of all vectors, i.e. the on-curve point,
@@ -93,12 +55,13 @@ struct FrenetFrame
     glm::vec3 n; // normal vector
 };
 
+glm::mat4 frenetFrameMatrix(FrenetFrame frame);
+
 class Path {
 public:
     std::vector<uint32_t> const & getIndices() const;
     std::vector<Point> const & getPoints() const;
-    std::vector<ControlPoint> const & getControlPoints() const;
-    virtual void generateFrenetFrames();
+    std::vector<FrenetFrame> const & getFrenetFrames() const;
     virtual void recompute();
 
 protected:
@@ -106,7 +69,6 @@ protected:
 
     std::vector<Point> points;
     std::vector<uint32_t> indices;
-    std::vector<ControlPoint> controlPoints;
     std::vector<FrenetFrame> frenetFrames; // Might not be needed in all cases, like the line path
     bool dirty = true; // TODO: Use this to only update the buffers when needed
     float resolution = 0.1f; // Distance between points on the curve

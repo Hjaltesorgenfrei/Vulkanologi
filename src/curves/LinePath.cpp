@@ -7,11 +7,6 @@ LinePath::LinePath(glm::vec3 start, glm::vec3 end, glm::vec3 color)
     addPoint(end, color);
 }
 
-void LinePath::generateFrenetFrames()
-{
-    // TODO: Implement by linear interpolation between points, based on total distance.
-}
-
 void LinePath::addPoint(glm::vec3 position, glm::vec3 color)
 {
     if (points.size() == 0) {

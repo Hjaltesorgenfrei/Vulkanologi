@@ -175,16 +175,14 @@ int App::drawFrame(float delta) {
             drawRigidBodyDebugInfo(rigidBody);
         }
 
-        auto path = cubicPath(
-            start,
-            end,
-            50, 
-            10, glm::vec3{1, 0, 0});
+        auto path = Bezier(glm::vec3{1, 0, 0});
+        path.addPoint(start);
+        path.addPoint(end);
         frameInfo.paths.emplace_back(path);
         for (const auto point : path.getPoints()) {
             frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
         }
-        for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, 50, 10)) {
+        for (const auto frame : path.getFrenetFrames()) {
             auto start = frame.o;
             auto rightVector = glm::normalize(frame.r);
             auto end = frame.o + frame.t * 0.25f;

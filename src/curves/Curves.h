@@ -3,8 +3,9 @@
 #ifndef CURVES_H
 #define CURVES_H
 
+#include "Interpolation.h"
 #include "Path.h"
 #include "LinePath.h"
-#include "Spline.h"
+#include "Bezier.h"
 
 #endif

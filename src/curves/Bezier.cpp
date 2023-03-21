@@ -5,15 +5,18 @@ Bezier::Bezier(glm::vec3 color) : color(color)
 {
 }
 
-std::vector<FrenetFrame> Bezier::getRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d)
+Bezier::Bezier(std::vector<ControlPoint*> controlPoints, glm::vec3 color) : controlPoints(controlPoints), color(color)
+{
+    recompute();
+}
+
+std::vector<FrenetFrame> Bezier::getRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float>& evenTs)
 {
     std::vector<FrenetFrame> frames;
 
-    auto ts = evenTsAlongCubic(a.position, b, c, d);
-
     auto x0 = FrenetFrame{
         .o = a.position,
-        .t = tangentCubicCurve(a.position, b, c, d, ts[0]),
+        .t = tangentCubicCurve(a.position, b, c, d, evenTs[0]),
         .n = a.normal};
 
     // Get right from normal and tangent
@@ -21,11 +24,11 @@ std::vector<FrenetFrame> Bezier::getRMFrames(Point a, glm::vec3 b, glm::vec3 c, 
 
     frames.push_back(x0);
 
-    for (int i = 1; i < ts.size(); i++)
+    for (int i = 1; i < evenTs.size(); i++)
     {
         x0 = frames.back();
 
-        auto t1 = ts[i];
+        auto t1 = evenTs[i];
         auto x1 = FrenetFrame{.o = cubicCurve(a.position, b, c, d, t1), .t = tangentCubicCurve(a.position, b, c, d, t1)};
 
         auto v1 = x1.o - x0.o;
@@ -57,13 +60,16 @@ void Bezier::recompute()
 
     for (int i = 0; i < controlPoints.size() - 1; i++)
     {
-        auto a = controlPoints[i].point();
-        auto b = controlPoints[i].forwardWorld();
-        auto c = controlPoints[i + 1].backwardWorld();
-        auto d = controlPoints[i + 1].point().position;
+        controlPoints[i]->dirty = false;
+        controlPoints[i + 1]->dirty = false;
+        auto a = controlPoints[i]->point();
+        auto b = controlPoints[i]->forwardWorld();
+        auto c = controlPoints[i + 1]->backwardWorld();
+        auto d = controlPoints[i + 1]->point().position;
 
-        auto evenPoints = evenPointsAlongCubicCurve(a.position, b, c, d);
-        auto frames = getRMFrames(a, b, c, d);
+        auto evenTs = evenTsAlongCubic(a.position, b, c, d);
+        auto evenPoints = evenPointsAlongCubicCurve(a.position, b, c, d, evenTs);
+        auto frames = getRMFrames(a, b, c, d, evenTs);
 
         for (int j = 0; j < evenPoints.size(); j++)
         {
@@ -82,13 +88,14 @@ void Bezier::recompute()
     }
 }
 
-void Bezier::addPoint(ControlPoint controlPoint)
+void Bezier::addPoint(ControlPoint* controlPoint)
 {
+    controlPoint->dirty = true;
     controlPoints.push_back(controlPoint);
     recompute();
 }
 
-ControlPoint Bezier::getPoint(int index) const
+ControlPoint* Bezier::getPoint(int index) const
 {
     return controlPoints.at(index);
 }
@@ -98,7 +105,7 @@ size_t Bezier::getNumPoints()
     return controlPoints.size();
 }
 
-void Bezier::setPoint(int index, ControlPoint controlPoint)
+void Bezier::setPoint(int index, ControlPoint* controlPoint)
 {
     controlPoints.at(index) = controlPoint;
 }
@@ -110,20 +117,22 @@ void Bezier::removePoint(int index)
         return;
     }
 
+    auto pointToRemove = controlPoints.begin() + index;
+    (*pointToRemove)->dirty = true;
     controlPoints.erase(controlPoints.begin() + index);
     recompute();
 }
 
-std::vector<ControlPoint> const &Bezier::getControlPoints() const
+std::vector<ControlPoint*> const &Bezier::getControlPoints() const
 {
     return controlPoints;
 }
 
-std::vector<glm::vec3> Bezier::evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d)
+std::vector<glm::vec3> Bezier::evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float>& evenTs)
 {
     std::vector<glm::vec3> points;
 
-    for (auto t : evenTsAlongCubic(a, b, c, d))
+    for (auto t : evenTs)
     {
         points.push_back(cubicCurve(a, b, c, d, t));
     }
@@ -156,7 +165,7 @@ std::vector<float> Bezier::evenTsAlongCubic(glm::vec3 a, glm::vec3 b, glm::vec3 
 std::vector<std::pair<float, float>> Bezier::arcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d)
 {
     std::vector<std::pair<float, float>> lengths;
-    int steps = static_cast<int>(estimateArcLength(a, b, c, d) / resolution) * 2;
+    int steps = static_cast<int>(estimateArcLength(a, b, c, d) / resolution) * 5;
     float length = 0.f;
     glm::vec3 lastPoint = a;
     for (int i = 1; i <= steps; i++)
@@ -174,4 +183,14 @@ float Bezier::estimateArcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3
 {
     // Length between a and d plus half of the control net
     return glm::length(a - d) + 0.5f * (glm::length(a - b) + glm::length(b - c) + glm::length(c - d));
+}
+
+bool Bezier::recomputeIfDirty()
+{
+    if (std::any_of(controlPoints.begin(), controlPoints.end(), [](ControlPoint* const &p) { return p->dirty; }))
+    {
+        recompute();
+        return true;
+    }
+    return false;
 }

@@ -159,51 +159,42 @@ int App::drawFrame(float delta) {
 
     auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
     auto sensor = registry.try_get<Sensor>(selectedEntity);
-    
-    std::vector<ControlPoint> controlPoints;
 
-    registry.view<ControlPoint>().each([&](auto entity, auto& controlPoint) {
-        controlPoints.push_back(controlPoint);
-    });
 
     if (showDebugInfo) {
-        auto start = controlPoints[0];
-        auto end = controlPoints[1];
+        registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
+            bezier.recomputeIfDirty();
+            frameInfo.paths.emplace_back(bezier);
+            for (const auto point : bezier.getPoints()) {
+                frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
+            }
+            for (const auto frame : bezier.getFrenetFrames()) {
+                auto start = frame.o;
+                auto rightVector = glm::normalize(frame.r);
+                auto end = frame.o + frame.t * 0.25f;
+                auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
+                auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
+                frameInfo.paths.emplace_back(LinePath(start, end, {0, 1, 0}));
+                // Make a arrow at the end
+                frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
+                frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
+                frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
+            }
+        });
+
         drawFrameDebugInfo(delta);
 
         if (rigidBody) {
             drawRigidBodyDebugInfo(rigidBody);
-        }
-
-        auto path = Bezier(glm::vec3{1, 0, 0});
-        path.addPoint(start);
-        path.addPoint(end);
-        frameInfo.paths.emplace_back(path);
-        for (const auto point : path.getPoints()) {
-            frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
-        }
-        for (const auto frame : path.getFrenetFrames()) {
-            auto start = frame.o;
-            auto rightVector = glm::normalize(frame.r);
-            auto end = frame.o + frame.t * 0.25f;
-            auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
-            auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
-            frameInfo.paths.emplace_back(LinePath(start, end, {0, 1, 0}));
-            // Make a arrow at the end
-            frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
-            frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
-            frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
-        }
+        }       
 
         auto physicsPaths = physicsWorld->getDebugLines();
         frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
-
         frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
 
         if (!objects.empty()) {
-            auto lastModel = objects.back(); // Just a testing statement
+            auto lastModel = objects.back(); 
             // drawImGuizmo(&lastModel->transformMatrix.model);
-
             auto normalPaths = drawNormals(lastModel);
             frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
         }
@@ -345,8 +336,8 @@ void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh(glm::vec3{}), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
@@ -367,7 +358,20 @@ void App::mainLoop() {
         physicsWorld->addGhost(ghostObject);
         registry.emplace<Transform>(entity);
         registry.emplace<Sensor>(entity, ghostObject);
-        registry.emplace<ControlPoint>(entity);
+        registry.emplace<ControlPointPtr>(entity);
+    }
+
+    std::vector<ControlPoint*> controlPoints;
+
+    registry.view<ControlPointPtr>().each([&](auto entity, auto& controlPoint) {
+        controlPoints.push_back(controlPoint.controlPoint);
+    });
+
+    {
+        auto entity = registry.create();
+        entities.push_back(entity);
+        Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
+        registry.emplace<Bezier>(entity, bezier);
     }
 
 
@@ -406,10 +410,10 @@ void App::mainLoop() {
         // TODO: Give milliseconds type as argument
         physicsWorld->update(delta.count() / 1000.f);
 
-        auto view = registry.view<const Sensor, ControlPoint>();
+        auto view = registry.view<const Sensor, ControlPointPtr>();
 
         for (auto entity : view) {
-            auto [sensor, controlPoint] = view.get<const Sensor, ControlPoint>(entity);
+            auto [sensor, controlPoint] = view.get<const Sensor, ControlPointPtr>(entity);
             auto body = sensor.ghost;
             auto scale = body->getCollisionShape()->getLocalScaling();
             // convert to glm
@@ -417,7 +421,8 @@ void App::mainLoop() {
             auto transform = body->getWorldTransform();
             transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
             modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-            controlPoint.transform = modelMatrix;
+            // Check if the transform changed
+            controlPoint.controlPoint->update(modelMatrix);
         }
         
         if (updateWindowSize) {

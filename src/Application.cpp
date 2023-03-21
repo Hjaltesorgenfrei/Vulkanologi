@@ -136,15 +136,16 @@ float bytesToMegaBytes(uint64_t bytes) {
     return bytes / 1024.0f / 1024.0f;
 }
 
-Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
-    Path path(true);
-    for (int i = 0; i < segments; i++) {
-        float angle = (float)i / (float)segments * 2.0f * 3.14159265359f;
-        glm::vec3 point = center + glm::vec3(cos(angle) * radius, sin(angle) * radius, 0);
-        path.addPoint({point, glm::vec3(1, 1, 1), glm::vec3(0, 1, 0)});
-    }
-    return path;
-}
+// TODO: Move to circle path class
+// Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
+//     Path path(true);
+//     for (int i = 0; i < segments; i++) {
+//         float angle = (float)i / (float)segments * 2.0f * 3.14159265359f;
+//         glm::vec3 point = center + glm::vec3(cos(angle) * radius, sin(angle) * radius, 0);
+//         path.addPoint({point, glm::vec3(1, 1, 1), glm::vec3(0, 1, 0)});
+//     }
+//     return path;
+// }
 
 int App::drawFrame(float delta) {
     ImGui_ImplVulkan_NewFrame();

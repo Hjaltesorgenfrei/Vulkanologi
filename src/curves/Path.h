@@ -48,7 +48,6 @@ struct Point {
 };
 
 class ControlPoint {
-
 public:
     Point point() const {
         Point newPoint;
@@ -96,29 +95,22 @@ struct FrenetFrame
 
 class Path {
 public:
-    Path(bool loop = false);
-
-    bool loop;
-
-    void addPoint(Point point);
-    Point getPoint(int index);
-    size_t getNumPoints();
-    void setPoint(int index, Point point);
-    void removePoint(int index);
-    void clear();
-
     std::vector<uint32_t> const & getIndices() const;
     std::vector<Point> const & getPoints() const;
     std::vector<ControlPoint> const & getControlPoints() const;
     virtual void generateFrenetFrames();
+    virtual void recompute();
 
-private:
+protected:
+    Path(bool loop = false);
+
     std::vector<Point> points;
     std::vector<uint32_t> indices;
     std::vector<ControlPoint> controlPoints;
     std::vector<FrenetFrame> frenetFrames; // Might not be needed in all cases, like the line path
     bool dirty = true; // TODO: Use this to only update the buffers when needed
     float resolution = 0.1f; // Distance between points on the curve
+    bool loop;
 };
 
 #endif

@@ -1,78 +1,30 @@
-#pragma once
+#include "Spline.h"
 
-#ifndef _SPLINE_H_
-#define _SPLINE_H_
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <vector>
-#include <utility>
-#include "Path.h"
-
-class ControlPoint {
-
-public:
-    Point point() const {
-        Point newPoint;
-        newPoint.position = glm::vec3(transform * glm::vec4(_point.position, 1.0f));
-        newPoint.normal = glm::vec3(transform * glm::vec4(_point.normal, 0.0f));
-        newPoint.color = _point.color;
-        return newPoint;
-    }
-
-    void setPoint(Point point) {
-        _point = point;
-    }
-
-    glm::vec3 forward() const {
-        return glm::vec3(transform * glm::vec4(_forward, 0.0f));
-    }
-
-    glm::vec3 forwardWorld() const {
-        return point().position + forward();
-    }
-
-    glm::vec3 backwardWorld() const {
-        return point().position - forward();
-    }
-
-    void setForward(glm::vec3 forward) {
-        _forward = forward;
-    }
-
-    glm::mat4 transform = glm::mat4(1.0f);
-
-private:
-    Point _point = { glm::vec3(0.0f), glm::vec3(0, 1, 0), glm::vec3(1.0f) };
-    glm::vec3 _forward = {1.0f, 0.f, 0.f}; // Is mirrored if the points is not a end point
-
-};
-
-inline glm::vec3 lerp(glm::vec3 a, glm::vec3 b, float t)
+glm::vec3 lerp(glm::vec3 a, glm::vec3 b, float t)
 {
     return glm::mix(a, b, t);
 }
 
-inline glm::vec3 quadtricCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, float t)
+glm::vec3 quadtricCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, float t)
 {
     return lerp(lerp(a, b, t), lerp(b, c, t), t);
 }
 
-inline glm::vec3 cubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float t)
+glm::vec3 cubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float t)
 {
     return lerp(quadtricCurve(a, b, c, t), quadtricCurve(b, c, d, t), t);
 }
 
 // Function that returns tanget at t
 // Tangent is first derivative of the Cubic Bezier Curve
-inline glm::vec3 tangent(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float t)
+glm::vec3 tangent(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, float t)
 {
     return 3.f * glm::pow(1.f - t, 2.f) * (b - a) +
         6.f * (1.f - t) * t * (c - b) +
         3.f * glm::pow(t, 2.f) * (d - c);
 }
 
-inline std::vector<std::pair<float, float>> arcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int steps)
+std::vector<std::pair<float, float>> arcLength(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int steps)
 {
     std::vector<std::pair<float, float>> lengths;
     float length = 0.f;
@@ -88,7 +40,7 @@ inline std::vector<std::pair<float, float>> arcLength(glm::vec3 a, glm::vec3 b, 
     return lengths;
 }
 
-inline std::vector<float> evenTsAlongCubic(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
+std::vector<float> evenTsAlongCubic(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
 {
     std::vector<float> ts;
 
@@ -112,17 +64,8 @@ inline std::vector<float> evenTsAlongCubic(glm::vec3 a, glm::vec3 b, glm::vec3 c
 }
 
 
-struct FrenetFrame
-{
-    glm::vec3 o; // origin of all vectors, i.e. the on-curve point,
-    glm::vec3 t; // tangent vector
-    glm::vec3 r; // rotational axis vector
-    glm::vec3 n; // normal vector
-};
-
-
 // fernet frame at t
-inline FrenetFrame frenetFrame(glm::vec3 start, glm::vec3 c1, glm::vec3 c2, glm::vec3 end, float t) {
+FrenetFrame frenetFrame(glm::vec3 start, glm::vec3 c1, glm::vec3 c2, glm::vec3 end, float t) {
     auto t1 = tangent(start, c1, c2, end, t);
     auto a = glm::normalize(t1);
     auto b = glm::normalize(a + glm::cross(a, glm::vec3(0.f, 1.f, 0.f)));
@@ -131,7 +74,7 @@ inline FrenetFrame frenetFrame(glm::vec3 start, glm::vec3 c1, glm::vec3 c2, glm:
     return FrenetFrame{ cubicCurve(start, c1, c2, end, t), a, r, normal };
 }
 
-inline glm::mat4 frenetFrameMatrix(FrenetFrame frame) {
+glm::mat4 frenetFrameMatrix(FrenetFrame frame) {
     auto direction = frame.t;
     auto up = frame.n;
     auto pos = frame.o;
@@ -148,7 +91,7 @@ inline glm::mat4 frenetFrameMatrix(FrenetFrame frame) {
 
 // C++ translation of https://pomax.github.io/bezierinfo/#pointvectors3d
 
-inline std::vector<FrenetFrame> generateRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
+std::vector<FrenetFrame> generateRMFrames(Point a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
 {
     std::vector<FrenetFrame> frames;
 
@@ -188,7 +131,7 @@ inline std::vector<FrenetFrame> generateRMFrames(Point a, glm::vec3 b, glm::vec3
     return frames;
 }
 
-inline std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
+std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, int segments, int resolution)
 {
     std::vector<glm::vec3> points;
     
@@ -231,5 +174,3 @@ glm::mat4 moveAlongCubicPath(ControlPoint a, ControlPoint b, int segments, int r
     auto frame = frames[(int)(t * (float)frames.size()) % frames.size()];
     return frenetFrameMatrix(frame);
 }
-
-#endif

@@ -24,7 +24,6 @@ int PARTICLE_COUNT = 256 * 4;
 
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
-#include "BehFrameInfo.h"
 #include "Particle.h"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)

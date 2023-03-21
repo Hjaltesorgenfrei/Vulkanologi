@@ -85,13 +85,11 @@ std::vector<Point> const & Path::getPoints() const
     return points;
 }
 
-Path linePath(glm::vec3 start, glm::vec3 end, glm::vec3 color)
+std::vector<ControlPoint> const &Path::getControlPoints() const
 {
-    Path path;
+    return controlPoints;
+}
 
-    glm::vec3 normal = glm::vec3(0, 1, 0);
-    path.addPoint({ start, normal, color });
-    path.addPoint({ end, normal, color  });
-
-    return path;
+void Path::generateFrenetFrames()
+{
 }

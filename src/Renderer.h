@@ -18,7 +18,6 @@
 #include "BehDescriptors.h"
 #include "BehPipelines.h"
 #include "BehFrameInfo.h"
-#include "Path.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 

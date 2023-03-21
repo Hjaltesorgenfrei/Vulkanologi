@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include "BehCamera.h"
 #include "RenderObject.h"
-#include "Path.h"
+#include "curves/Curves.h"
 
 struct GlobalUbo {
     glm::mat4 view;

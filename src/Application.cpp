@@ -11,8 +11,6 @@
 #include "Application.h"
 #include "Cube.h"
 
-#include "Path.h"
-#include "Spline.h"
 #include "Components.h"
 
 
@@ -88,7 +86,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
         glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
         rays.clear();
-        rays.push_back(linePath(rayFromWorldGlm, rayToWorldGlm, glm::vec3(1, 0, 0)));
+        rays.push_back(LinePath(rayFromWorldGlm, rayToWorldGlm, glm::vec3(1, 0, 0)));
 
     }
     else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
@@ -183,7 +181,7 @@ int App::drawFrame(float delta) {
             10, glm::vec3{1, 0, 0});
         frameInfo.paths.emplace_back(path);
         for (const auto point : path.getPoints()) {
-            frameInfo.paths.emplace_back(linePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
+            frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
         }
         for (const auto frame : generateRMFrames(start.point(), start.forwardWorld(), end.backwardWorld(), end.point().position, 50, 10)) {
             auto start = frame.o;
@@ -191,11 +189,11 @@ int App::drawFrame(float delta) {
             auto end = frame.o + frame.t * 0.25f;
             auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
             auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
-            frameInfo.paths.emplace_back(linePath(start, end, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(start, end, {0, 1, 0}));
             // Make a arrow at the end
-            frameInfo.paths.emplace_back(linePath(end, right, {0, 1, 0}));
-            frameInfo.paths.emplace_back(linePath(end, left, {0, 1, 0}));
-            frameInfo.paths.emplace_back(linePath(right, left, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
         }
 
         auto physicsPaths = physicsWorld->getDebugLines();
@@ -453,7 +451,7 @@ std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
     for (const auto& vertex : mesh->_vertices) {
         auto start = transform * glm::vec4(vertex.pos, 1.0f);
         auto end = start + glm::vec4(vertex.normal, 1.0f) * 0.1f;
-        paths.push_back(linePath(start, end, {0, 0, 1}));
+        paths.push_back(LinePath(start, end, {0, 0, 1}));
     }
     return paths;
 }

@@ -7,9 +7,11 @@
 #include <thread>
 #include <glm/gtc/type_ptr.hpp>
 
+
 #include "Renderer.h"
 #include "Application.h"
 #include "Cube.h"
+#include "Sphere.h"
 
 #include "Components.h"
 
@@ -194,7 +196,7 @@ int App::drawFrame(float delta) {
 
         if (!objects.empty()) {
             auto lastModel = objects.back(); 
-            // drawImGuizmo(&lastModel->transformMatrix.model);
+            drawImGuizmo(&lastModel->transformMatrix.model);
             auto normalPaths = drawNormals(lastModel);
             frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
         }
@@ -338,7 +340,8 @@ void App::mainLoop() {
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(glm::vec3{}), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 

@@ -29,7 +29,7 @@ const std::vector<glm::vec2> texCoords = {
 
 const glm::vec3 white = { 1.0f, 1.0f, 1.0f };
 
-std::shared_ptr<Mesh> createCubeMesh(glm::vec3 position)
+std::shared_ptr<Mesh> createCubeMesh()
 {
     auto mesh = std::make_shared<Mesh>(); 
 

@@ -28,6 +28,8 @@ private:
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
+    btRaycastVehicle *vehicle = nullptr;
+
     BehCamera camera{};
     bool showDebugInfo = true;
     bool updateWindowSize = false;

@@ -196,7 +196,7 @@ int App::drawFrame(float delta) {
 
         if (!objects.empty()) {
             auto lastModel = objects.back(); 
-            drawImGuizmo(&lastModel->transformMatrix.model);
+            // drawImGuizmo(&lastModel->transformMatrix.model);
             auto normalPaths = drawNormals(lastModel);
             frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
         }
@@ -347,6 +347,12 @@ void App::mainLoop() {
 
     renderer->uploadMeshes(objects);
 
+    vehicle = physicsWorld->createVehicle();
+    auto vehicleEntity = registry.create();
+    entities.push_back(vehicleEntity);
+    registry.emplace<Transform>(vehicleEntity);
+    registry.emplace<RigidBody>(vehicleEntity, vehicle->getRigidBody());
+    vehicle->getRigidBody()->setUserIndex((int)vehicleEntity);
     
     for (int i = 0; i < 2; i++){
         auto entity = registry.create();
@@ -477,6 +483,42 @@ void App::processPressedKeys(float delta) {
         camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         camera.moveCameraRight(cameraSpeed);
+    if (glfwGetKey(glfw_window, GLFW_KEY_UP) == GLFW_PRESS) {
+        vehicle->getRigidBody()->activate();
+        for (int wheel = 0; wheel <= 3; wheel++)
+        {
+            vehicle->applyEngineForce(1000.f, wheel);
+        }
+    }
+    else {
+        for (int wheel = 0; wheel <= 3; wheel++)
+        {
+            vehicle->applyEngineForce(0.f, wheel);
+        }
+    }
+    if (glfwGetKey(glfw_window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+        vehicle->getRigidBody()->activate();
+        for (int wheel = 0; wheel <= 3; wheel++)
+        {
+             vehicle->applyEngineForce(-1000.f, wheel);
+        }
+    }
+    if (glfwGetKey(glfw_window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+        vehicle->getRigidBody()->activate();
+        vehicle->setSteeringValue(0.5f, 0);
+        vehicle->setSteeringValue(0.5f, 1);
+    }
+    if (glfwGetKey(glfw_window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+        vehicle->getRigidBody()->activate();
+        vehicle->setSteeringValue(-0.5f, 0);
+        vehicle->setSteeringValue(-0.5f, 1);
+    }
+    if(glfwGetKey(glfw_window, GLFW_KEY_LEFT) == GLFW_RELEASE && glfwGetKey(glfw_window, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
+        vehicle->setSteeringValue(0.f, 0);
+        vehicle->setSteeringValue(0.f, 1);
+    }
+
+    vehicle->updateVehicle(delta / 1000.f);
 }
 
 App::App() = default;

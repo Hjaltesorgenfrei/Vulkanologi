@@ -29,6 +29,8 @@ public:
 
     void closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback);
 
+    btRaycastVehicle* createVehicle();
+
     std::vector<Path> getDebugLines() const;
 
 private:

@@ -76,6 +76,48 @@ void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayT
     }
 }
 
+btRaycastVehicle* PhysicsWorld::createVehicle()
+{
+    btCollisionShape* chassisShape = new btBoxShape(btVector3(1, 1, 1));
+    btCompoundShape* compound = new btCompoundShape();
+    btTransform localTrans;
+    localTrans.setIdentity();
+    localTrans.setOrigin(btVector3(0, 1, 0));
+    compound->addChildShape(localTrans, chassisShape);
+    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 5, 0)));
+    btScalar mass = 800;
+    btVector3 localInertia(0, 0, 0);
+    compound->calculateLocalInertia(mass, localInertia);
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, compound, localInertia);
+    btRigidBody* chassis = new btRigidBody(rbInfo);
+    dynamicsWorld->addRigidBody(chassis);
+    btRaycastVehicle::btVehicleTuning tuning;
+    btVehicleRaycaster* raycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
+    btRaycastVehicle* vehicle = new btRaycastVehicle(tuning, chassis, raycaster);
+    dynamicsWorld->addAction(vehicle);
+    btVector3 wheelDirectionCS0(0, -1, 0);
+    btVector3 wheelAxleCS(-1, 0, 0);
+    bool isFrontWheel = true;
+    btScalar suspensionRestLength(0.6f);
+    btScalar wheelRadius(0.5f);
+    vehicle->addWheel(btVector3(-1, 0, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, 0, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    isFrontWheel = false;
+    vehicle->addWheel(btVector3(-1, 0, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, 0, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    for (int i = 0; i < vehicle->getNumWheels(); i++) {
+        btWheelInfo& wheel = vehicle->getWheelInfo(i);
+        wheel.m_suspensionStiffness = 20.f;
+        wheel.m_wheelsDampingRelaxation = 2.3f;
+        wheel.m_wheelsDampingCompression = 4.4f;
+        wheel.m_frictionSlip = 1000.f;
+        wheel.m_rollInfluence = 0.1f;
+    }
+    vehicle->setCoordinateSystem(0, 1, 2);
+
+    return vehicle;
+}
+
 std::vector<Path> PhysicsWorld::getDebugLines() const
 {
     debugDrawer->clearLines();

@@ -133,6 +133,12 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Sensors should not scale. But there should still be a way to scale the control point.
 - [ ] Maybe all buffers should be typed.
   - Has the problem that if I want to use buffer as a different type I can not. Which can be a problem.
+- [ ] Fix minimize on windows
+  - `Validation layer: Validation Error: [ VUID-VkSwapchainCreateInfoKHR-imageExtent-01689 ] Object 0: handle = 0x16f47f34660, type = VK_OBJECT_TYPE_DEVICE; | MessageID = 0x13140d69 | vkCreateSwapchainKHR(): pCreateInfo->imageExtent = (0, 0) which is illegal. The Vulkan spec states: imageExtent members width and height must both be non-zero (https://vulkan.lunarg.com/doc/view/1.3.224.1/windows/1.3-extensions/vkspec.html#VUID-VkSwapchainCreateInfoKHR-imageExtent-01689)`
+- [ ] RenderObject should not be used a component, Need a different wrapper for that
+  - Which means that the transform sent to the engine should be given from the `Transform` component
+- [ ] Transform sources should be mutually exclusive, which I don't know if I can check.
+- [ ] Fix collisions so that they are the same size as the model.
 
 ### Descriptor Layout Idea
 
@@ -172,17 +178,32 @@ But this might require that the result of the build is a pair of `MeshHandle` an
 Do not really know how nice that would be.
 
 ```cpp
-MeshBuilder::begin()
-  .loadObj("filename.obj")
-  .loadMtl() // tinyObj loads the materials if referenced in the obj file
-  .build();
+auto [mesh, material] = 
+  MeshBuilder::begin(renderer)
+    .loadObj("filename.obj") // Maybe this is just load Mesh? Then delegate to the correct loader
+    .loadMtl() // tinyObj loads the materials if referenced in the obj file
+    .upload(); // upload to the GPU either now or later. 
 ```
 
 When the ECS system gets added these handles could then be held together in a Mesh Component.
 
-Using would also avoid callbacks as the renderer could just ignore meshes and materials that have not been uploaded yet. 
+Using would also avoid callbacks as the renderer would just ignore meshes and materials that have not been uploaded yet, as the ECS view will not take them.
 This would simplify the interaction model.
 
+Maybe the engine returns futures, this could then be checked for results in the ECS and swapped for the result when ready.
+
+```cpp
+std::future<UploadedMesh> uploadMesh();
+
+registry.view<std::future<UploadedMesh>>.each([&](auto entity, auto& result) {
+    if(result.valid()) {
+      registry.emplace<UploadedMesh>(entity, result.get());
+      registry.remove<std::future<UploadedMesh>>(entity); // This is safe according to the documentation
+    }
+  });
+```
+
+The future wait could probably even templated and added as a list of Functions as to make it easy to extend.
 
 ### Physics multithreading idea
 

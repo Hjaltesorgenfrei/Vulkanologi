@@ -155,52 +155,78 @@ int App::drawFrame(float delta) {
     ImGui::NewFrame();
 
     FrameInfo frameInfo{};
-    frameInfo.objects = objects;
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
 
+    for (auto entity : registry.view<std::shared_ptr<RenderObject>>()) {
+        auto renderObject = registry.get<std::shared_ptr<RenderObject>>(entity);
+        frameInfo.objects.push_back(renderObject);
+    }
+
+    if(showDebugInfo) {
+        drawFrameDebugInfo(delta, frameInfo);
+    }
+    
+    auto result = renderer->drawFrame(frameInfo);
+    ImGui::EndFrame();
+    return result;
+}
+
+void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
+{
+    auto memoryUsage = renderer->getMemoryUsage();
+    // Make a imgui window to show the frame time
+
+    // Save average of last 10 frames
+    static const int frameCount = 30;
+    static float frameTimes[frameCount] = {0};
+    static int frameTimeIndex = 0;
+    frameTimes[frameTimeIndex] = delta;
+    frameTimeIndex = (frameTimeIndex + 1) % frameCount;
+    float averageFrameTime = 0;
+    for (int i = 0; i < frameCount; i++) {
+        averageFrameTime += frameTimes[i];
+    }
+    averageFrameTime /= frameCount;
+
+    static int resolution = 10;
+    static int segments = 50;
+
+    ImGui::Begin("Frame Info");
+    ImGui::Text("Frame Time: %f", averageFrameTime);
+    ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
+    ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+    ImGui::End();
+
     auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
     auto sensor = registry.try_get<Sensor>(selectedEntity);
-
-
-    if (showDebugInfo) {
-        registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
-            bezier.recomputeIfDirty();
-            frameInfo.paths.emplace_back(bezier);
-            for (const auto point : bezier.getPoints()) {
-                frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
-            }
-            for (const auto frame : bezier.getFrenetFrames()) {
-                auto start = frame.o;
-                auto rightVector = glm::normalize(frame.r);
-                auto end = frame.o + frame.t * 0.25f;
-                auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
-                auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
-                frameInfo.paths.emplace_back(LinePath(start, end, {0, 1, 0}));
-                // Make a arrow at the end
-                frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
-                frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
-                frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
-            }
-        });
-
-        drawFrameDebugInfo(delta);
-
-        if (rigidBody) {
-            drawRigidBodyDebugInfo(rigidBody);
-        }       
-
-        auto physicsPaths = physicsWorld->getDebugLines();
-        frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
-        frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
-
-        if (!objects.empty()) {
-            auto lastModel = objects.back(); 
-            // drawImGuizmo(&lastModel->transformMatrix.model);
-            auto normalPaths = drawNormals(lastModel);
-            frameInfo.paths.insert(frameInfo.paths.end(), normalPaths.begin(), normalPaths.end());
+    registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
+        bezier.recomputeIfDirty();
+        frameInfo.paths.emplace_back(bezier);
+        for (const auto point : bezier.getPoints()) {
+            frameInfo.paths.emplace_back(LinePath(point.position, point.position + point.normal * 0.5f, {0, 0, 1}));
         }
-    }
+        for (const auto frame : bezier.getFrenetFrames()) {
+            auto start = frame.o;
+            auto rightVector = glm::normalize(frame.r);
+            auto end = frame.o + frame.t * 0.25f;
+            auto right = frame.o + frame.t * 0.23f - rightVector * 0.01f;
+            auto left = frame.o + frame.t * 0.23f + rightVector * 0.01f;
+            frameInfo.paths.emplace_back(LinePath(start, end, {0, 1, 0}));
+            // Make a arrow at the end
+            frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
+        }
+    });
+
+    if (rigidBody) {
+        drawRigidBodyDebugInfo(rigidBody);
+    }       
+
+    auto physicsPaths = physicsWorld->getDebugLines();
+    frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
+    frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
 
     if (rigidBody != nullptr) {
         auto body = rigidBody->body;
@@ -269,37 +295,6 @@ int App::drawFrame(float delta) {
             body->setWorldTransform(newTransform);
         }
     }
-    
-    auto result = renderer->drawFrame(frameInfo);
-    ImGui::EndFrame();
-    return result;
-}
-
-void App::drawFrameDebugInfo(float delta)
-{
-    auto memoryUsage = renderer->getMemoryUsage();
-    // Make a imgui window to show the frame time
-
-    // Save average of last 10 frames
-    static const int frameCount = 30;
-    static float frameTimes[frameCount] = {0};
-    static int frameTimeIndex = 0;
-    frameTimes[frameTimeIndex] = delta;
-    frameTimeIndex = (frameTimeIndex + 1) % frameCount;
-    float averageFrameTime = 0;
-    for (int i = 0; i < frameCount; i++) {
-        averageFrameTime += frameTimes[i];
-    }
-    averageFrameTime /= frameCount;
-
-    static int resolution = 10;
-    static int segments = 50;
-
-    ImGui::Begin("Frame Info");
-    ImGui::Text("Frame Time: %f", averageFrameTime);
-    ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
-    ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
-    ImGui::End();
 }
 
 void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
@@ -337,11 +332,14 @@ void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
 
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
+    std::vector<std::shared_ptr<RenderObject>> objects;
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
     objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(2, 10, 10), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
@@ -353,6 +351,7 @@ void App::mainLoop() {
     registry.emplace<Transform>(vehicleEntity);
     registry.emplace<RigidBody>(vehicleEntity, vehicle->getRigidBody());
     vehicle->getRigidBody()->setUserIndex((int)vehicleEntity);
+    registry.emplace<std::shared_ptr<RenderObject>>(vehicleEntity, objects.back());
     
     for (int i = 0; i < 2; i++){
         auto entity = registry.create();
@@ -403,10 +402,10 @@ void App::mainLoop() {
 
         registry.emplace<Transform>(entity);
         registry.emplace<RigidBody>(entity, body);
+        registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
  
 
-    // registry.emplace<RenderObject>(selectedEntity, createCube(glm::vec3{}), Material{}); // Not supported yet
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float, std::milli> delta = now - timeStart;
@@ -417,12 +416,13 @@ void App::mainLoop() {
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
         // TODO: Give milliseconds type as argument
+        
         physicsWorld->update(delta.count() / 1000.f);
 
-        auto view = registry.view<const Sensor, ControlPointPtr>();
-
-        for (auto entity : view) {
-            auto [sensor, controlPoint] = view.get<const Sensor, ControlPointPtr>(entity);
+        // I would prefer if these two just got from transform. 
+        // But thats a messy dependency as transform has to be updated before in this case.
+        for (auto entity : registry.view<const Sensor, ControlPointPtr>()) {
+            auto [sensor, controlPoint] = registry.get<const Sensor, ControlPointPtr>(entity);
             auto body = sensor.ghost;
             auto scale = body->getCollisionShape()->getLocalScaling();
             // convert to glm
@@ -432,6 +432,20 @@ void App::mainLoop() {
             modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
             // Check if the transform changed
             controlPoint.controlPoint->update(modelMatrix);
+        }
+
+        
+        for (auto entity : registry.view<RigidBody, std::shared_ptr<RenderObject>>()) {
+            auto [rigidBody, renderObject] = registry.get<RigidBody, std::shared_ptr<RenderObject>>(entity);
+            auto body = rigidBody.body;
+            auto scale = body->getCollisionShape()->getLocalScaling();
+            // convert to glm
+            glm::mat4 modelMatrix;
+            auto transform = body->getWorldTransform();
+            transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+            // Check if the transform changed
+            renderObject->transformMatrix.model = modelMatrix;
         }
         
         if (updateWindowSize) {
@@ -456,6 +470,7 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
     return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &(*matrix)[0][0]);
 }
 
+// TODO: Enable this by inspection with debug window.
 std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
 {
     auto mesh = object->mesh;
@@ -517,8 +532,6 @@ void App::processPressedKeys(float delta) {
         vehicle->setSteeringValue(0.f, 0);
         vehicle->setSteeringValue(0.f, 1);
     }
-
-    vehicle->updateVehicle(delta / 1000.f);
 }
 
 App::App() = default;

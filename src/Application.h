@@ -21,7 +21,6 @@ private:
     std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::unique_ptr<Renderer> renderer;
     std::shared_ptr<BehDevice> device;
-    std::vector<std::shared_ptr<RenderObject>> objects;
     entt::entity selectedEntity = entt::null;
     entt::registry registry;
     std::vector<entt::entity> entities;
@@ -51,7 +50,7 @@ private:
     bool shiftPressed = false;
 
     int drawFrame(float delta);
-    void drawFrameDebugInfo(float delta);
+    void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
     void drawRigidBodyDebugInfo(RigidBody* rigidBody);
 
 };

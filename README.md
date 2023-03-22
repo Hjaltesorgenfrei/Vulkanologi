@@ -131,6 +131,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] There is probably a lot of memory leaks from using new in relation to physics.
 - [ ] Rework the spline class, it should only compute once it is dirty which should only happen on changes in the transform.
 - [ ] Sensors should not scale. But there should still be a way to scale the control point.
+- [ ] Maybe all buffers should be typed.
+  - Has the problem that if I want to use buffer as a different type I can not. Which can be a problem.
 
 ### Descriptor Layout Idea
 

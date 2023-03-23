@@ -6,7 +6,7 @@
 #include <functional>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include <btBulletDynamicsCommon.h>
-#include "curves/Curves.h"
+#include "curves/Curves.hpp"
 
 class DebugDrawer;
 

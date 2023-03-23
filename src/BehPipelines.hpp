@@ -1,5 +1,5 @@
-#include "BehDevice.h"
-#include "Deletionqueue.h"
+#include "BehDevice.hpp"
+#include "Deletionqueue.hpp"
 
 #pragma once
 

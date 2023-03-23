@@ -1,9 +1,9 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "BehCamera.h"
-#include "RenderObject.h"
-#include "curves/Curves.h"
+#include "BehCamera.hpp"
+#include "RenderObject.hpp"
+#include "curves/Curves.hpp"
 
 struct GlobalUbo {
     glm::mat4 view;

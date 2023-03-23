@@ -1,4 +1,4 @@
-#include "Path.h"
+#include "Path.hpp"
 
 Path::Path(bool loop) : loop(loop)
 {

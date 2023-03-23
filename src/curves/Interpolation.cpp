@@ -1,4 +1,4 @@
-#include "Interpolation.h"
+#include "Interpolation.hpp"
 
 glm::vec3 lerp(glm::vec3 a, glm::vec3 b, float t)
 {

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "BehVkTypes.h"
+#include "BehVkTypes.hpp"
 #include <vector>
 #include <array>
 #include <unordered_map>

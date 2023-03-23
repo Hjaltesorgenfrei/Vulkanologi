@@ -1,7 +1,7 @@
 #pragma once
-#include "Mesh.h"
-#include "Material.h"
-#include "BehVkTypes.h"
+#include "Mesh.hpp"
+#include "Material.hpp"
+#include "BehVkTypes.hpp"
 #include <vulkan/vulkan.hpp>
 
 

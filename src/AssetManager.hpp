@@ -4,10 +4,10 @@
 #include <span>
 #include <vulkan/vulkan.hpp>
 
-#include "Deletionqueue.h"
-#include "BehVkInit.h"
-#include "BehVkTypes.h"
-#include "BehDevice.h"
+#include "Deletionqueue.hpp"
+#include "BehVkInit.hpp"
+#include "BehVkTypes.hpp"
+#include "BehDevice.hpp"
 
 class AssetManager {
    public:

@@ -1,7 +1,7 @@
-﻿#include "Renderer.h"
-#include "Mesh.h"
-#include "Util.h"
-#include "BehPipelines.h"
+﻿#include "Renderer.hpp"
+#include "Mesh.hpp"
+#include "Util.hpp"
+#include "BehPipelines.hpp"
 
 #include <chrono>
 #include <set>
@@ -20,11 +20,11 @@
 
 int PARTICLE_COUNT = 256 * 4;
 
-#include "vk_mem_alloc.h"
+#include <vk_mem_alloc.h>
 
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "Particle.h"
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include "Particle.hpp"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {

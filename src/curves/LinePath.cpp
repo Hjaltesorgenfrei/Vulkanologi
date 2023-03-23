@@ -1,4 +1,4 @@
-#include "LinePath.h"
+#include "LinePath.hpp"
 
 LinePath::LinePath(glm::vec3 start, glm::vec3 end, glm::vec3 color)
 {

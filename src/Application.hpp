@@ -1,13 +1,13 @@
 #pragma once
 #include <entt/entt.hpp>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <ImGuizmo.h>
 #include <unordered_map>
-#include "Renderer.h"
 
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
-#include "ImGuizmo.h"
-#include "Physics.h"
-#include "Components.h"
+#include "Renderer.hpp"
+#include "Physics.hpp"
+#include "Components.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;

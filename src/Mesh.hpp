@@ -9,7 +9,7 @@
 #include <vector>
 #include <memory>
 
-#include "BehVkTypes.h"
+#include "BehVkTypes.hpp"
 
 struct Vertex {
 	glm::vec3 pos;

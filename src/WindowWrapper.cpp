@@ -1,4 +1,4 @@
-﻿#include "WindowWrapper.h"
+﻿#include "WindowWrapper.hpp"
 #include <iostream>
 
 void glfwErrorCallback(int code, const char* description)

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "WindowWrapper.h"
+#include "WindowWrapper.hpp"
 
 #include <memory>
 
@@ -11,13 +11,13 @@
 #include <vector>
 #include <vulkan/vulkan.hpp>
 
-#include "AssetManager.h"
-#include "Deletionqueue.h"
-#include "BehVkTypes.h"
-#include "BehDevice.h"
-#include "BehDescriptors.h"
-#include "BehPipelines.h"
-#include "BehFrameInfo.h"
+#include "AssetManager.hpp"
+#include "Deletionqueue.hpp"
+#include "BehVkTypes.hpp"
+#include "BehDevice.hpp"
+#include "BehDescriptors.hpp"
+#include "BehPipelines.hpp"
+#include "BehFrameInfo.hpp"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 

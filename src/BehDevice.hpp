@@ -2,9 +2,9 @@
 #define BEHDEVICE_H
 #pragma once
 
-#include "WindowWrapper.h"
-#include "BehVkTypes.h"
-#include "Deletionqueue.h"
+#include "WindowWrapper.hpp"
+#include "BehVkTypes.hpp"
+#include "Deletionqueue.hpp"
 #include <vulkan/vulkan.hpp>
 #include <iostream>
 #include <map>

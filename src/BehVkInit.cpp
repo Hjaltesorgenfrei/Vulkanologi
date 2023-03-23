@@ -1,4 +1,4 @@
-#include "BehVkInit.h"
+#include "BehVkInit.hpp"
 
 vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format, vk::Flags<vk::ImageAspectFlagBits> aspectFlags,
 				uint32_t mipLevels) {

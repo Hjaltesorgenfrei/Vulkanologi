@@ -1,4 +1,4 @@
-#include "Cube.h"
+#include "Cube.hpp"
 
 const std::vector<glm::vec3> cubePositions = {
     { -0.5f, -0.5f, -0.5f },

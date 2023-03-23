@@ -2,7 +2,7 @@
 #include <numbers>
 #include <memory>
 #include <glm/glm.hpp>
-#include "Mesh.h"
+#include "Mesh.hpp"
 
 // https://gist.github.com/Pikachuxxxx/5c4c490a7d7679824e0e18af42918efc
 

@@ -8,7 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include "curves/Curves.h"
+#include "curves/Curves.hpp"
 
 struct Transform {
     glm::mat4 modelMatrix;

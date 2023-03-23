@@ -8,13 +8,13 @@
 #include <glm/gtc/type_ptr.hpp>
 
 
-#include "Renderer.h"
-#include "Application.h"
-#include "Cube.h"
-#include "Sphere.h"
-#include "Components.h"
-#include "systems/CarSystem.h"
-#include "systems/ControllerSystem.h"
+#include "Renderer.hpp"
+#include "Application.hpp"
+#include "Cube.hpp"
+#include "Sphere.hpp"
+#include "Components.hpp"
+#include "systems/CarSystem.hpp"
+#include "systems/ControllerSystem.hpp"
 
 
 void App::run() {

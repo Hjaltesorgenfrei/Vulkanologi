@@ -1,7 +1,7 @@
 #include <cmath>
-#include "CarSystem.h"
-#include "../Components.h"
-#include "ControllerSystem.h"
+#include "CarSystem.hpp"
+#include "../Components.hpp"
+#include "ControllerSystem.hpp"
 
 void carSystemUpdate(entt::registry &registry, float delta)
 {

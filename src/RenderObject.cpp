@@ -1,4 +1,4 @@
-#include "RenderObject.h"
+#include "RenderObject.hpp"
 
 RenderObject::RenderObject(std::shared_ptr<Mesh> mesh, Material material) {
     this->material = material;

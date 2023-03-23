@@ -1,8 +1,8 @@
-#include "BehPipelines.h"
+#include "BehPipelines.hpp"
 
 #include <utility>
-#include "Util.h"
-#include "Mesh.h"
+#include "Util.hpp"
+#include "Mesh.hpp"
 
 
 BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurationInfo &config) {

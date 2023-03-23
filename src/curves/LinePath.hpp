@@ -3,7 +3,7 @@
 #ifndef LINEPATH_H
 #define LINEPATH_H
 
-#include "Path.h"
+#include "Path.hpp"
 
 class LinePath : public Path {
 public:

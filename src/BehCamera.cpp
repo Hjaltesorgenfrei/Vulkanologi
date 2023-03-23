@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "BehCamera.h"
+#include "BehCamera.hpp"
 
 BehCamera::BehCamera() {
     cameraYaw = 135.0f;

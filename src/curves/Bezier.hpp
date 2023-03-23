@@ -4,7 +4,7 @@
 #define BEZIER_H
 
 #include <memory>
-#include "Path.h"
+#include "Path.hpp"
 
 class ControlPoint
 {

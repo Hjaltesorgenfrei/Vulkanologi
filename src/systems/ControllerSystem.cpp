@@ -1,5 +1,5 @@
-#include "ControllerSystem.h"
-#include "../Components.h"
+#include "ControllerSystem.hpp"
+#include "../Components.hpp"
 #include <GLFW/glfw3.h>
 
 void controllerSystemUpdate(entt::registry &registry, float delta)

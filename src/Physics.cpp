@@ -100,11 +100,11 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     bool isFrontWheel = true;
     btScalar suspensionRestLength(0.6f);
     btScalar wheelRadius(0.5f);
-    vehicle->addWheel(btVector3(-1, 0, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, 0, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1, -0.001f, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, -0.001f, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     isFrontWheel = false;
-    vehicle->addWheel(btVector3(-1, 0, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, 0, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1, -0.001f, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, -0.001f, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     for (int i = 0; i < vehicle->getNumWheels(); i++) {
         btWheelInfo& wheel = vehicle->getWheelInfo(i);
         wheel.m_suspensionStiffness = 20.f;

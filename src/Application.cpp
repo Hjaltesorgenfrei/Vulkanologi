@@ -387,7 +387,7 @@ void App::mainLoop() {
         auto entity = registry.create();
         entities.push_back(entity);
 
-        auto colShape = new btBoxShape(btVector3(1, 1, 1));
+        auto colShape = new btBoxShape(btVector3(0.5f, 0.5f, 0.5f));
         auto startTransform = btTransform();
         startTransform.setIdentity();
         auto mass = 1.f;

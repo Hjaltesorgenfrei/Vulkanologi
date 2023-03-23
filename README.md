@@ -139,6 +139,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Which means that the transform sent to the engine should be given from the `Transform` component
 - [ ] Transform sources should be mutually exclusive, which I don't know if I can check.
 - [ ] Fix collisions so that they are the same size as the model.
+- [ ] Make a input event enum, so there is reliance on the key pressed later.
+- [ ] Maybe make a way to have systems depend on each other so they can run in order and can be sorted?
 
 ### Descriptor Layout Idea
 

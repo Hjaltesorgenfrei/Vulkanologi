@@ -90,6 +90,7 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     compound->calculateLocalInertia(mass, localInertia);
     btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, compound, localInertia);
     btRigidBody* chassis = new btRigidBody(rbInfo);
+    chassis->setActivationState(DISABLE_DEACTIVATION);
     dynamicsWorld->addRigidBody(chassis);
     btRaycastVehicle::btVehicleTuning tuning;
     btVehicleRaycaster* raycaster = new btDefaultVehicleRaycaster(dynamicsWorld);

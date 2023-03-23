@@ -24,10 +24,10 @@ private:
     entt::entity selectedEntity = entt::null;
     entt::registry registry;
     std::vector<entt::entity> entities;
+    entt::entity keyboardPlayer; // Index is important
+    std::vector<entt::entity> controllers;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
-
-    btRaycastVehicle *vehicle = nullptr;
 
     BehCamera camera{};
     bool showDebugInfo = true;
@@ -36,9 +36,11 @@ private:
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
+    void updateSystems(float delta);
     void processPressedKeys(float delta);
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);
+    void setupWorld();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
@@ -52,5 +54,4 @@ private:
     int drawFrame(float delta);
     void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
     void drawRigidBodyDebugInfo(RigidBody* rigidBody);
-
 };

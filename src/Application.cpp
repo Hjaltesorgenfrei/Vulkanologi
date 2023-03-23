@@ -12,8 +12,8 @@
 #include "Application.h"
 #include "Cube.h"
 #include "Sphere.h"
-
 #include "Components.h"
+#include "systems/CarSystem.h"
 
 
 void App::run() {
@@ -22,7 +22,7 @@ void App::run() {
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
-  
+    setupWorld();
     mainLoop();
 }
 
@@ -131,6 +131,15 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
     if(key == GLFW_KEY_C && action != GLFW_RELEASE) {
         app->currentGizmoOperation = ImGuizmo::SCALE;
+    }
+
+    if(action == GLFW_PRESS) {
+        auto& input = app->registry.get<KeyboardInput>(app->keyboardPlayer);
+        input.keys[key] = true;
+    }
+    if(action == GLFW_RELEASE) {
+        auto& input = app->registry.get<KeyboardInput>(app->keyboardPlayer);
+        input.keys[key] = false;
     }
 }
 
@@ -330,8 +339,7 @@ void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
     ImGui::End();
 }
 
-void App::mainLoop() {
-    auto timeStart = std::chrono::high_resolution_clock::now();
+void App::setupWorld() {
     std::vector<std::shared_ptr<RenderObject>> objects;
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
@@ -345,13 +353,14 @@ void App::mainLoop() {
 
     renderer->uploadMeshes(objects);
 
-    vehicle = physicsWorld->createVehicle();
-    auto vehicleEntity = registry.create();
-    entities.push_back(vehicleEntity);
-    registry.emplace<Transform>(vehicleEntity);
-    registry.emplace<RigidBody>(vehicleEntity, vehicle->getRigidBody());
-    vehicle->getRigidBody()->setUserIndex((int)vehicleEntity);
-    registry.emplace<std::shared_ptr<RenderObject>>(vehicleEntity, objects.back());
+    keyboardPlayer = registry.create();
+    registry.emplace<KeyboardInput>(keyboardPlayer);
+    auto vehicle = physicsWorld->createVehicle();
+    registry.emplace<Transform>(keyboardPlayer);
+    registry.emplace<RigidBody>(keyboardPlayer, vehicle->getRigidBody());
+    registry.emplace<Car>(keyboardPlayer, vehicle);
+    vehicle->getRigidBody()->setUserIndex((int)keyboardPlayer);
+    registry.emplace<std::shared_ptr<RenderObject>>(keyboardPlayer, objects.back());
     
     for (int i = 0; i < 2; i++){
         auto entity = registry.create();
@@ -404,7 +413,10 @@ void App::mainLoop() {
         registry.emplace<RigidBody>(entity, body);
         registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
- 
+}
+
+void App::mainLoop() {
+    auto timeStart = std::chrono::high_resolution_clock::now();
 
 	while (!window->windowShouldClose()) {
         auto now = std::chrono::high_resolution_clock::now();
@@ -419,34 +431,7 @@ void App::mainLoop() {
         
         physicsWorld->update(delta.count() / 1000.f);
 
-        // I would prefer if these two just got from transform. 
-        // But thats a messy dependency as transform has to be updated before in this case.
-        for (auto entity : registry.view<const Sensor, ControlPointPtr>()) {
-            auto [sensor, controlPoint] = registry.get<const Sensor, ControlPointPtr>(entity);
-            auto body = sensor.ghost;
-            auto scale = body->getCollisionShape()->getLocalScaling();
-            // convert to glm
-            glm::mat4 modelMatrix;
-            auto transform = body->getWorldTransform();
-            transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-            // Check if the transform changed
-            controlPoint.controlPoint->update(modelMatrix);
-        }
-
-        
-        for (auto entity : registry.view<RigidBody, std::shared_ptr<RenderObject>>()) {
-            auto [rigidBody, renderObject] = registry.get<RigidBody, std::shared_ptr<RenderObject>>(entity);
-            auto body = rigidBody.body;
-            auto scale = body->getCollisionShape()->getLocalScaling();
-            // convert to glm
-            glm::mat4 modelMatrix;
-            auto transform = body->getWorldTransform();
-            transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-            // Check if the transform changed
-            renderObject->transformMatrix.model = modelMatrix;
-        }
+        updateSystems(delta.count());
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();
@@ -457,6 +442,40 @@ void App::mainLoop() {
             renderer->recreateSwapchain();
         }
 	}
+}
+
+void App::updateSystems(float delta)
+{
+    // I would prefer if these two just got from transform. 
+    // But thats a messy dependency as transform has to be updated before in this case.
+    for (auto entity : registry.view<const Sensor, ControlPointPtr>()) {
+        auto [sensor, controlPoint] = registry.get<const Sensor, ControlPointPtr>(entity);
+        auto body = sensor.ghost;
+        auto scale = body->getCollisionShape()->getLocalScaling();
+        // convert to glm
+        glm::mat4 modelMatrix;
+        auto transform = body->getWorldTransform();
+        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+        // Check if the transform changed
+        controlPoint.controlPoint->update(modelMatrix);
+    }
+
+    
+    for (auto entity : registry.view<RigidBody, std::shared_ptr<RenderObject>>()) {
+        auto [rigidBody, renderObject] = registry.get<RigidBody, std::shared_ptr<RenderObject>>(entity);
+        auto body = rigidBody.body;
+        auto scale = body->getCollisionShape()->getLocalScaling();
+        // convert to glm
+        glm::mat4 modelMatrix;
+        auto transform = body->getWorldTransform();
+        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+        // Check if the transform changed
+        renderObject->transformMatrix.model = modelMatrix;
+    }
+
+    carSystemUpdate(registry, delta);
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {
@@ -490,6 +509,8 @@ void App::processPressedKeys(float delta) {
     if (shiftPressed) {
         cameraSpeed *= 4;
     }
+
+    // TODO: Add camera as an entity which can take input :)
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         camera.moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
@@ -498,40 +519,6 @@ void App::processPressedKeys(float delta) {
         camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         camera.moveCameraRight(cameraSpeed);
-    if (glfwGetKey(glfw_window, GLFW_KEY_UP) == GLFW_PRESS) {
-        vehicle->getRigidBody()->activate();
-        for (int wheel = 0; wheel <= 3; wheel++)
-        {
-            vehicle->applyEngineForce(1000.f, wheel);
-        }
-    }
-    else {
-        for (int wheel = 0; wheel <= 3; wheel++)
-        {
-            vehicle->applyEngineForce(0.f, wheel);
-        }
-    }
-    if (glfwGetKey(glfw_window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-        vehicle->getRigidBody()->activate();
-        for (int wheel = 0; wheel <= 3; wheel++)
-        {
-             vehicle->applyEngineForce(-1000.f, wheel);
-        }
-    }
-    if (glfwGetKey(glfw_window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-        vehicle->getRigidBody()->activate();
-        vehicle->setSteeringValue(0.5f, 0);
-        vehicle->setSteeringValue(0.5f, 1);
-    }
-    if (glfwGetKey(glfw_window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-        vehicle->getRigidBody()->activate();
-        vehicle->setSteeringValue(-0.5f, 0);
-        vehicle->setSteeringValue(-0.5f, 1);
-    }
-    if(glfwGetKey(glfw_window, GLFW_KEY_LEFT) == GLFW_RELEASE && glfwGetKey(glfw_window, GLFW_KEY_RIGHT) == GLFW_RELEASE) {
-        vehicle->setSteeringValue(0.f, 0);
-        vehicle->setSteeringValue(0.f, 1);
-    }
 }
 
 App::App() = default;

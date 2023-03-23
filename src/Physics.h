@@ -31,6 +31,8 @@ public:
 
     btRaycastVehicle* createVehicle();
 
+    void removeVehicle(btRaycastVehicle* vehicle);
+
     std::vector<Path> getDebugLines() const;
 
 private:

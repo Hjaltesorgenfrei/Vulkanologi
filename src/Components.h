@@ -37,46 +37,50 @@ struct KeyboardInput {
     bool mouseLeftReleased;
     bool mouseRightPressed;
     bool mouseRightReleased;
-    
-    void clear() {
-        for (int i = 0; i < GLFW_KEY_LAST; i++) {
-            keys[i] = false;
-        }
-        mouseLeftPressed = false;
-        mouseLeftReleased = false;
-        mouseRightPressed = false;
-        mouseRightReleased = false;
-        mousePosition = glm::vec2(0.0f);
-        mouseDelta = glm::vec2(0.0f);
-    }
 };
 
 struct ControllerInput {
-    std::unordered_set<int> buttonsPressed;
-    std::unordered_set<int> buttonsReleased;
-    std::unordered_set<int> buttonsDown;
+    int joystickId;
+    float timeSinceLastSeen = 0.f;
+    bool connected = true;
+
+    // Buttons
+    bool a;
+    bool b;
+    bool x;
+    bool y;
+    bool leftBumper;
+    bool rightBumper;
+    bool up;
+    bool down;
+    bool left;
+    bool right;
+    bool leftStickButton;
+    bool rightStickButton;
+    bool start;
+    bool back;
+    bool guide;
+
+    // Axes
     glm::vec2 leftStick;
     glm::vec2 rightStick;
     float leftTrigger;
     float rightTrigger;
-    
-    void clear() {
-        buttonsPressed.clear();
-        buttonsReleased.clear();
-        leftStick = glm::vec2(0.0f);
-        rightStick = glm::vec2(0.0f);
-        leftTrigger = 0.0f;
-        rightTrigger = 0.0f;
-    }
 };
 
 struct Car {
     btRaycastVehicle* vehicle;
     float steering = 0.0f;
-    float desiredSteering = 0.0f;
     float acceleration = 0.0f;
-    float desiredAcceleration = 0.0f;
     float brake = 0.0f;
+    float maxSteering = 0.5f;
+    float maxAcceleration = 1000.0f;
+    float maxBrake = 100.0f;
+};
+
+struct CarControl {
+    float desiredSteering = 0.0f;
+    float desiredAcceleration = 0.0f;
     float desiredBrake = 0.0f;
 };
 

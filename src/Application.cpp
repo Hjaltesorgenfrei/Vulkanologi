@@ -14,9 +14,11 @@
 #include "Sphere.h"
 #include "Components.h"
 #include "systems/CarSystem.h"
+#include "systems/ControllerSystem.h"
 
 
 void App::run() {
+    instance = this;
     setupCallBacks(); // We create ImGui in the renderer, so callbacks have to happen before.
     device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
@@ -33,6 +35,7 @@ void App::setupCallBacks() {
     glfwSetCursorEnterCallback(window->getGLFWwindow(), cursorEnterCallback);
     glfwSetMouseButtonCallback(window->getGLFWwindow(), mouseButtonCallback);
     glfwSetKeyCallback(window->getGLFWwindow(), keyCallback);
+    glfwSetJoystickCallback(joystickCallback);
 }
 
 void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -143,6 +146,59 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 }
 
+void App::joystickCallback(int joystickId, int event)
+{
+    auto * const app = App::instance;
+    if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(joystickId)) {
+        app->createJoystickPlayer(joystickId);
+    }
+    else if (event == GLFW_DISCONNECTED) {
+        app->registry.view<ControllerInput>().each([&](auto entity, auto& input) {
+            if (input.joystickId == joystickId) {
+                app->registry.destroy(entity);
+            }
+        });
+    }
+}
+
+void App::createJoystickPlayer(int joystickId)
+{
+    auto controller = registry.create();
+    registry.emplace<ControllerInput>(controller, joystickId);
+    auto vehicle = physicsWorld->createVehicle();
+    vehicle->getRigidBody()->setUserIndex((int)controller);
+    registry.emplace<Transform>(controller);
+    registry.emplace<Car>(controller, vehicle);
+    registry.emplace<CarControl>(controller);
+}
+
+void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
+{
+    auto *rigidBody = registry.try_get<RigidBody>(entity);
+    if (rigidBody == nullptr) {
+        return;
+    }
+    physicsWorld->removeBody(rigidBody->body);
+}
+
+void App::onSensorDestroyed(entt::registry &registry, entt::entity entity)
+{
+    auto *sensor = registry.try_get<Sensor>(entity);
+    if (sensor == nullptr) {
+        return;
+    }
+    physicsWorld->removeGhost(sensor->ghost);
+}
+
+void App::onCarDestroyed(entt::registry &registry, entt::entity entity)
+{
+    auto *car = registry.try_get<Car>(entity);
+    if (car == nullptr) {
+        return;
+    }
+    physicsWorld->removeVehicle(car->vehicle);
+}
+
 float bytesToMegaBytes(uint64_t bytes) {
     return bytes / 1024.0f / 1024.0f;
 }
@@ -207,8 +263,6 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
     ImGui::End();
 
-    auto rigidBody = registry.try_get<RigidBody>(selectedEntity);
-    auto sensor = registry.try_get<Sensor>(selectedEntity);
     registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
         bezier.recomputeIfDirty();
         frameInfo.paths.emplace_back(bezier);
@@ -229,6 +283,16 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
+    btRigidBody *rigidBody = nullptr;
+    if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
+        rigidBody = rigidBodyComponent->body;
+    }
+    else if (auto car = registry.try_get<Car>(selectedEntity)) {
+        rigidBody = car->vehicle->getRigidBody();
+    }
+
+    auto sensor = registry.try_get<Sensor>(selectedEntity);
+
     if (rigidBody) {
         drawRigidBodyDebugInfo(rigidBody);
     }       
@@ -237,10 +301,9 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
     frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
 
-    if (rigidBody != nullptr) {
-        auto body = rigidBody->body;
-        auto transform = body->getWorldTransform();
-        auto scale = body->getCollisionShape()->getLocalScaling();
+    if (rigidBody) {
+        auto transform = rigidBody->getWorldTransform();
+        auto scale = rigidBody->getCollisionShape()->getLocalScaling();
         // convert to glm
         glm::mat4 modelMatrix;
         transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
@@ -259,7 +322,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
                 // Add the scale to the current scale
                 btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
                 newScale *= scale;
-                body->getCollisionShape()->setLocalScaling(newScale);
+                rigidBody->getCollisionShape()->setLocalScaling(newScale);
             }
         }
 
@@ -267,7 +330,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
             // convert back to bullet
             btTransform newTransform;
             newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-            body->setWorldTransform(newTransform);
+            rigidBody->setWorldTransform(newTransform);
         }
 
     }
@@ -306,9 +369,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     }
 }
 
-void App::drawRigidBodyDebugInfo(RigidBody* rigidBody)
+void App::drawRigidBodyDebugInfo(btRigidBody* body)
 {
-    auto body = rigidBody->body;
     auto transform = body->getWorldTransform();
     auto scale = body->getCollisionShape()->getLocalScaling();
 
@@ -351,16 +413,22 @@ void App::setupWorld() {
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
+    registry.on_destroy<RigidBody>().connect<&App::onRigidBodyDestroyed>(this);
+    registry.on_destroy<Sensor>().connect<&App::onSensorDestroyed>(this);
+    registry.on_destroy<Car>().connect<&App::onCarDestroyed>(this);
+
     renderer->uploadMeshes(objects);
 
     keyboardPlayer = registry.create();
     registry.emplace<KeyboardInput>(keyboardPlayer);
     auto vehicle = physicsWorld->createVehicle();
     registry.emplace<Transform>(keyboardPlayer);
-    registry.emplace<RigidBody>(keyboardPlayer, vehicle->getRigidBody());
     registry.emplace<Car>(keyboardPlayer, vehicle);
+    registry.emplace<CarControl>(keyboardPlayer);
     vehicle->getRigidBody()->setUserIndex((int)keyboardPlayer);
     registry.emplace<std::shared_ptr<RenderObject>>(keyboardPlayer, objects.back());
+
+    setupControllerPlayers();
     
     for (int i = 0; i < 2; i++){
         auto entity = registry.create();
@@ -444,6 +512,23 @@ void App::mainLoop() {
 	}
 }
 
+void App::setupControllerPlayers()
+{
+    // Get all joysticks
+    int joystickCount = 0;
+    for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
+        if (glfwJoystickPresent(i)) {
+            joystickCount++;
+            const char* joystickName = glfwGetJoystickName(i);
+            std::cout << "Joystick " << i << " is present: " << joystickName << std::endl;
+            if (glfwJoystickIsGamepad(i)) {
+                std::cout << "Joystick " << i << " is a gamepad" << std::endl;
+                createJoystickPlayer(i);
+            }
+        }
+    }
+}
+
 void App::updateSystems(float delta)
 {
     // I would prefer if these two just got from transform. 
@@ -465,6 +550,19 @@ void App::updateSystems(float delta)
     for (auto entity : registry.view<RigidBody, std::shared_ptr<RenderObject>>()) {
         auto [rigidBody, renderObject] = registry.get<RigidBody, std::shared_ptr<RenderObject>>(entity);
         auto body = rigidBody.body;
+        auto scale = body->getCollisionShape()->getLocalScaling();
+        // convert to glm
+        glm::mat4 modelMatrix;
+        auto transform = body->getWorldTransform();
+        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+        // Check if the transform changed
+        renderObject->transformMatrix.model = modelMatrix;
+    }
+
+    for (auto entity : registry.view<Car, std::shared_ptr<RenderObject>>()) {
+        auto [car, renderObject] = registry.get<Car, std::shared_ptr<RenderObject>>(entity);
+        auto body = car.vehicle->getRigidBody();
         auto scale = body->getCollisionShape()->getLocalScaling();
         // convert to glm
         glm::mat4 modelMatrix;
@@ -519,6 +617,8 @@ void App::processPressedKeys(float delta) {
         camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         camera.moveCameraRight(cameraSpeed);
+    
+    controllerSystemUpdate(registry, delta);
 }
 
 App::App() = default;

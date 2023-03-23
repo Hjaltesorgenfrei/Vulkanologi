@@ -1,5 +1,6 @@
 #pragma once
 #include <entt/entt.hpp>
+#include <unordered_map>
 #include "Renderer.h"
 
 #include "backends/imgui_impl_glfw.h"
@@ -17,6 +18,8 @@ public:
 
     void run();
 
+    App inline static* instance = nullptr;
+
 private:
     std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::unique_ptr<Renderer> renderer;
@@ -25,7 +28,6 @@ private:
     entt::registry registry;
     std::vector<entt::entity> entities;
     entt::entity keyboardPlayer; // Index is important
-    std::vector<entt::entity> controllers;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
@@ -41,6 +43,7 @@ private:
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);
     void setupWorld();
+    void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
@@ -48,10 +51,17 @@ private:
     static void cursorEnterCallback(GLFWwindow *window, int enter);
     static void mouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+    static void joystickCallback(int joystickId, int event);
+
+    void createJoystickPlayer(int joystickId);
+
+    void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
+    void onSensorDestroyed(entt::registry &registry, entt::entity entity);
+    void onCarDestroyed(entt::registry &registry, entt::entity entity);
 
     bool shiftPressed = false;
 
     int drawFrame(float delta);
     void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
-    void drawRigidBodyDebugInfo(RigidBody* rigidBody);
+    void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
 };

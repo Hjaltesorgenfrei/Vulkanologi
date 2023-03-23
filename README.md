@@ -141,6 +141,10 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Fix collisions so that they are the same size as the model.
 - [ ] Make a input event enum, so there is reliance on the key pressed later.
 - [ ] Maybe make a way to have systems depend on each other so they can run in order and can be sorted?
+  - Could be an abstract class with a setup(registry) function, update and dependencies.
+  - Then have a enum of all dependencies and use dependency sorting to call them in the correct order.
+- [ ] Figure out where Components should be placed.
+- [ ] Maybe delete players if they disconnect?
 
 ### Descriptor Layout Idea
 

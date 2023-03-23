@@ -28,6 +28,18 @@ PhysicsWorld::PhysicsWorld()
     auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
     auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
     addBody(groundRigidBody);
+
+    // Create a second plane to test collision
+    auto groundShape2 = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
+    auto groundTransform2 = btTransform();
+    groundTransform2.setIdentity();
+    groundTransform2.setOrigin(btVector3(0, -1.25, 0));
+    auto groundMass2 = 0.f;
+    auto groundLocalInertia2 = btVector3(0, 0, 0);
+    auto groundMotionState2 = new btDefaultMotionState(groundTransform2);
+    auto groundRigidBodyCI2 = btRigidBody::btRigidBodyConstructionInfo(groundMass2, groundMotionState2, groundShape2, groundLocalInertia2);
+    auto groundRigidBody2 = new btRigidBody(groundRigidBodyCI2);
+    addBody(groundRigidBody2);
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -78,13 +90,17 @@ void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayT
 
 btRaycastVehicle* PhysicsWorld::createVehicle()
 {
-    btCollisionShape* chassisShape = new btBoxShape(btVector3(1, 1, 1));
+    // get 2 random values for x and z position of the vehicle between -5 and 5
+    float x = static_cast<float>((rand() % 10) - 5);
+    float z = static_cast<float>((rand() % 10) - 5);
+
+    btCollisionShape* chassisShape = new btBoxShape(btVector3(1, 1, 1.5));
     btCompoundShape* compound = new btCompoundShape();
     btTransform localTrans;
     localTrans.setIdentity();
     localTrans.setOrigin(btVector3(0, 1, 0));
     compound->addChildShape(localTrans, chassisShape);
-    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 5, 0)));
+    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(x, 2, z)));
     btScalar mass = 800;
     btVector3 localInertia(0, 0, 0);
     compound->calculateLocalInertia(mass, localInertia);
@@ -101,11 +117,11 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     bool isFrontWheel = true;
     btScalar suspensionRestLength(0.6f);
     btScalar wheelRadius(0.5f);
-    vehicle->addWheel(btVector3(-1, -0.001f, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, -0.001f, 1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     isFrontWheel = false;
-    vehicle->addWheel(btVector3(-1, -0.001f, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, -0.001f, -1), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     for (int i = 0; i < vehicle->getNumWheels(); i++) {
         btWheelInfo& wheel = vehicle->getWheelInfo(i);
         wheel.m_suspensionStiffness = 20.f;
@@ -117,6 +133,13 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     vehicle->setCoordinateSystem(0, 1, 2);
 
     return vehicle;
+}
+
+void PhysicsWorld::removeVehicle(btRaycastVehicle *vehicle)
+{
+    dynamicsWorld->removeAction(vehicle);
+    dynamicsWorld->removeRigidBody(vehicle->getRigidBody());
+    delete vehicle;
 }
 
 std::vector<Path> PhysicsWorld::getDebugLines() const

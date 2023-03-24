@@ -8,6 +8,7 @@ struct SystemNode {
     std::vector<size_t> dependencies{};
     std::vector<size_t> dependents{};
     size_t dependenciesNotReady = 0;
+    bool ran = false;
 
     // override ->
     System* operator ->() {
@@ -60,6 +61,7 @@ public:
         std::vector<size_t> readyNodes;
         for (auto& node : nodes) {
             node.dependenciesNotReady = node.dependencies.size();
+            node.ran = false;
             if (node.dependenciesNotReady == 0) {
                 readyNodes.push_back(node.index);
             }
@@ -69,6 +71,7 @@ public:
             auto node = readyNodes.back();
             readyNodes.pop_back();
             nodes[node]->update(registry, delta);
+            nodes[node].ran = true;
             for (auto dependent : nodes[node].dependents) {
                 auto dependentNode = &nodes[dependent];
                 dependentNode->dependenciesNotReady--;
@@ -81,24 +84,18 @@ public:
                 }
             }
         }
-    }
 
-    bool hasCycle(size_t node, std::vector<bool>& visited, std::vector<bool>& stack) {
-        if (!visited[node]) {
-            visited[node] = true;
-            stack[node] = true;
-
-            for (auto& dependency : nodes[node].dependencies) {
-                if (!visited[dependency] && hasCycle(dependency, visited, stack)) {
-                    return true;
+        for (auto& node : nodes) {
+            if (!node.ran) {
+                std::cerr << "SystemGraph::update() - system did not run. System name: " << node.system->name() << std::endl;
+                std::cerr << "SystemGraph::update() - system dependencies: "; 
+                for (auto& dependency : node.dependencies) {
+                    std::cerr << nodes[dependency].system->name() << " ";
                 }
-                else if (stack[dependency]) {
-                    return true;
-                }
+                std::cerr << std::endl;
+                std::cerr << "A cycle likely exists in the system graph." << std::endl;
             }
         }
-        stack[node] = false;
-        return false;
     }
 
     void debugPrint() {
@@ -117,16 +114,6 @@ public:
                 std::cout << dependentName << (i + 1 < node.dependents.size() ? ", " : "");
             }
             std::cout << ")" << std::endl;
-        }
-
-        for (auto& node : nodes) {
-            std::vector<bool> visited(nodes.size(), false);
-            std::vector<bool> stack(nodes.size(), false);
-            // TODO: Print out the entire cycle
-            if (hasCycle(node.index, visited, stack)) {
-                throw std::runtime_error("SystemGraph::debugPrint() - cycle detected in system graph. System: " +
-                    std::string(node.system->name()));
-            }
         }
     }
 

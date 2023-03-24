@@ -1,5 +1,7 @@
 #pragma once 
+#include "../DependentSystem.hpp"
+#include "../Components.hpp"
 
-#include <entt/entt.hpp>
-
-void controllerSystemUpdate(entt::registry& registry, float delta);
+struct ControllerSystem : Reads<>::Writes<ControllerInput>::Named<"ControllerSystem"> {
+    virtual void run(float delta, ControllerInput& input) const override;
+};

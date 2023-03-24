@@ -84,4 +84,11 @@ struct CarControl {
     float desiredBrake = 0.0f;
 };
 
+// Struct to store speed, direction and position of a car
+struct CarStateLastUpdate {
+    float speed;
+    glm::vec3 direction;
+    glm::vec3 position;
+};
+
 #endif

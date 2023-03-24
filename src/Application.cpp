@@ -169,6 +169,7 @@ void App::createJoystickPlayer(int joystickId)
     vehicle->getRigidBody()->setUserIndex((int)controller);
     registry.emplace<Transform>(controller);
     registry.emplace<Car>(controller, vehicle);
+    registry.emplace<CarStateLastUpdate>(controller);
     registry.emplace<CarControl>(controller);
 }
 
@@ -427,6 +428,7 @@ void App::setupWorld() {
     registry.emplace<CarControl>(keyboardPlayer);
     vehicle->getRigidBody()->setUserIndex((int)keyboardPlayer);
     registry.emplace<std::shared_ptr<RenderObject>>(keyboardPlayer, objects.back());
+    registry.emplace<CarStateLastUpdate>(keyboardPlayer);
 
     setupControllerPlayers();
     
@@ -480,6 +482,20 @@ void App::setupWorld() {
         registry.emplace<Transform>(entity);
         registry.emplace<RigidBody>(entity, body);
         registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
+    }
+
+    setupSystems();
+}
+
+void App::setupSystems()
+{
+    systems.emplace_back(new CarKeyboardSystem());
+    systems.emplace_back(new CarJoystickSystem());
+    systems.emplace_back(new ControllerSystem());
+    systems.emplace_back(new CarSystem());
+
+    for (auto& system : systems) {
+        std::cout << "Adding system: " << system->name() << std::endl;
     }
 }
 
@@ -573,7 +589,9 @@ void App::updateSystems(float delta)
         renderObject->transformMatrix.model = modelMatrix;
     }
 
-    carSystemUpdate(registry, delta);
+    for(auto system : systems) {
+        system->update(registry, delta);
+    }
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {
@@ -617,8 +635,6 @@ void App::processPressedKeys(float delta) {
         camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
         camera.moveCameraRight(cameraSpeed);
-    
-    controllerSystemUpdate(registry, delta);
 }
 
 App::App() = default;

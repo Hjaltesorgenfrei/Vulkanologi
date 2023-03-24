@@ -8,6 +8,7 @@
 #include "Renderer.hpp"
 #include "Physics.hpp"
 #include "Components.hpp"
+#include "DependentSystem.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -28,6 +29,7 @@ private:
     entt::registry registry;
     std::vector<entt::entity> entities;
     entt::entity keyboardPlayer; // Index is important
+    std::vector<std::shared_ptr<System>> systems;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
@@ -43,6 +45,7 @@ private:
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);
     void setupWorld();
+    void setupSystems();
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 

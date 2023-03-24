@@ -15,7 +15,7 @@
 #include "Components.hpp"
 #include "systems/CarSystem.hpp"
 #include "systems/ControllerSystem.hpp"
-
+#include "systems/TransformSystems.hpp"
 
 void App::run() {
     instance = this;
@@ -224,8 +224,10 @@ int App::drawFrame(float delta) {
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
 
-    for (auto entity : registry.view<std::shared_ptr<RenderObject>>()) {
+    for (auto entity : registry.view<std::shared_ptr<RenderObject>, Transform>()) {
         auto renderObject = registry.get<std::shared_ptr<RenderObject>>(entity);
+        auto transform = registry.get<Transform>(entity);
+        renderObject->transformMatrix.model = transform.modelMatrix;
         frameInfo.objects.push_back(renderObject);
     }
 
@@ -493,7 +495,12 @@ void App::setupSystems()
     systemGraph.addSystem<CarJoystickSystem>();
     systemGraph.addSystem<ControllerSystem>();
     systemGraph.addSystem<CarSystem>();
-
+    systemGraph.addSystem<SensorTransformSystem>();
+    systemGraph.addSystem<RigidBodySystem>();
+    systemGraph.addSystem<CarTransformSystem>();
+    systemGraph.addSystem<TransformControlPointsSystem>();
+    
+    systemGraph.init(registry);
     systemGraph.debugPrint();
 }
 
@@ -509,11 +516,10 @@ void App::mainLoop() {
 
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
-        // TODO: Give milliseconds type as argument
         
         physicsWorld->update(delta.count() / 1000.f);
 
-        updateSystems(delta.count());
+        systemGraph.update(registry, delta.count());
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();
@@ -541,53 +547,6 @@ void App::setupControllerPlayers()
             }
         }
     }
-}
-
-void App::updateSystems(float delta)
-{
-    // I would prefer if these two just got from transform. 
-    // But thats a messy dependency as transform has to be updated before in this case.
-    for (auto entity : registry.view<const Sensor, ControlPointPtr>()) {
-        auto [sensor, controlPoint] = registry.get<const Sensor, ControlPointPtr>(entity);
-        auto body = sensor.ghost;
-        auto scale = body->getCollisionShape()->getLocalScaling();
-        // convert to glm
-        glm::mat4 modelMatrix;
-        auto transform = body->getWorldTransform();
-        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-        // Check if the transform changed
-        controlPoint.controlPoint->update(modelMatrix);
-    }
-
-    
-    for (auto entity : registry.view<RigidBody, std::shared_ptr<RenderObject>>()) {
-        auto [rigidBody, renderObject] = registry.get<RigidBody, std::shared_ptr<RenderObject>>(entity);
-        auto body = rigidBody.body;
-        auto scale = body->getCollisionShape()->getLocalScaling();
-        // convert to glm
-        glm::mat4 modelMatrix;
-        auto transform = body->getWorldTransform();
-        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-        // Check if the transform changed
-        renderObject->transformMatrix.model = modelMatrix;
-    }
-
-    for (auto entity : registry.view<Car, std::shared_ptr<RenderObject>>()) {
-        auto [car, renderObject] = registry.get<Car, std::shared_ptr<RenderObject>>(entity);
-        auto body = car.vehicle->getRigidBody();
-        auto scale = body->getCollisionShape()->getLocalScaling();
-        // convert to glm
-        glm::mat4 modelMatrix;
-        auto transform = body->getWorldTransform();
-        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-        modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-        // Check if the transform changed
-        renderObject->transformMatrix.model = modelMatrix;
-    }
-
-    systemGraph.update(registry, delta);
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {

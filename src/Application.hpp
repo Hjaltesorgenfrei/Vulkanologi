@@ -41,7 +41,6 @@ private:
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
-    void updateSystems(float delta);
     void processPressedKeys(float delta);
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);

@@ -10,6 +10,6 @@ struct CarKeyboardSystem : Reads<KeyboardInput>::Writes<CarControl>::Named<"CarK
     virtual void run(float delta, KeyboardInput input, CarControl& carControl) const override;
 };
 
-struct CarSystem : Reads<CarControl>::Writes<CarStateLastUpdate, Car>::Named<"CarSystem"> {
-    virtual void run(float delta, CarControl carControl, CarStateLastUpdate& lastState, Car& car) const override;
+struct CarSystem : Reads<CarControl>::Writes<Car>::Named<"CarSystem", CarStateLastUpdate> {
+    virtual void run(float delta, CarControl carControl, Car& car, CarStateLastUpdate& lastState) const override;
 };

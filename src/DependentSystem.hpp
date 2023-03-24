@@ -25,10 +25,11 @@ template <typename... ReadArgs>
 struct Reads {
     template <typename... WriteArgs>
     struct Writes { 
-        template <StringLiteral Name>
+        template <StringLiteral Name, typename... OtherArgs>
         struct Named : System {
     protected:
-            virtual void run(float delta, ReadArgs..., WriteArgs&...) const = 0;
+            // TODO: Change this to registry, entity, delta if needed for performance or because we need to delete stuff.
+            virtual void run(float delta, ReadArgs..., WriteArgs&..., OtherArgs&...) const = 0;
             
     public:
             static constexpr auto contents = Name.value;
@@ -48,9 +49,9 @@ struct Reads {
             }
         
             virtual void update(entt::registry& registry, float delta) const override {
-                auto view = registry.view<ReadArgs..., WriteArgs...>();
+                auto view = registry.view<ReadArgs..., WriteArgs..., OtherArgs...>();
                 for (auto entity : view) {
-                    run(delta, view.get<ReadArgs>(entity)..., view.get<WriteArgs>(entity)...);
+                    run(delta, view.get<ReadArgs>(entity)..., view.get<WriteArgs>(entity)..., view.get<OtherArgs>(entity)...);
                 }
             }
         };

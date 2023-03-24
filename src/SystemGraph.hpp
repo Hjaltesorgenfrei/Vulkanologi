@@ -57,6 +57,12 @@ public:
         }
     }
 
+    void init(entt::registry& registry) {
+        for (auto& node : nodes) {
+            node->init(registry);
+        }
+    }
+
     void update(entt::registry& registry, float delta) {
         std::vector<size_t> readyNodes;
         for (auto& node : nodes) {

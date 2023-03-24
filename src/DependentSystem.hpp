@@ -10,6 +10,7 @@ struct System {
     virtual constexpr std::unordered_set<std::type_index> reads() = 0;
     virtual constexpr std::unordered_set<std::type_index> writes() = 0;
     virtual void update(entt::registry& registry, float delta) const = 0;
+    virtual void init(entt::registry& registry) { }
 };
 
 template<size_t N>
@@ -28,8 +29,8 @@ struct Reads {
         template <StringLiteral Name, typename... OtherArgs>
         struct Named : System {
     protected:
-            // TODO: Change this to registry, entity, delta if needed for performance or because we need to delete stuff.
-            virtual void run(float delta, ReadArgs..., WriteArgs&..., OtherArgs&...) const = 0;
+            virtual void run(float delta, ReadArgs..., WriteArgs&..., OtherArgs&...) const { };
+            virtual void run(entt::registry& registry, entt::entity entity, float delta) const { };
             
     public:
             static constexpr auto contents = Name.value;
@@ -52,6 +53,7 @@ struct Reads {
                 auto view = registry.view<ReadArgs..., WriteArgs..., OtherArgs...>();
                 for (auto entity : view) {
                     run(delta, view.get<ReadArgs>(entity)..., view.get<WriteArgs>(entity)..., view.get<OtherArgs>(entity)...);
+                    run(registry, entity, delta);
                 }
             }
         };

@@ -1,0 +1,138 @@
+#include "DependentSystem.hpp"
+#include <memory>
+#include <unordered_map>
+
+struct SystemNode {
+    std::unique_ptr<System> system;
+    size_t index = 0;
+    std::vector<size_t> dependencies{};
+    std::vector<size_t> dependents{};
+    size_t dependenciesNotReady = 0;
+
+    // override ->
+    System* operator ->() {
+        return system.get();
+    }
+};
+
+class SystemGraph {
+public:
+    SystemGraph() = default;
+    SystemGraph(const SystemGraph&) = delete;
+    SystemGraph(SystemGraph&&) = delete;
+    SystemGraph& operator=(const SystemGraph&) = delete;
+    SystemGraph& operator=(SystemGraph&&) = delete;
+    ~SystemGraph() = default;
+
+    template <typename T>
+    void addSystem()
+    {
+        nodes.push_back({std::make_unique<T>(), nodes.size()});
+        auto node = nodes.back().index;
+        if (systemMap.find(typeid(T)) != systemMap.end()) {
+            auto name = nodes[node]->name();
+            throw std::runtime_error("System (" + std::string(name) + ") already added to graph.");
+        }
+        systemMap[typeid(T)] = node;
+
+        auto writeTypes = nodes[node]->writes();
+        for (auto& type : writeTypes) {
+            this->writes[type].push_back(node);
+            for (auto read : reads[type]) {
+                auto readNode = &nodes[read];
+                readNode->dependencies.push_back(node);
+                nodes[node].dependents.push_back(read);
+            }
+        }
+
+        auto readTypes = nodes[node]->reads();
+        for (auto& type : readTypes) {
+            this->reads[type].push_back(node);
+            for (auto write : this->writes[type]) {
+                auto writeNode = &nodes[write];
+                writeNode->dependents.push_back(node);
+                nodes[node].dependencies.push_back(write);
+            }
+        }
+    }
+
+    void update(entt::registry& registry, float delta) {
+        std::vector<size_t> readyNodes;
+        for (auto& node : nodes) {
+            node.dependenciesNotReady = node.dependencies.size();
+            if (node.dependenciesNotReady == 0) {
+                readyNodes.push_back(node.index);
+            }
+        }
+
+        while (!readyNodes.empty()) {
+            auto node = readyNodes.back();
+            readyNodes.pop_back();
+            nodes[node]->update(registry, delta);
+            for (auto dependent : nodes[node].dependents) {
+                auto dependentNode = &nodes[dependent];
+                dependentNode->dependenciesNotReady--;
+                if (dependentNode->dependenciesNotReady == 0) {
+                    readyNodes.push_back(dependentNode->index);
+                }
+                if (dependentNode->dependenciesNotReady < 0) {
+                    throw std::runtime_error("SystemGraph::update() - dependency count is less than 0. System name: " +
+                        std::string(dependentNode->system->name()));
+                }
+            }
+        }
+    }
+
+    bool hasCycle(size_t node, std::vector<bool>& visited, std::vector<bool>& stack) {
+        if (!visited[node]) {
+            visited[node] = true;
+            stack[node] = true;
+
+            for (auto& dependency : nodes[node].dependencies) {
+                if (!visited[dependency] && hasCycle(dependency, visited, stack)) {
+                    return true;
+                }
+                else if (stack[dependency]) {
+                    return true;
+                }
+            }
+        }
+        stack[node] = false;
+        return false;
+    }
+
+    void debugPrint() {
+        for (auto& node : nodes) {
+            auto name = node.system->name();
+            std::cout << name << " depends on: (";
+            for (int i = 0; i < node.dependencies.size(); i++) {
+                auto dependency = node.dependencies[i];
+                auto dependencyName = nodes[dependency].system->name();
+                std::cout << dependencyName << (i + 1 < node.dependencies.size() ? ", " : "");
+            }
+            std::cout << ") and is depended on by: (";
+            for (int i = 0; i < node.dependents.size(); i++) {
+                auto dependent = node.dependents[i];
+                auto dependentName = nodes[dependent].system->name();
+                std::cout << dependentName << (i + 1 < node.dependents.size() ? ", " : "");
+            }
+            std::cout << ")" << std::endl;
+        }
+
+        for (auto& node : nodes) {
+            std::vector<bool> visited(nodes.size(), false);
+            std::vector<bool> stack(nodes.size(), false);
+            // TODO: Print out the entire cycle
+            if (hasCycle(node.index, visited, stack)) {
+                throw std::runtime_error("SystemGraph::debugPrint() - cycle detected in system graph. System: " +
+                    std::string(node.system->name()));
+            }
+        }
+    }
+
+private:
+    std::unordered_map<std::type_index, size_t> systemMap;
+    std::unordered_map<std::type_index, std::vector<size_t>> writes;
+    std::unordered_map<std::type_index, std::vector<size_t>> reads;
+    std::vector<SystemNode> nodes;
+};

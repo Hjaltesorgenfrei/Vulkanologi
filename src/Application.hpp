@@ -9,6 +9,7 @@
 #include "Physics.hpp"
 #include "Components.hpp"
 #include "DependentSystem.hpp"
+#include "SystemGraph.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -29,7 +30,7 @@ private:
     entt::registry registry;
     std::vector<entt::entity> entities;
     entt::entity keyboardPlayer; // Index is important
-    std::vector<std::shared_ptr<System>> systems;
+    SystemGraph systemGraph;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 

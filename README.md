@@ -6,21 +6,17 @@ A Vulkan Renderer written in C++ 23. Very much WIP.
 
 Control movement via Splines that minimize rotation via bishops frames!
 
-https://user-images.githubusercontent.com/8939023/225312673-ae9748e1-c363-45c1-ad7c-fdabec51e73d.mp4
+<https://user-images.githubusercontent.com/8939023/225312673-ae9748e1-c363-45c1-ad7c-fdabec51e73d.mp4>
 
 ## Building
 
-To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows> and set the enviroment variable `VULKAN_HOME` to the install location. 
+To build on Windows install the Vulkan SDK from <https://vulkan.lunarg.com/sdk/home#windows> and set the environment variable `VULKAN_HOME` to the install location.
 
 On arch install `sudo pacman -S vulkan-devel shaderc`
 
 ## Credits
 
-
-
-
-
-Based upon [Vulkan Tutorial](https://vulkan-tutorial.com), inspiration drawn from [Vulkan Guide](https://vkguide.dev/) 
+Based upon [Vulkan Tutorial](https://vulkan-tutorial.com), inspiration drawn from [Vulkan Guide](https://vkguide.dev/)
 and [Brendan Galea's YouTube series](https://www.youtube.com/c/BrendanGalea).
 Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/).
 
@@ -64,7 +60,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - <https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/>
     - <https://github.com/KhronosGroup/Vulkan-Samples/tree/master/samples/performance/command_buffer_usage>
     - <https://vkguide.dev/docs/extra-chapter/multithreading/>
-  - These secondary command buffers could be recorded in parellel in systems.
+  - These secondary command buffers could be recorded in parallel in systems.
 - [ ] Stop blocking when uploading textures, there is currently a wait on idle which is unnecessary.
   - Should probably also use the transfer queue.
   - Usage of transfer queue is only possible for some commands.
@@ -95,7 +91,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Abstract pipelines some more
   - Maybe create some systems which holds the pipeline and layout.
   - The systems could also have a render function.
-- [ ] Create handles for materials and uploaded models, currently its just returned as an object. 
+- [ ] Create handles for materials and uploaded models, currently its just returned as an object.
   - The handles could be `uint64_t`.
   - This would also remove the shared ptr, which is weird to use anyway as the lifetime of the object is more than the data.
 - [x] Smooth resize
@@ -108,7 +104,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Implement Compute shaders <https://github.com/Overv/VulkanTutorial/pull/320>
 - [x] Delete `Renderer::uploadBuffer` it should be handled by `AssetManager`
 - [x] Create multiple vk::Framebuffer swapChainFramebuffers.
-  - No dont do that, i made the change because it is imageless now.
+  - No don't do that, i made the change because it is imageless now.
 - [x] Move cmake for third party to the folder containing them.
 - [ ] Fix sync issues <https://github.com/Overv/VulkanTutorial/issues/276>
 - [x] Fix cursor jumping bug due to ImGui getting input from another thread than GLFW. Need to sync IO somehow, someone on the Vulkan Discord Suggested modeling it as Producer/Consumer problem.
@@ -145,6 +141,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Then have a enum of all dependencies and use dependency sorting to call them in the correct order.
 - [ ] Figure out where Components should be placed.
 - [ ] Maybe delete players if they disconnect?
+- [ ] Add a way to have read/write without it impacting of it's execution.
+  - Maybe it is possible with a struct as a template variable <https://brevzin.github.io/c++/2019/12/02/named-arguments/>
 
 ### Descriptor Layout Idea
 
@@ -213,12 +211,13 @@ The future wait could probably even templated and added as a list of Functions a
 
 ### Physics multithreading idea
 
-Need to seperate the physics out to a seperate thread, which means that transforms from previous iteration should be available.
+Need to separate the physics out to a separate thread, which means that transforms from previous iteration should be available.
 These can be saved to a data structure and copied to a synced reference when ready.
 Which means that the lock only happens while changing the reference.
-The data should only be the transforms at the start, but might have AABB later for frustrum culling.
+The data should only be the transforms at the start, but might have AABB later for frustum culling.
 The start up an update should be getting this reference, which probably means keeping it in a shared pointer.
-Probably `atomic<shared_ptr<map<id, transform>>>`, then have the physics compontent just have the id for the index.
+Probably `atomic<shared_ptr<map<id, transform>>>`, then have the physics component just have the id for the index.
+
 ```cpp
 struct PhysicsComponent { // Maybe just Physics? Check what other engines use as naming.
   uint64_t id; // Maybe typedef this.
@@ -226,6 +225,7 @@ struct PhysicsComponent { // Maybe just Physics? Check what other engines use as
 ```
 
 Each of the updates that need the transforms can then get it passed it in the call to their update.
+
 ```cpp
 void update(float delta) {
   auto transforms = world->getLatestTransforms();
@@ -236,6 +236,7 @@ void update(float delta) {
   jobs->waitAll(); // Wait for all jobs which the systems create to be done.
 }
 ```
+
 This means that they all use the same transforms and thereby gives consistent results.
 
 To allow for doing tasks which rely on `btDynamicWorld`, tasks can be dispatched to world which is executed before stepping.

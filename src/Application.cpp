@@ -489,14 +489,12 @@ void App::setupWorld() {
 
 void App::setupSystems()
 {
-    systems.emplace_back(new CarKeyboardSystem());
-    systems.emplace_back(new CarJoystickSystem());
-    systems.emplace_back(new ControllerSystem());
-    systems.emplace_back(new CarSystem());
+    systemGraph.addSystem<CarKeyboardSystem>();
+    systemGraph.addSystem<CarJoystickSystem>();
+    systemGraph.addSystem<ControllerSystem>();
+    systemGraph.addSystem<CarSystem>();
 
-    for (auto& system : systems) {
-        std::cout << "Adding system: " << system->name() << std::endl;
-    }
+    systemGraph.debugPrint();
 }
 
 void App::mainLoop() {
@@ -589,9 +587,7 @@ void App::updateSystems(float delta)
         renderObject->transformMatrix.model = modelMatrix;
     }
 
-    for(auto system : systems) {
-        system->update(registry, delta);
-    }
+    systemGraph.update(registry, delta);
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {

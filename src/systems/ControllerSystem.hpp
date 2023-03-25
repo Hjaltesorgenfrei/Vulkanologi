@@ -2,6 +2,7 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 
-struct ControllerSystem : Reads<>::Writes<ControllerInput>::Named<"ControllerSystem"> {
-    virtual void run(float delta, ControllerInput& input) const override;
+struct ControllerSystem : System<ControllerSystem, Reads<>, Writes<ControllerInput>, Others<>>
+{
+    void update(entt::registry &registry, float delta, entt::entity ent, ControllerInput &input) const;
 };

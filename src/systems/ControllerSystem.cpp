@@ -2,7 +2,7 @@
 #include "../Components.hpp"
 #include <GLFW/glfw3.h>
 
-void ControllerSystem::run(float delta, ControllerInput& input) const {
+void ControllerSystem::update(entt::registry &registry, float delta, entt::entity ent, ControllerInput &input) const {
     // Get Joystick Input
     auto joystickId = input.joystickId;
     if (glfwJoystickPresent(joystickId) != GLFW_TRUE) {

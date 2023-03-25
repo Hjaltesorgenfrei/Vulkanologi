@@ -12,22 +12,22 @@ glm::mat4 fromCollisionObject(btCollisionObject* body) {
     return glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
 }
 
-void SensorTransformSystem::run(float delta, Sensor sensor, Transform &transform) const
+void SensorTransformSystem::update(entt::registry &registry, float delta, entt::entity ent, Sensor const &sensor, Transform &transform) const
 {
     transform.modelMatrix = fromCollisionObject(sensor.ghost);
 }
 
-void RigidBodySystem::run(float delta, RigidBody rigidBody, Transform &transform) const
+void RigidBodySystem::update(entt::registry &registry, float delta, entt::entity ent, RigidBody const &rigidBody, Transform &transform) const
 {
     transform.modelMatrix = fromCollisionObject(rigidBody.body);
 }
 
-void CarTransformSystem::run(float delta, Car car, Transform &transform) const
+void CarTransformSystem::update(entt::registry &registry, float delta, entt::entity ent, Car const &car, Transform &transform) const
 {
     transform.modelMatrix = fromCollisionObject(car.vehicle->getRigidBody());
 }
 
-void TransformControlPointsSystem::run(float delta, Transform transform, ControlPointPtr &controlPoint) const
+void TransformControlPointsSystem::update(entt::registry &registry, float delta, entt::entity ent, Transform const &transform, ControlPointPtr &controlPoint) const
 {
     controlPoint.controlPoint->transform = transform.modelMatrix;
 }

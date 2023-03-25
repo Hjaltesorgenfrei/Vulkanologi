@@ -3,7 +3,7 @@
 #include <unordered_map>
 
 struct SystemNode {
-    std::unique_ptr<System> system;
+    std::shared_ptr<ISystem> system;
     size_t index = 0;
     std::vector<size_t> dependencies{};
     std::vector<size_t> dependents{};
@@ -11,8 +11,8 @@ struct SystemNode {
     bool ran = false;
 
     // override ->
-    System* operator ->() {
-        return system.get();
+    std::shared_ptr<ISystem> operator ->() {
+        return system;
     }
 };
 
@@ -28,7 +28,7 @@ public:
     template <typename T>
     void addSystem()
     {
-        nodes.push_back({std::make_unique<T>(), nodes.size()});
+        nodes.push_back({std::make_shared<T>(), nodes.size()});
         auto node = nodes.back().index;
         if (systemMap.find(typeid(T)) != systemMap.end()) {
             auto name = nodes[node]->name();

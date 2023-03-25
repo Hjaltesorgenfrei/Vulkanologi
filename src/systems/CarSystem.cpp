@@ -2,7 +2,7 @@
 #include "../Util.hpp"
 #include "CarSystem.hpp"
 
-void CarSystem::run(float delta, CarControl carControl, Car &car, CarStateLastUpdate &lastState) const
+void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, Car &car, CarStateLastUpdate &lastState) const
 {
     auto currentSteering = car.vehicle->getSteeringValue(0);
     auto currentAcceleration = car.vehicle->getWheelInfo(2).m_engineForce;
@@ -30,7 +30,7 @@ void CarSystem::run(float delta, CarControl carControl, Car &car, CarStateLastUp
     lastState.position = toGlm(car.vehicle->getChassisWorldTransform().getOrigin());
 }
 
-void CarKeyboardSystem::run(float delta, KeyboardInput input, CarControl &carControl) const
+void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input, CarControl &carControl) const
 {
     if (input.keys[GLFW_KEY_RIGHT]) {
         carControl.desiredSteering = -0.5f;
@@ -60,8 +60,8 @@ void CarKeyboardSystem::run(float delta, KeyboardInput input, CarControl &carCon
     }
 }
 
-void CarJoystickSystem::run(float delta, ControllerInput input, CarStateLastUpdate lastState, CarControl &carControl) const
-{    
+void CarJoystickSystem::update(entt::registry &registry, float delta, entt::entity ent, ControllerInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const
+{
     carControl.desiredAcceleration = 0.0f;
     carControl.desiredBrake = 0.0f;
 

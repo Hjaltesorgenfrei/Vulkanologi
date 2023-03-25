@@ -2,18 +2,18 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 
-struct SensorTransformSystem : Reads<Sensor>::Writes<Transform>::Named<"SensorTransformSystem"> {
-    virtual void run(float delta, Sensor sensor, Transform& transform) const override;
+struct SensorTransformSystem : System<SensorTransformSystem, Reads<Sensor>, Writes<Transform>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, Sensor const &sensor, Transform &transform) const;
 };
 
-struct RigidBodySystem : Reads<RigidBody>::Writes<Transform>::Named<"RigidBodySystem"> {
-    virtual void run(float delta, RigidBody rigidBody, Transform& transform) const override;
+struct RigidBodySystem : System<RigidBodySystem, Reads<RigidBody>, Writes<Transform>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, RigidBody const &rigidBody, Transform &transform) const;
 };
 
-struct CarTransformSystem : Reads<Car>::Writes<Transform>::Named<"CarTransformSystem"> {
-    virtual void run(float delta, Car car, Transform& transform) const override;
+struct CarTransformSystem : System<CarTransformSystem, Reads<Car>, Writes<Transform>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, Car const &car, Transform &transform) const;
 };
 
-struct TransformControlPointsSystem : Reads<Transform>::Writes<ControlPointPtr>::Named<"TransformControlPointsSystem"> {
-    virtual void run(float delta, Transform transform, ControlPointPtr& controlPoint) const override;
+struct TransformControlPointsSystem : System<TransformControlPointsSystem, Reads<Transform>, Writes<ControlPointPtr>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, Transform const &transform, ControlPointPtr &controlPoint) const;
 };

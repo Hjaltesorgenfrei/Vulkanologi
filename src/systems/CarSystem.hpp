@@ -2,14 +2,14 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 
-struct CarJoystickSystem : Reads<ControllerInput, CarStateLastUpdate>::Writes<CarControl>::Named<"CarJoystickSystem"> {
-    virtual void run(float delta, ControllerInput input, CarStateLastUpdate lastState, CarControl& carControl) const override;
+struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<Car>, Others<CarStateLastUpdate>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, Car &car, CarStateLastUpdate &lastState) const;
 };
 
-struct CarKeyboardSystem : Reads<KeyboardInput>::Writes<CarControl>::Named<"CarKeyboardSystem"> {
-    virtual void run(float delta, KeyboardInput input, CarControl& carControl) const override;
+struct CarKeyboardSystem : System<CarKeyboardSystem, Reads<KeyboardInput>, Writes<CarControl>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input, CarControl &carControl) const;
 };
 
-struct CarSystem : Reads<CarControl>::Writes<Car>::Named<"CarSystem", CarStateLastUpdate> {
-    virtual void run(float delta, CarControl carControl, Car& car, CarStateLastUpdate& lastState) const override;
+struct CarJoystickSystem : System<CarJoystickSystem, Reads<ControllerInput, CarStateLastUpdate>, Writes<CarControl>, Others<>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, ControllerInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const;
 };

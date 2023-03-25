@@ -15,7 +15,7 @@ std::shared_ptr<Mesh> GenerateSphereSmooth(int radius, int latitudes, int longit
 
     std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    float pi = std::numbers::pi_v<float>;
+    const float pi = std::numbers::pi_v<float>;
     float nx, ny, nz, lengthInv = 1.0f / radius;    // normal
 
     float deltaLatitude = pi / latitudes;

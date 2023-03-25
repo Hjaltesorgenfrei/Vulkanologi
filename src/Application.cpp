@@ -352,6 +352,13 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
+    auto renderObject = registry.try_get<std::shared_ptr<RenderObject>>(selectedEntity);
+    auto transform = registry.try_get<Transform>(selectedEntity);
+    if (renderObject && transform) {
+        auto normals = drawNormals(*renderObject);
+        frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
+    }
+
     btRigidBody *rigidBody = nullptr;
     if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
         rigidBody = rigidBodyComponent->body;
@@ -477,8 +484,8 @@ void App::setupWorld() {
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
     objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(2, 10, 10), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj"), Material{}));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
@@ -505,7 +512,7 @@ void App::setupWorld() {
         entities.push_back(entity);
         // Create a ghost object using btGhostObject, same way i need to do control points
         btGhostObject* ghostObject = new btGhostObject();
-        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 2), static_cast<btScalar>(i * 2), static_cast<btScalar>(i * 2))));
+        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
         btConvexShape* sphere = new btSphereShape(0.1f);
         ghostObject->setCollisionShape(sphere);
         ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
@@ -566,6 +573,27 @@ void App::setupWorld() {
         road->mesh = deformMesh(bezierComponent, road->mesh);
         registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
         registry.emplace<Transform>(bezier);
+        auto& vertices = road->mesh->_vertices;
+        auto& indices = road->mesh->_indices;
+        // Make a bullet3 polygonal mesh
+        btTriangleMesh* triangleMesh = new btTriangleMesh();
+        for (int i = 0; i < indices.size(); i += 3) {
+            triangleMesh->addTriangle(
+                btVector3(vertices[indices[i]].pos.x, vertices[indices[i]].pos.y, vertices[indices[i]].pos.z),
+                btVector3(vertices[indices[i + 1]].pos.x, vertices[indices[i + 1]].pos.y, vertices[indices[i + 1]].pos.z),
+                btVector3(vertices[indices[i + 2]].pos.x, vertices[indices[i + 2]].pos.y, vertices[indices[i + 2]].pos.z)
+            );
+        } 
+        btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(triangleMesh, true);
+        btTransform transform;
+        transform.setIdentity();
+        transform.setOrigin(btVector3(0, 0, 0));
+        btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+        btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, shape);
+        btRigidBody* body = new btRigidBody(rbInfo);
+        body->setUserIndex((int)bezier);
+        physicsWorld->addBody(body);
+        registry.emplace<RigidBody>(bezier, body);
     }
     renderer->uploadMeshes({road});
 }
@@ -642,6 +670,7 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
 }
 
 // TODO: Enable this by inspection with debug window.
+// TODO: REEEEEEEEEEEEEE, Needs the rotation matrix because the translation of the end is wrong.
 std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
 {
     auto mesh = object->mesh;

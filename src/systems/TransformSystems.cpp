@@ -29,5 +29,5 @@ void CarTransformSystem::update(entt::registry &registry, float delta, entt::ent
 
 void TransformControlPointsSystem::update(entt::registry &registry, float delta, entt::entity ent, Transform const &transform, ControlPointPtr &controlPoint) const
 {
-    controlPoint.controlPoint->transform = transform.modelMatrix;
+    controlPoint.controlPoint->update(transform.modelMatrix);
 }

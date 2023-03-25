@@ -679,15 +679,15 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
 }
 
 // TODO: Enable this by inspection with debug window.
-// TODO: REEEEEEEEEEEEEE, Needs the rotation matrix because the translation of the end is wrong.
 std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
 {
     auto mesh = object->mesh;
     auto transform = object->transformMatrix.model;
+    glm::mat4 view = glm::mat4(glm::mat3(transform));  
     std::vector<Path> paths;
     for (const auto& vertex : mesh->_vertices) {
         auto start = transform * glm::vec4(vertex.pos, 1.0f);
-        auto end = start + glm::vec4(vertex.normal, 1.0f) * 0.1f;
+        auto end = start + (view * glm::vec4(vertex.normal, 1.0f)) * 0.1f;
         paths.push_back(LinePath(start, end, {0, 0, 1}));
     }
     return paths;

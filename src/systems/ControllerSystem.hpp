@@ -2,7 +2,7 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 
-struct ControllerSystem : System<ControllerSystem, Reads<>, Writes<ControllerInput>, Others<>>
+struct ControllerSystem : WSystem<ControllerSystem, Writes<ControllerInput>>
 {
     void update(entt::registry &registry, float delta, entt::entity ent, ControllerInput &input) const;
 };

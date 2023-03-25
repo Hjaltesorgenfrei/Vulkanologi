@@ -56,3 +56,12 @@ struct System<Self, Reads<Read...>, Writes<Write...>, Others<Other...>> : virtua
                                                 { static_cast<Self const *>(this)->update(registry, delta, ent, reads..., writes..., others...); });
     }
 };
+
+template <typename Self, typename... Write>
+using WSystem = System<Self, Reads<>, Write..., Others<>>;
+
+template <typename Self, typename... Read>
+using RSystem = System<Self, Read..., Writes<>, Others<>>;
+
+template <typename Self, typename... Other>
+using OSystem = System<Self, Reads<>, Writes<>, Other...>;

@@ -119,9 +119,10 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Pre-dock debug info in ImGui, probably with a `DockBuilder`.
 - [ ] Size the debug windows to the size of their content.
 - [ ] Use shared_ptr reference counting in AssetManager to clean up unused assets when space is low.
+  - Reference count of 1 means it can be cleaned.
 - [ ] Move loading of models and textures to a class which can have multiple `loaders`.
   - Each loader has a `canHandle` and `handle` method that returns either a material or a mesh depending on the type of loader.
-- [ ] Implement clickable control objects, which don't collide. This should be possible with <https://pybullet.org/Bullet/BulletFull/classbtGhostObject.html#details>
+- [x] Implement clickable control objects, which don't collide. This should be possible with <https://pybullet.org/Bullet/BulletFull/classbtGhostObject.html#details>
   - Should be tied together with the spline
 - [ ] Make a component for if a entity is allowed to be manipulated with the gizmo and which ones.
 - [ ] There is probably a lot of memory leaks from using new in relation to physics.
@@ -136,13 +137,14 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Transform sources should be mutually exclusive, which I don't know if I can check.
 - [ ] Fix collisions so that they are the same size as the model.
 - [ ] Make a input event enum, so there is reliance on the key pressed later.
-- [ ] Maybe make a way to have systems depend on each other so they can run in order and can be sorted?
+- [x] Maybe make a way to have systems depend on each other so they can run in order and can be sorted?
   - Could be an abstract class with a setup(registry) function, update and dependencies.
   - Then have a enum of all dependencies and use dependency sorting to call them in the correct order.
 - [ ] Figure out where Components should be placed.
 - [ ] Maybe delete players if they disconnect?
-- [ ] Add a way to have read/write without it impacting of it's execution.
+- [x] Add a way to have read/write without it impacting of it's execution.
   - Maybe it is possible with a struct as a template variable <https://brevzin.github.io/c++/2019/12/02/named-arguments/>
+- [ ] Remove the need for `Others<>` in the system type.
 
 ### Descriptor Layout Idea
 

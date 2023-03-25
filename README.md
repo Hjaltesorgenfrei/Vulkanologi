@@ -135,16 +135,19 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] RenderObject should not be used a component, Need a different wrapper for that
   - Which means that the transform sent to the engine should be given from the `Transform` component
 - [ ] Transform sources should be mutually exclusive, which I don't know if I can check.
-- [ ] Fix collisions so that they are the same size as the model.
-- [ ] Make a input event enum, so there is reliance on the key pressed later.
+  - So that any single entity only has one. Else it gets confusing about where it should be.
+- [ ] Fix collisions shapes so that they are the same size as the model.
+- [x] Make a input event enum, so there is reliance on the key pressed later.
 - [x] Maybe make a way to have systems depend on each other so they can run in order and can be sorted?
   - Could be an abstract class with a setup(registry) function, update and dependencies.
   - Then have a enum of all dependencies and use dependency sorting to call them in the correct order.
 - [ ] Figure out where Components should be placed.
-- [ ] Maybe delete players if they disconnect?
+- [x] Maybe delete players if they disconnect?
 - [x] Add a way to have read/write without it impacting of it's execution.
   - Maybe it is possible with a struct as a template variable <https://brevzin.github.io/c++/2019/12/02/named-arguments/>
 - [ ] Remove the need for `Others<>` in the system type.
+  - Probably just by making multiple classes that do the same thing.
+- [ ] Add a background cube map, the black is getting annoying.
 
 ### Descriptor Layout Idea
 

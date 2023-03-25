@@ -9,6 +9,5 @@ class RenderObject {
 public:
     std::shared_ptr<Mesh> mesh;
     Material material;
-    MeshPushConstants transformMatrix;
-    RenderObject(std::shared_ptr<Mesh> mesh, Material material);
+    MeshPushConstants transformMatrix = {glm::mat4(1.0f)};
 };

@@ -74,7 +74,7 @@ struct Car {
     float acceleration = 0.0f;
     float brake = 0.0f;
     float maxSteering = 0.5f;
-    float maxAcceleration = 1000.0f;
+    float maxAcceleration = 2000.0f;
     float maxBrake = 100.0f;
 };
 
@@ -89,6 +89,12 @@ struct CarStateLastUpdate {
     float speed;
     glm::vec3 direction;
     glm::vec3 position;
+};
+
+// TAGS
+
+struct ShowNormalsTag {
+    bool enabled = false;
 };
 
 #endif

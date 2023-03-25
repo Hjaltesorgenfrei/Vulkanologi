@@ -171,6 +171,7 @@ void App::createJoystickPlayer(int joystickId)
     registry.emplace<Car>(controller, vehicle);
     registry.emplace<CarStateLastUpdate>(controller);
     registry.emplace<CarControl>(controller);
+    registry.emplace<std::shared_ptr<RenderObject>>(controller, std::make_shared<RenderObject>(carMesh, carMaterial));
 }
 
 void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
@@ -354,7 +355,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
 
     auto renderObject = registry.try_get<std::shared_ptr<RenderObject>>(selectedEntity);
     auto transform = registry.try_get<Transform>(selectedEntity);
-    if (renderObject && transform) {
+    auto showNormals = registry.try_get<ShowNormalsTag>(selectedEntity);
+    if (renderObject && transform && showNormals) {
         auto normals = drawNormals(*renderObject);
         frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
     }
@@ -480,12 +482,12 @@ void App::drawRigidBodyDebugInfo(btRigidBody* body)
 void App::setupWorld() {
     std::vector<std::shared_ptr<RenderObject>> objects;
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(createCubeMesh(), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10), Material{}));
-    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj"), Material{}));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
+    objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
+    objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
+    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
+    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
+    objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
@@ -494,6 +496,8 @@ void App::setupWorld() {
     registry.on_destroy<Car>().connect<&App::onCarDestroyed>(this);
 
     renderer->uploadMeshes(objects);
+    carMesh = objects.back()->mesh;
+    carMaterial = objects.back()->material;
 
     keyboardPlayer = registry.create();
     registry.emplace<KeyboardInput>(keyboardPlayer);
@@ -506,35 +510,6 @@ void App::setupWorld() {
     registry.emplace<CarStateLastUpdate>(keyboardPlayer);
 
     setupControllerPlayers();
-    
-    for (int i = 0; i < 2; i++){
-        auto entity = registry.create();
-        entities.push_back(entity);
-        // Create a ghost object using btGhostObject, same way i need to do control points
-        btGhostObject* ghostObject = new btGhostObject();
-        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
-        btConvexShape* sphere = new btSphereShape(0.1f);
-        ghostObject->setCollisionShape(sphere);
-        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-        ghostObject->setUserIndex((int)entity);
-        physicsWorld->addGhost(ghostObject);
-        registry.emplace<Transform>(entity);
-        registry.emplace<Sensor>(entity, ghostObject);
-        registry.emplace<ControlPointPtr>(entity);
-    }
-
-    std::vector<std::shared_ptr<ControlPoint>> controlPoints;
-
-    registry.view<ControlPointPtr>().each([&](auto entity, auto& controlPoint) {
-        controlPoints.push_back(controlPoint.controlPoint);
-    });
-
-    {
-        auto entity = registry.create();
-        entities.push_back(entity);
-        Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
-        registry.emplace<Bezier>(entity, bezier);
-    }
 
 
     for (int i = 0; i < 5; i++) {
@@ -563,9 +538,9 @@ void App::setupWorld() {
     systemGraph.update(registry, 0.0f);
     physicsWorld->update(0.0f);
 
-    auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{});
     auto beziers = registry.view<Bezier>();
     for (auto bezier : beziers) {
+        auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
         auto& bezierComponent = registry.get<Bezier>(bezier);
         // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
         // registry.emplace<SplineMesh>(bezier, splineMesh);
@@ -573,38 +548,66 @@ void App::setupWorld() {
         road->mesh = deformMesh(bezierComponent, road->mesh);
         registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
         registry.emplace<Transform>(bezier);
-        auto& vertices = road->mesh->_vertices;
-        auto& indices = road->mesh->_indices;
         // Make a bullet3 polygonal mesh
-        btTriangleMesh* triangleMesh = new btTriangleMesh();
-        for (int i = 0; i < indices.size(); i += 3) {
-            triangleMesh->addTriangle(
-                btVector3(vertices[indices[i]].pos.x, vertices[indices[i]].pos.y, vertices[indices[i]].pos.z),
-                btVector3(vertices[indices[i + 1]].pos.x, vertices[indices[i + 1]].pos.y, vertices[indices[i + 1]].pos.z),
-                btVector3(vertices[indices[i + 2]].pos.x, vertices[indices[i + 2]].pos.y, vertices[indices[i + 2]].pos.z)
-            );
-        } 
-        btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(triangleMesh, true);
-        btTransform transform;
-        transform.setIdentity();
-        transform.setOrigin(btVector3(0, 0, 0));
-        btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-        btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, shape);
-        btRigidBody* body = new btRigidBody(rbInfo);
+        std::vector<btVector3> vertices;
+        for (auto index : road->mesh->_indices) {
+            vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y, road->mesh->_vertices[index].pos.z));
+        }
+
+        auto body = physicsWorld->createWorldGeometry(vertices);
         body->setUserIndex((int)bezier);
-        physicsWorld->addBody(body);
         registry.emplace<RigidBody>(bezier, body);
+        renderer->uploadMeshes({road});
     }
-    renderer->uploadMeshes({road});
+    
 
     // Arena
-    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"), Material{});
+    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
     renderer->uploadMeshes({arena});
     auto entity = registry.create();
     entities.push_back(entity);
     registry.emplace<Transform>(entity);
     registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
-    
+    std::vector<btVector3> vertices;
+    for (auto index : arena->mesh->_indices) {
+        vertices.push_back(btVector3(arena->mesh->_vertices[index].pos.x, arena->mesh->_vertices[index].pos.y, arena->mesh->_vertices[index].pos.z));
+    }
+    auto body = physicsWorld->createWorldGeometry(vertices);
+    body->setUserIndex((int)entity);
+    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
+    body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
+    registry.emplace<RigidBody>(entity, body);
+}
+
+void App::bezierTesting() {
+    for (int i = 0; i < 2; i++){
+        auto entity = registry.create();
+        entities.push_back(entity);
+        // Create a ghost object using btGhostObject, same way i need to do control points
+        btGhostObject* ghostObject = new btGhostObject();
+        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
+        btConvexShape* sphere = new btSphereShape(0.1f);
+        ghostObject->setCollisionShape(sphere);
+        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+        ghostObject->setUserIndex((int)entity);
+        physicsWorld->addGhost(ghostObject);
+        registry.emplace<Transform>(entity);
+        registry.emplace<Sensor>(entity, ghostObject);
+        registry.emplace<ControlPointPtr>(entity);
+    }
+
+    std::vector<std::shared_ptr<ControlPoint>> controlPoints;
+
+    registry.view<ControlPointPtr>().each([&](auto entity, auto& controlPoint) {
+        controlPoints.push_back(controlPoint.controlPoint);
+    });
+
+    {
+        auto entity = registry.create();
+        entities.push_back(entity);
+        Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
+        registry.emplace<Bezier>(entity, bezier);
+    }
 }
 
 void App::setupSystems()

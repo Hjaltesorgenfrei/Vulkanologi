@@ -18,28 +18,16 @@ PhysicsWorld::PhysicsWorld()
     dynamicsWorld->setDebugDrawer(debugDrawer);
 
     // Create a ground plane
-    auto groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
-    auto groundTransform = btTransform();
-    groundTransform.setIdentity();
-    groundTransform.setOrigin(btVector3(0, -1, 0));
-    auto groundMass = 0.f;
-    auto groundLocalInertia = btVector3(0, 0, 0);
-    auto groundMotionState = new btDefaultMotionState(groundTransform);
-    auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
-    auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
-    addBody(groundRigidBody);
-
-    // Create a second plane to test collision
-    auto groundShape2 = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
-    auto groundTransform2 = btTransform();
-    groundTransform2.setIdentity();
-    groundTransform2.setOrigin(btVector3(0, -1.25, 0));
-    auto groundMass2 = 0.f;
-    auto groundLocalInertia2 = btVector3(0, 0, 0);
-    auto groundMotionState2 = new btDefaultMotionState(groundTransform2);
-    auto groundRigidBodyCI2 = btRigidBody::btRigidBodyConstructionInfo(groundMass2, groundMotionState2, groundShape2, groundLocalInertia2);
-    auto groundRigidBody2 = new btRigidBody(groundRigidBodyCI2);
-    addBody(groundRigidBody2);
+    // auto groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
+    // auto groundTransform = btTransform();
+    // groundTransform.setIdentity();
+    // groundTransform.setOrigin(btVector3(0, -1, 0));
+    // auto groundMass = 0.f;
+    // auto groundLocalInertia = btVector3(0, 0, 0);
+    // auto groundMotionState = new btDefaultMotionState(groundTransform);
+    // auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
+    // auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
+    // addBody(groundRigidBody);
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -147,6 +135,27 @@ std::vector<Path> PhysicsWorld::getDebugLines() const
     debugDrawer->clearLines();
     dynamicsWorld->debugDrawWorld();
     return debugDrawer->paths;
+}
+
+btRigidBody *PhysicsWorld::createWorldGeometry(const std::vector<btVector3> &vertices)
+{
+    btTriangleMesh* triangleMesh = new btTriangleMesh();
+    for (int i = 0; i < vertices.size(); i += 3) {
+        triangleMesh->addTriangle(vertices[i], vertices[i + 1], vertices[i + 2]);
+    }
+    btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(triangleMesh, true);
+    btTransform transform;
+    transform.setIdentity();
+    transform.setOrigin(btVector3(0, 0, 0));
+    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
+    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, shape);
+    btRigidBody* body = new btRigidBody(rbInfo);
+    // Dont debug draw because its slow
+    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
+    // Make kinematic
+    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+    addBody(body);
+    return body;
 }
 
 void DebugDrawer::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) {

@@ -31,6 +31,8 @@ private:
     std::vector<entt::entity> entities;
     entt::entity keyboardPlayer; // Index is important
     SystemGraph systemGraph;
+    std::shared_ptr<Mesh> carMesh;
+    Material carMaterial;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
@@ -45,6 +47,7 @@ private:
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix);
     void setupWorld();
+    void bezierTesting();
     void setupSystems();
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);

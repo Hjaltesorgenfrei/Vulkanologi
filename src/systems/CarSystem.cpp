@@ -43,17 +43,17 @@ void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::enti
     }
 
     if (input.keys[GLFW_KEY_UP]) {
-        carControl.desiredAcceleration = 1000.0f;
+        carControl.desiredAcceleration = 2000.0f;
     }
     else if (input.keys[GLFW_KEY_DOWN]) {
-        carControl.desiredAcceleration = -1000.0f;
+        carControl.desiredAcceleration = -2000.0f;
     }
     else {
         carControl.desiredAcceleration = 0.0f;
     }
 
     if (input.keys[GLFW_KEY_SPACE]) {
-        carControl.desiredBrake = 1000.0f;
+        carControl.desiredBrake = 2000.0f;
     }
     else {
         carControl.desiredBrake = 0.0f;
@@ -68,12 +68,12 @@ void CarJoystickSystem::update(entt::registry &registry, float delta, entt::enti
     carControl.desiredSteering = -(input.leftStick.x * 0.5f);
     // If we are going forwards, the right trigger controls acceleration
     if (lastState.speed >= 0.0f) {
-        carControl.desiredAcceleration = input.rightTrigger * 1000.0f;
-        carControl.desiredBrake = input.leftTrigger * 1000.0f;
+        carControl.desiredAcceleration = input.rightTrigger * 2000.0f;
+        carControl.desiredBrake = input.leftTrigger * 2000.0f;
     }
     else {
-        carControl.desiredAcceleration = -input.leftTrigger * 1000.0f;
-        carControl.desiredBrake = input.rightTrigger * 1000.0f;
+        carControl.desiredAcceleration = -input.leftTrigger * 2000.0f;
+        carControl.desiredBrake = input.rightTrigger * 2000.0f;
     }
 
     // TODO: Right now you have to stop completely before you can reverse. fix this

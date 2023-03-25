@@ -35,6 +35,8 @@ public:
 
     std::vector<Path> getDebugLines() const;
 
+    btRigidBody* createWorldGeometry(const std::vector<btVector3>& vertices);
+
 private:
     btDiscreteDynamicsWorld* dynamicsWorld;
     btCollisionConfiguration* collisionConfiguration;

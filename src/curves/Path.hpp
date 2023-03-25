@@ -4,7 +4,6 @@
 #define PATH_H
 
 #include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
 #include <vector>
 #include <memory>
@@ -55,15 +54,9 @@ struct FrenetFrame
     glm::vec3 r; // rotational axis vector
     glm::vec3 n; // normal vector
 
-    glm::quat rotation() const
-    {
-        return glm::quatLookAt(n, t);
-    }
+    glm::mat4 rotation() const;
 
-    glm::vec3 binormal() const
-    {
-        return glm::normalize(glm::cross(t, n));
-    }   
+    glm::vec3 binormal() const;
 };
 
 glm::mat4 frenetFrameMatrix(FrenetFrame frame);

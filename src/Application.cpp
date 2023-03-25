@@ -270,15 +270,12 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
         float sVal = splineValue(verts[i].pos, min, max);
         auto frameAt = bezier.frameAt(sVal);
         auto splinePosition = frameAt.o;
-        auto splineTangent = frameAt.t;
         auto splineNormal = frameAt.n;
         auto splineBinormal = frameAt.binormal();
-        glm::vec3 vertexPosition = verts[i].pos;
-        glm::vec3 vertexNormal = verts[i].normal;
 
         float offset = axis == Axis::X ? verts[i].pos.z : verts[i].pos.x;
         verts[i].pos = splineBinormal * offset * bumb + splinePosition + verts[i].pos.y * heightScale * splineNormal;
-        verts[i].normal = glm::normalize(glm::cross(splineTangent, splineBinormal));
+        verts[i].normal = frameAt.rotation() * glm::vec4(verts[i].normal, 1.0f);
     }
     return result;
 }

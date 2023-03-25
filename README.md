@@ -148,6 +148,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Remove the need for `Others<>` in the system type.
   - Probably just by making multiple classes that do the same thing.
 - [ ] Add a background cube map, the black is getting annoying.
+- [ ] Investigate the jittering issue from the vehicle driving around. A post on the Bullet forums mentioned it possibly being due to large bodies.
 
 ### Descriptor Layout Idea
 

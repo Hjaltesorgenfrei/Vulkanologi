@@ -51,7 +51,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& fil
 			createTextureImage(filename.c_str(), texture);
 		}
 		createTextureImageView(texture);
-		createTextureSampler(texture);
+		createTextureSampler(texture, texture->height + texture->width < 65 ? vk::Filter::eNearest : vk::Filter::eLinear); 
 		uploadedTextures[filename] = texture;
 	}
 	return uploadedTextures[filename];
@@ -63,6 +63,8 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 
 	texture->mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 	vk::DeviceSize imageSize = texWidth * texHeight * 4;
+	texture->width = texWidth;
+	texture->height = texHeight;
 
 	if (!pixels) {
 		throw std::runtime_error("Failed to load texture image!");
@@ -106,12 +108,12 @@ void AssetManager::createTextureImageView(const std::shared_ptr<UploadedTexture>
 	});
 }
 
-void AssetManager::createTextureSampler(const std::shared_ptr<UploadedTexture>& texture) {
+void AssetManager::createTextureSampler(const std::shared_ptr<UploadedTexture>& texture, vk::Filter filter) {
 	auto properties = device->physicalDevice().getProperties();
 
 	vk::SamplerCreateInfo samplerInfo{
-			.magFilter = vk::Filter::eLinear,
-			.minFilter = vk::Filter::eLinear,
+			.magFilter = filter,
+			.minFilter = filter,
 			.mipmapMode = vk::SamplerMipmapMode::eLinear,
 			.addressModeU = vk::SamplerAddressMode::eRepeat,
 			.addressModeV = vk::SamplerAddressMode::eRepeat,

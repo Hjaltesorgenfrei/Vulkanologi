@@ -48,4 +48,6 @@ struct UploadedTexture {
 	vk::ImageView textureImageView;
     vk::Format textureImageFormat;
 	vk::Sampler textureSampler;
+    int width;
+    int height;
 };

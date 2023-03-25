@@ -52,7 +52,7 @@ class AssetManager {
 
     void createTextureImageView(const std::shared_ptr<UploadedTexture>& texture);
 
-    void createTextureSampler(const std::shared_ptr<UploadedTexture>& texture);
+    void createTextureSampler(const std::shared_ptr<UploadedTexture>& texture, vk::Filter filter = vk::Filter::eLinear);
 
     template <typename T>
     [[nodiscard]] AllocatedBuffer stageData(std::span<T>& dataToStage);

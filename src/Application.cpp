@@ -596,6 +596,15 @@ void App::setupWorld() {
         registry.emplace<RigidBody>(bezier, body);
     }
     renderer->uploadMeshes({road});
+
+    // Arena
+    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"), Material{});
+    renderer->uploadMeshes({arena});
+    auto entity = registry.create();
+    entities.push_back(entity);
+    registry.emplace<Transform>(entity);
+    registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
+    
 }
 
 void App::setupSystems()

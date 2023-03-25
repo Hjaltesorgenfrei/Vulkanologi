@@ -215,6 +215,74 @@ float bytesToMegaBytes(uint64_t bytes) {
 //     return path;
 // }
 
+enum Axis {
+    X,
+    Y,
+    Z
+};
+
+Axis axis = X;
+
+float splineValue(glm::vec3 pos, float minX, float maxX) {
+    if (axis == Axis::X) {
+        return (pos.x - minX) / (maxX - minX);
+    }
+    else if (axis == Axis::Y) {
+        return (pos.y - minX) / (maxX - minX);
+    }
+    else {
+        return (pos.z - minX) / (maxX - minX);
+    }
+}
+
+float heightScale = 1.f;
+float bumb = 1.f;
+
+std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh) {
+    auto result = std::make_shared<Mesh>();
+    result->_vertices = baseMesh->_vertices;
+    result->_indices = baseMesh->_indices;
+    result->_texturePaths = baseMesh->_texturePaths;
+    result->_vertexBuffer = baseMesh->_vertexBuffer;
+    result->_indexBuffer = baseMesh->_indexBuffer;
+
+    auto& verts = result->_vertices;
+
+    float min = FLT_MAX;
+    float max = FLT_MIN;
+    for (int i = 0; i < verts.size(); i++)
+    {
+        if (axis == Axis::X) {
+            min = std::min(min, verts[i].pos.x);
+            max = std::max(max, verts[i].pos.x);
+        }
+        else if (axis == Axis::Y) {
+            min = std::min(min, verts[i].pos.y);
+            max = std::max(max, verts[i].pos.y);
+        }
+        else {
+            min = std::min(min, verts[i].pos.z);
+            max = std::max(max, verts[i].pos.z);
+        }
+    }
+    for (int i = 0; i < verts.size(); i++)
+    {
+        float sVal = splineValue(verts[i].pos, min, max);
+        auto frameAt = bezier.frameAt(sVal);
+        auto splinePosition = frameAt.o;
+        auto splineTangent = frameAt.t;
+        auto splineNormal = frameAt.n;
+        auto splineBinormal = frameAt.binormal();
+        glm::vec3 vertexPosition = verts[i].pos;
+        glm::vec3 vertexNormal = verts[i].normal;
+
+        float offset = axis == Axis::X ? verts[i].pos.z : verts[i].pos.x;
+        verts[i].pos = splineBinormal * offset * bumb + splinePosition + verts[i].pos.y * heightScale * splineNormal;
+        verts[i].normal = glm::normalize(glm::cross(splineTangent, splineBinormal));
+    }
+    return result;
+}
+
 int App::drawFrame(float delta) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -283,6 +351,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
             frameInfo.paths.emplace_back(LinePath(end, right, {0, 1, 0}));
             frameInfo.paths.emplace_back(LinePath(end, left, {0, 1, 0}));
             frameInfo.paths.emplace_back(LinePath(right, left, {0, 1, 0}));
+            frameInfo.paths.emplace_back(LinePath(start, start + frame.binormal() * 0.5f, {1, 0, 1}));
         }
     });
 
@@ -439,7 +508,7 @@ void App::setupWorld() {
         entities.push_back(entity);
         // Create a ghost object using btGhostObject, same way i need to do control points
         btGhostObject* ghostObject = new btGhostObject();
-        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(i), 0, -2)));
+        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 2), static_cast<btScalar>(i * 2), static_cast<btScalar>(i * 2))));
         btConvexShape* sphere = new btSphereShape(0.1f);
         ghostObject->setCollisionShape(sphere);
         ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
@@ -487,6 +556,21 @@ void App::setupWorld() {
     }
 
     setupSystems();
+    systemGraph.update(registry, 0.0f);
+    physicsWorld->update(0.0f);
+
+    auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"), Material{});
+    auto beziers = registry.view<Bezier>();
+    for (auto bezier : beziers) {
+        auto& bezierComponent = registry.get<Bezier>(bezier);
+        // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
+        // registry.emplace<SplineMesh>(bezier, splineMesh);
+        bezierComponent.recomputeIfDirty();
+        road->mesh = deformMesh(bezierComponent, road->mesh);
+        registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+        registry.emplace<Transform>(bezier);
+    }
+    renderer->uploadMeshes({road});
 }
 
 void App::setupSystems()
@@ -603,6 +687,10 @@ int main() {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;
 	}
+    catch (...) {
+        std::cerr << "Unknown exception" << std::endl;
+        return EXIT_FAILURE;
+    }
 
 	return EXIT_SUCCESS;
 }

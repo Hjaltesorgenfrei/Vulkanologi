@@ -77,10 +77,12 @@ public:
     void setPoint(int index, std::shared_ptr<ControlPoint> controlPoint);
     void removePoint(int index);
     std::vector<std::shared_ptr<ControlPoint>> const &getControlPoints() const;
+    FrenetFrame frameAt(float t) const;
 
 protected:
     std::vector<std::shared_ptr<ControlPoint>> controlPoints;
     glm::vec3 color;
+    std::vector<std::pair<float, FrenetFrame>> sortedFrames;
 
     std::vector<glm::vec3> evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float> &evenTs);
 

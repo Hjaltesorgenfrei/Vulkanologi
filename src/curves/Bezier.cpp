@@ -57,6 +57,7 @@ void Bezier::recompute()
     points.clear();
     indices.clear();
     frenetFrames.clear();
+    sortedFrames.clear();
 
     for (int i = 0; i < controlPoints.size() - 1; i++)
     {
@@ -82,9 +83,21 @@ void Bezier::recompute()
                 color
             };
             points.push_back(p);
+
+            if (j > 0)
+            {
+                indices.push_back(static_cast<uint32_t>(points.size() - 2));
+                indices.push_back(static_cast<uint32_t>(points.size() - 1));
+            }
         }
 
         frenetFrames.insert(frenetFrames.end(), frames.begin(), frames.end());
+
+        assert(frames.size() == evenPoints.size());
+        for (int j = 0; j < frames.size(); j++)
+        {
+            sortedFrames.emplace_back(evenTs[j], frames[j]);
+        }
     }
 }
 
@@ -126,6 +139,37 @@ void Bezier::removePoint(int index)
 std::vector<std::shared_ptr<ControlPoint>> const &Bezier::getControlPoints() const
 {
     return controlPoints;
+}
+
+FrenetFrame Bezier::frameAt(float t) const
+{
+    // find the first frame with a t greater than the given t
+    auto it = std::upper_bound(sortedFrames.begin(), sortedFrames.end(), t, [](float t, const std::pair<float, FrenetFrame>& frame) {
+        return t < frame.first;
+    });
+    // if the iterator is at the end, return the last frame
+    if (it == sortedFrames.end())
+    {
+        return sortedFrames.back().second;
+    }
+    // if the iterator is at the beginning, return the first frame
+    if (it == sortedFrames.begin())
+    {
+        return sortedFrames.front().second;
+    }
+    // otherwise, interpolate between the two frames
+    
+    auto t0 = (it - 1)->first;
+    auto f0 = (it - 1)->second;
+    auto t1 = it->first;
+    auto f1 = it->second;
+    auto tInterp = (t - t0) / (t1 - t0);
+    return FrenetFrame {
+        .o = glm::mix(f0.o, f1.o, tInterp),
+        .t = glm::mix(f0.t, f1.t, tInterp),
+        .r = glm::mix(f0.r, f1.r, tInterp),
+        .n = glm::mix(f0.n, f1.n, tInterp)
+    };
 }
 
 std::vector<glm::vec3> Bezier::evenPointsAlongCubicCurve(glm::vec3 a, glm::vec3 b, glm::vec3 c, glm::vec3 d, std::vector<float>& evenTs)

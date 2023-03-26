@@ -84,11 +84,15 @@ struct CarControl {
     float desiredBrake = 0.0f;
 };
 
-// Struct to store speed, direction and position of a car
+// Struct to store speed, direction and position of a car for the last frame.
 struct CarStateLastUpdate {
     float speed;
     glm::vec3 direction;
     glm::vec3 position;
+};
+
+struct Player {
+    int id;
 };
 
 // TAGS
@@ -98,5 +102,7 @@ struct ShowNormalsTag {
 };
 
 struct MarkForDeletionTag { };
+
+struct SelectedTag { };
 
 #endif

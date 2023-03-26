@@ -83,9 +83,15 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         btVector3 rayFromWorld(pos.x, pos.y, pos.z);
         const int maxRayLength = 1000;
         btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
+        for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
+            app->registry.remove<SelectedTag>(entity);
+        }
         app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](const btCollisionObject* body, const btVector3& point, const btVector3& normal) {
+            if (body->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT) {
+                return;
+            }
             auto entity = static_cast<entt::entity>(body->getUserIndex());
-            app->selectedEntity = entity;
+            app->registry.emplace<SelectedTag>(entity);
         });
 
         glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
@@ -137,12 +143,14 @@ void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 
     if(action == GLFW_PRESS) {
-        auto& input = app->registry.get<KeyboardInput>(app->keyboardPlayer);
-        input.keys[key] = true;
+        for (auto [entity, input] : app->registry.view<KeyboardInput>().each()) {
+            input.keys[key] = true;
+        }
     }
     if(action == GLFW_RELEASE) {
-        auto& input = app->registry.get<KeyboardInput>(app->keyboardPlayer);
-        input.keys[key] = false;
+        for (auto [entity, input] : app->registry.view<KeyboardInput>().each()) {
+            input.keys[key] = false;
+        }
     }
 }
 
@@ -353,6 +361,45 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
+    for (auto entity : registry.view<SelectedTag>()) {
+        drawDebugForSelectedEntity(entity, frameInfo);
+    }
+}
+
+void App::drawRigidBodyDebugInfo(btRigidBody* body)
+{
+    auto transform = body->getWorldTransform();
+    auto scale = body->getCollisionShape()->getLocalScaling();
+
+    // Show with ImGui
+    ImGui::Begin("Rigid Body Info");
+    ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
+    ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
+    ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+    ImGui::Text("Mass: %f", body->getInvMass());
+    ImGui::Text("Friction: %f", body->getFriction());
+    ImGui::Text("Restitution: %f", body->getRestitution());
+    ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
+    ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
+    ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
+    ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
+    ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
+    ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
+    ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
+    ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
+    ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
+    ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
+    ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
+
+    if (ImGui::Button("Set Active")) {
+        body->activate(true);
+    }
+
+    ImGui::End();
+}
+
+void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo)
+{
     auto renderObject = registry.try_get<std::shared_ptr<RenderObject>>(selectedEntity);
     auto transform = registry.try_get<Transform>(selectedEntity);
     auto showNormals = registry.try_get<ShowNormalsTag>(selectedEntity);
@@ -447,38 +494,6 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     }
 }
 
-void App::drawRigidBodyDebugInfo(btRigidBody* body)
-{
-    auto transform = body->getWorldTransform();
-    auto scale = body->getCollisionShape()->getLocalScaling();
-
-    // Show with ImGui
-    ImGui::Begin("Rigid Body Info");
-    ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
-    ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
-    ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-    ImGui::Text("Mass: %f", body->getInvMass());
-    ImGui::Text("Friction: %f", body->getFriction());
-    ImGui::Text("Restitution: %f", body->getRestitution());
-    ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
-    ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
-    ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
-    ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
-    ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
-    ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
-    ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
-    ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
-    ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
-    ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
-    ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
-
-    if (ImGui::Button("Set Active")) {
-        body->activate(true);
-    }
-
-    ImGui::End();
-}
-
 void App::setupWorld() {
     std::vector<std::shared_ptr<RenderObject>> objects;
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
@@ -499,7 +514,8 @@ void App::setupWorld() {
     carMesh = objects.back()->mesh;
     carMaterial = objects.back()->material;
 
-    keyboardPlayer = registry.create();
+    auto keyboardPlayer = registry.create();
+    entities.insert(keyboardPlayer);
     registry.emplace<KeyboardInput>(keyboardPlayer);
     auto vehicle = physicsWorld->createVehicle();
     registry.emplace<Transform>(keyboardPlayer);
@@ -514,7 +530,7 @@ void App::setupWorld() {
 
     for (int i = 0; i < 5; i++) {
         auto entity = registry.create();
-        entities.push_back(entity);
+        entities.insert(entity);
 
         auto colShape = new btBoxShape(btVector3(0.5f, 0.5f, 0.5f));
         auto startTransform = btTransform();
@@ -565,7 +581,7 @@ void App::setupWorld() {
     auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
     renderer->uploadMeshes({arena});
     auto entity = registry.create();
-    entities.push_back(entity);
+    entities.insert(entity);
     registry.emplace<Transform>(entity);
     registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
     std::vector<btVector3> vertices;
@@ -582,7 +598,7 @@ void App::setupWorld() {
 void App::bezierTesting() {
     for (int i = 0; i < 2; i++){
         auto entity = registry.create();
-        entities.push_back(entity);
+        entities.insert(entity);
         // Create a ghost object using btGhostObject, same way i need to do control points
         btGhostObject* ghostObject = new btGhostObject();
         ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
@@ -604,7 +620,7 @@ void App::bezierTesting() {
 
     {
         auto entity = registry.create();
-        entities.push_back(entity);
+        entities.insert(entity);
         Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
         registry.emplace<Bezier>(entity, bezier);
     }
@@ -650,9 +666,10 @@ void App::mainLoop() {
         if (result == 1) {
             renderer->recreateSwapchain();
         }
-        
+
         for (auto& entity : registry.view<MarkForDeletionTag>()) {
             registry.destroy(entity);
+            entities.erase(entity);
         }
 	}
 }

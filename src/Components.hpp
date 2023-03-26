@@ -39,7 +39,7 @@ struct KeyboardInput {
     bool mouseRightReleased;
 };
 
-struct ControllerInput {
+struct GamepadInput {
     int joystickId;
     float timeSinceLastSeen = 0.f;
     bool connected = true;
@@ -93,6 +93,7 @@ struct CarStateLastUpdate {
 
 struct Player {
     int id;
+    int lives = 3;
 };
 
 // TAGS

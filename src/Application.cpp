@@ -158,10 +158,10 @@ void App::joystickCallback(int joystickId, int event)
 {
     auto * const app = App::instance;
     if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(joystickId)) {
-        app->createJoystickPlayer(joystickId);
+        app->createPlayer(GamepadInput { joystickId });
     }
     else if (event == GLFW_DISCONNECTED) {
-        app->registry.view<ControllerInput>().each([&](auto entity, auto& input) {
+        app->registry.view<GamepadInput>().each([&](auto entity, auto& input) {
             if (input.joystickId == joystickId) {
                 app->registry.emplace<MarkForDeletionTag>(entity);
             }
@@ -169,17 +169,26 @@ void App::joystickCallback(int joystickId, int event)
     }
 }
 
-void App::createJoystickPlayer(int joystickId)
+template <typename T>
+entt::entity App::createPlayer(T input)
 {
-    auto controller = registry.create();
-    registry.emplace<ControllerInput>(controller, joystickId);
+    int playerId = 0;
+    for (auto [entity, player] : registry.view<Player>().each()) {
+        if (player.id >= playerId) {
+            playerId = player.id + 1;
+        }
+    }
+    auto entity = registry.create();
     auto vehicle = physicsWorld->createVehicle();
-    vehicle->getRigidBody()->setUserIndex((int)controller);
-    registry.emplace<Transform>(controller);
-    registry.emplace<Car>(controller, vehicle);
-    registry.emplace<CarStateLastUpdate>(controller);
-    registry.emplace<CarControl>(controller);
-    registry.emplace<std::shared_ptr<RenderObject>>(controller, std::make_shared<RenderObject>(carMesh, carMaterial));
+    vehicle->getRigidBody()->setUserIndex((int)entity);
+    registry.emplace<T>(entity, input);
+    registry.emplace<Player>(entity, playerId);
+    registry.emplace<Transform>(entity);
+    registry.emplace<Car>(entity, vehicle);
+    registry.emplace<CarStateLastUpdate>(entity);
+    registry.emplace<CarControl>(entity);
+    registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(carMesh, carMaterial));
+    return entity;
 }
 
 void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
@@ -514,16 +523,7 @@ void App::setupWorld() {
     carMesh = objects.back()->mesh;
     carMaterial = objects.back()->material;
 
-    auto keyboardPlayer = registry.create();
-    entities.insert(keyboardPlayer);
-    registry.emplace<KeyboardInput>(keyboardPlayer);
-    auto vehicle = physicsWorld->createVehicle();
-    registry.emplace<Transform>(keyboardPlayer);
-    registry.emplace<Car>(keyboardPlayer, vehicle);
-    registry.emplace<CarControl>(keyboardPlayer);
-    vehicle->getRigidBody()->setUserIndex((int)keyboardPlayer);
-    registry.emplace<std::shared_ptr<RenderObject>>(keyboardPlayer, objects.back());
-    registry.emplace<CarStateLastUpdate>(keyboardPlayer);
+    createPlayer(KeyboardInput {});
 
     setupControllerPlayers();
 
@@ -678,14 +678,14 @@ void App::setupControllerPlayers()
 {
     // Get all joysticks
     int joystickCount = 0;
-    for (int i = 0; i < GLFW_JOYSTICK_LAST; i++) {
-        if (glfwJoystickPresent(i)) {
+    for (int joystickId = 0; joystickId < GLFW_JOYSTICK_LAST; joystickId++) {
+        if (glfwJoystickPresent(joystickId)) {
             joystickCount++;
-            const char* joystickName = glfwGetJoystickName(i);
-            std::cout << "Joystick " << i << " is present: " << joystickName << std::endl;
-            if (glfwJoystickIsGamepad(i)) {
-                std::cout << "Joystick " << i << " is a gamepad" << std::endl;
-                createJoystickPlayer(i);
+            const char* joystickName = glfwGetJoystickName(joystickId);
+            std::cout << "Joystick " << joystickId << " is present: " << joystickName << std::endl;
+            if (glfwJoystickIsGamepad(joystickId)) {
+                std::cout << "Joystick " << joystickId << " is a gamepad" << std::endl;
+                createPlayer(GamepadInput { joystickId });
             }
         }
     }

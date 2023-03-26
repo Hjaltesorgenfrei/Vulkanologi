@@ -2,7 +2,7 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 
-struct ControllerSystem : WSystem<ControllerSystem, Writes<ControllerInput>>
+struct ControllerSystem : WSystem<ControllerSystem, Writes<GamepadInput>>
 {
-    void update(entt::registry &registry, float delta, entt::entity ent, ControllerInput &input) const;
+    void update(entt::registry &registry, float delta, entt::entity ent, GamepadInput &input) const;
 };

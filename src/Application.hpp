@@ -58,7 +58,8 @@ private:
     static void keyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
     static void joystickCallback(int joystickId, int event);
 
-    void createJoystickPlayer(int joystickId);
+    template <typename T>
+    entt::entity createPlayer(T input);
 
     void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
     void onSensorDestroyed(entt::registry &registry, entt::entity entity);

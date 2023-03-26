@@ -60,7 +60,7 @@ void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::enti
     }
 }
 
-void CarJoystickSystem::update(entt::registry &registry, float delta, entt::entity ent, ControllerInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const
+void CarJoystickSystem::update(entt::registry &registry, float delta, entt::entity ent, GamepadInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const
 {
     carControl.desiredAcceleration = 0.0f;
     carControl.desiredBrake = 0.0f;

@@ -36,7 +36,7 @@ private:
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
     BehCamera camera{};
-    bool showDebugInfo = true;
+    bool showDebugInfo = false;
     bool updateWindowSize = false;
     bool cursorHidden = false;
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
@@ -48,6 +48,7 @@ private:
     void setupWorld();
     void bezierTesting();
     void setupSystems();
+    void createSpawnPoints();
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 
@@ -59,7 +60,7 @@ private:
     static void joystickCallback(int joystickId, int event);
 
     template <typename T>
-    entt::entity createPlayer(T input);
+    entt::entity addPlayer(T input);
 
     void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
     void onSensorDestroyed(entt::registry &registry, entt::entity entity);

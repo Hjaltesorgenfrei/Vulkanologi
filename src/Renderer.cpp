@@ -442,7 +442,7 @@ void Renderer::createComputeDescriptorSetLayout() {
 
 void Renderer::createGraphicsPipelineLayout() {
     vk::PushConstantRange pushConstantRange{
-            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+            .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
             .offset = 0,
             .size = sizeof(MeshPushConstants)
     };
@@ -1048,7 +1048,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
                                                      &model->material.textureSet, 0, nullptr);
 
             MeshPushConstants constants = model->transformMatrix;
-            commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex, 0,
+            commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                                 sizeof(MeshPushConstants), &constants);
 
             commandBuffer.drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);

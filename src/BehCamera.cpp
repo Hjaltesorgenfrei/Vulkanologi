@@ -7,9 +7,9 @@
 #include "BehCamera.hpp"
 
 BehCamera::BehCamera() {
-    cameraYaw = 135.0f;
-    cameraPitch = -35.0f;
-    cameraPosition = glm::vec3(2.0f, 2.0f, -2.0f);
+    cameraYaw = 40.f;
+    cameraPitch = -30.0f;
+    cameraPosition = glm::vec3(-46.f, 44.f, -35.0f);
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
     setCameraFront();
 }

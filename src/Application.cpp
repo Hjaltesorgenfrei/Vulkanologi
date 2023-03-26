@@ -6,7 +6,7 @@
 #include <chrono>
 #include <thread>
 #include <glm/gtc/type_ptr.hpp>
-
+#include <fstream>
 
 #include "Renderer.hpp"
 #include "Application.hpp"
@@ -16,6 +16,7 @@
 #include "systems/CarSystem.hpp"
 #include "systems/ControllerSystem.hpp"
 #include "systems/TransformSystems.hpp"
+#include "Colors.hpp"
 
 void App::run() {
     instance = this;
@@ -158,7 +159,7 @@ void App::joystickCallback(int joystickId, int event)
 {
     auto * const app = App::instance;
     if (event == GLFW_CONNECTED && glfwJoystickIsGamepad(joystickId)) {
-        app->createPlayer(GamepadInput { joystickId });
+        app->addPlayer(GamepadInput { joystickId });
     }
     else if (event == GLFW_DISCONNECTED) {
         app->registry.view<GamepadInput>().each([&](auto entity, auto& input) {
@@ -170,7 +171,7 @@ void App::joystickCallback(int joystickId, int event)
 }
 
 template <typename T>
-entt::entity App::createPlayer(T input)
+entt::entity App::addPlayer(T input)
 {
     int playerId = 0;
     for (auto [entity, player] : registry.view<Player>().each()) {
@@ -178,11 +179,21 @@ entt::entity App::createPlayer(T input)
             playerId = player.id + 1;
         }
     }
+    std::vector<SpawnPoint> spawnPoints;
+    for (auto [entity, spawnPoint] : registry.view<SpawnPoint>().each()) {
+        spawnPoints.push_back(spawnPoint);
+    }
     auto entity = registry.create();
     auto vehicle = physicsWorld->createVehicle();
+    // Move vehicle to spawn point
+    auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+    vehicle->getRigidBody()->getWorldTransform().setOrigin(btVector3(spawnPoint.position.x, spawnPoint.position.y, spawnPoint.position.z));
+    auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
+    vehicle->getRigidBody()->getWorldTransform().setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+    auto color = Color::playerColor(playerId);
     vehicle->getRigidBody()->setUserIndex((int)entity);
     registry.emplace<T>(entity, input);
-    registry.emplace<Player>(entity, playerId);
+    registry.emplace<Player>(entity, playerId, color);
     registry.emplace<Transform>(entity);
     registry.emplace<Car>(entity, vehicle);
     registry.emplace<CarStateLastUpdate>(entity);
@@ -310,9 +321,37 @@ int App::drawFrame(float delta) {
     for (auto entity : registry.view<std::shared_ptr<RenderObject>, Transform>()) {
         auto renderObject = registry.get<std::shared_ptr<RenderObject>>(entity);
         auto transform = registry.get<Transform>(entity);
+        auto player = registry.try_get<Player>(entity);
+        if (player != nullptr) {
+            renderObject->transformMatrix.color = glm::vec4(player->color, 1.0f);
+        }
         renderObject->transformMatrix.model = transform.modelMatrix;
         frameInfo.objects.push_back(renderObject);
     }
+
+    // Make a imgui window to show all players
+    std::vector<entt::entity> players;
+    for (auto entity : registry.view<Player>()) {
+        players.push_back(entity);
+    }
+    std::sort(players.begin(), players.end(), [&](entt::entity a, entt::entity b) {
+        auto& playerA = registry.get<Player>(a);
+        auto& playerB = registry.get<Player>(b);
+        return playerA.id < playerB.id;
+    });
+    // Draw window without borders so it looks like a HUD
+    ImGui::Begin("Players", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus);
+    ImGui::SetWindowPos(ImVec2(0, 0));
+    for (auto entity : players) {
+        auto& player = registry.get<Player>(entity);
+        ImVec4 color(player.color.x, player.color.y, player.color.z, 1.0f);
+        ImGui::TextColored(color, "Player %d, lives: %d", player.id, player.lives);
+        if (showDebugInfo) {
+            ImGui::SameLine();
+            ImGui::ColorEdit3("Color", &player.color[0]);
+        }
+    }
+    ImGui::End();
 
     if(showDebugInfo) {
         drawFrameDebugInfo(delta, frameInfo);
@@ -523,12 +562,16 @@ void App::setupWorld() {
     carMesh = objects.back()->mesh;
     carMaterial = objects.back()->material;
 
-    createPlayer(KeyboardInput {});
+    createSpawnPoints();
+
+    for (int i = 0; i < 12; i++) {
+        addPlayer(KeyboardInput {});
+    }
 
     setupControllerPlayers();
 
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 0; i++) {
         auto entity = registry.create();
         entities.insert(entity);
 
@@ -641,6 +684,48 @@ void App::setupSystems()
     systemGraph.debugPrint();
 }
 
+void App::createSpawnPoints()
+{
+    // Read from text file SPAWNPOINTS.txt
+    /* Format:
+    3 // Number of spawn points
+    0 0 0 // Spawn point 1 position
+    1 0 0 // Spawn point 1 forward
+    */
+    std::ifstream file("resources/SPAWNPOINTS.txt");
+    int numSpawnPoints;
+    file >> numSpawnPoints;
+    std::vector<SpawnPoint> spawnPoints;
+    for (int i = 0; i < numSpawnPoints; i++) {
+        float x, y, z;
+        file >> x >> y >> z;
+        glm::vec3 position = glm::vec3(x, y, z);
+        file >> x >> y >> z;
+        glm::vec3 forward = glm::vec3(x, y, z);
+        spawnPoints.push_back(SpawnPoint{position, forward});
+    }
+    file.close();
+
+    // Create spawn points
+    for (int i = 0; i < numSpawnPoints; i++) {
+        auto entity = registry.create();
+        entities.insert(entity);
+        registry.emplace<Transform>(entity);
+        registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
+        btGhostObject* ghostObject = new btGhostObject();
+        auto position = spawnPoints[i].position;
+        auto forward = spawnPoints[i].forward;
+        auto rotation = glm::quatLookAt(forward, glm::vec3(0, 1, 0));
+        ghostObject->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z))));
+        btConvexShape* sphere = new btSphereShape(0.1f);
+        ghostObject->setCollisionShape(sphere);
+        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+        ghostObject->setUserIndex((int)entity);
+        physicsWorld->addGhost(ghostObject);
+        registry.emplace<Sensor>(entity, ghostObject);
+    }
+}
+
 void App::mainLoop() {
     auto timeStart = std::chrono::high_resolution_clock::now();
 
@@ -685,7 +770,7 @@ void App::setupControllerPlayers()
             std::cout << "Joystick " << joystickId << " is present: " << joystickName << std::endl;
             if (glfwJoystickIsGamepad(joystickId)) {
                 std::cout << "Joystick " << joystickId << " is a gamepad" << std::endl;
-                createPlayer(GamepadInput { joystickId });
+                addPlayer(GamepadInput { joystickId });
             }
         }
     }

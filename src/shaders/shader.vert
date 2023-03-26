@@ -8,6 +8,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout (push_constant) uniform constants {
 	mat4 modelMatrix;
+	vec4 color;
 } pushConstants;
 
 layout(location = 0) in vec3 inPosition;

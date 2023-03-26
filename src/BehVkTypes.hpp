@@ -33,6 +33,7 @@ struct AllocatedImage {
 
 struct MeshPushConstants {
     glm::mat4 model;
+    glm::vec4 color = glm::vec4(1.0f);
 };
 
 struct UploadContext {

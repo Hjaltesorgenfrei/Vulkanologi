@@ -78,17 +78,13 @@ void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayT
 
 btRaycastVehicle* PhysicsWorld::createVehicle()
 {
-    // get 2 random values for x and z position of the vehicle between -5 and 5
-    float x = static_cast<float>((rand() % 10) - 5);
-    float z = static_cast<float>((rand() % 10) - 5);
-
-    btCollisionShape* chassisShape = new btBoxShape(btVector3(1, 1, 1.5));
+    btCollisionShape* chassisShape = new btBoxShape(btVector3(1.3f, 1.f, 2.6f));
     btCompoundShape* compound = new btCompoundShape();
     btTransform localTrans;
     localTrans.setIdentity();
     localTrans.setOrigin(btVector3(0, 1, 0));
     compound->addChildShape(localTrans, chassisShape);
-    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(x, 2, z)));
+    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 2, 0)));
     btScalar mass = 800;
     btVector3 localInertia(0, 0, 0);
     compound->calculateLocalInertia(mass, localInertia);
@@ -105,11 +101,11 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     bool isFrontWheel = true;
     btScalar suspensionRestLength(0.6f);
     btScalar wheelRadius(0.5f);
-    vehicle->addWheel(btVector3(-1, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1.3, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1.3, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     isFrontWheel = false;
-    vehicle->addWheel(btVector3(-1, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1.3, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1.3, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     for (int i = 0; i < vehicle->getNumWheels(); i++) {
         btWheelInfo& wheel = vehicle->getWheelInfo(i);
         wheel.m_suspensionStiffness = 20.f;

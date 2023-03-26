@@ -93,7 +93,13 @@ struct CarStateLastUpdate {
 
 struct Player {
     int id;
+    glm::vec3 color = glm::vec3(1.0f, 1.0f, 1.0f);
     int lives = 3;
+};
+
+struct SpawnPoint {
+    glm::vec3 position;
+    glm::vec3 forward;
 };
 
 // TAGS

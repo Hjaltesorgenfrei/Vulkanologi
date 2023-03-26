@@ -249,3 +249,54 @@ To allow for doing tasks which rely on `btDynamicWorld`, tasks can be dispatched
 These tasks would then create messages or call callbacks to give the information back later.
 Tasks could be: CreateBody, DeleteBody or RayTest.
 To make it easy to implement this a callback should probably just be used at the start with documentation saying they are not thread-safe.
+
+### Concurrent system graph execution
+
+Note: This needs sync access to the registry
+
+Because systems are executed in order of dependencies it should be possible to execute them concurrently.
+Through care should be made to make sure that only one system can write to each type at a time.
+This could be done by assigning an id to each write and other component when added to the system.
+The ID could then be used in a set to make sure that each component is only being written to by one system at a time.
+One efficient implementation of this would be a atomic bitset in which all currently write locks are held.
+When a system starts all its writes component are locked by id and unlocked when the system finishes.
+As only one system is allowed to write at a time for each component it can simple assign the rows to 0.
+`boost::dynamic` is probably a good implementation to use for this as it is faster than `std::vector<bool>`.
+
+Pseudo code for the process, the implementation actually uses int keys to avoid copying or using pointers.
+
+```cpp
+
+std::vector<SystemNode> systems;
+std::vector<SystemNode> ready; 
+std::vector<SystemNode> waitingOnWrites;
+bitset writeLocks(countComponents(systems));
+
+void startExecution(SystemNode system) {
+  system.execute();
+  system.informDependents();
+  writeLocks &= (!system.writeBitSet()) // Remove all the write locks we took.
+  runAllReady();
+}
+
+void runAllReady() {
+  for (int i = 0; i < ready.size(); i++) {
+    if (ready[i].writeBitSet() & writeLocks == false) { // No overlap in locks. Also probably needs to be a atomic assign with an bit and, as it will be checked from multiple threads. 
+      theadPool.post(startExecution(ready[i]));
+      // remove the system
+    }
+  }
+}
+
+void runSystems() {
+  for (auto system : systems) {
+    if (system.reads().size() == 0) {
+      ready.push_back(system);
+    }
+    else {
+      waitingOnWrites.push_back(system);
+    }
+  }
+  runAllReady();
+}
+```

@@ -97,4 +97,6 @@ struct ShowNormalsTag {
     bool enabled = false;
 };
 
+struct MarkForDeletionTag { };
+
 #endif

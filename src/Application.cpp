@@ -155,7 +155,7 @@ void App::joystickCallback(int joystickId, int event)
     else if (event == GLFW_DISCONNECTED) {
         app->registry.view<ControllerInput>().each([&](auto entity, auto& input) {
             if (input.joystickId == joystickId) {
-                app->registry.destroy(entity);
+                app->registry.emplace<MarkForDeletionTag>(entity);
             }
         });
     }
@@ -649,6 +649,10 @@ void App::mainLoop() {
         auto result = drawFrame(delta.count());
         if (result == 1) {
             renderer->recreateSwapchain();
+        }
+        
+        for (auto& entity : registry.view<MarkForDeletionTag>()) {
+            registry.destroy(entity);
         }
 	}
 }

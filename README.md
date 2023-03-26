@@ -159,6 +159,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Care needs to be taken when and how they are deleted/written to, as a currently used buffer is considered off limits.
   - Possibly have SwapChainImages persistently mapped buffers for each kind of this data. Like I have for lines.
     - Then just a call to update them which updates them over the next N frames before they are used.
+    - Also some way to only delete part of it probably.
+      - Malloc, Alloc style.
 
 ### Descriptor Layout Idea
 

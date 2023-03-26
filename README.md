@@ -161,6 +161,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - Then just a call to update them which updates them over the next N frames before they are used.
     - Also some way to only delete part of it probably.
       - Malloc, Alloc style.
+    - <https://stackoverflow.com/questions/62182124/most-generally-correct-way-of-updating-a-vertex-buffer-in-vulkan>
 
 ### Descriptor Layout Idea
 

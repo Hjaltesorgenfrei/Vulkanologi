@@ -113,7 +113,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Might be possible to add normals from both ends and then interpolate between the two linearly along the path.
   - <https://gamedev.stackexchange.com/questions/94098/controlling-roll-rotation-when-travelling-along-bezier-curves>
   - Will probably be a trade off between given the user control and how jank it can look if they mess it up.
-- [ ] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
+  - Interpolating between the two quaternion from each end should work. It can currently be had by 
+- [x] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
 - [ ] Rename files and introduce a namespace.
   - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
 - [ ] Pre-dock debug info in ImGui, probably with a `DockBuilder`.
@@ -149,6 +150,15 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Probably just by making multiple classes that do the same thing.
 - [ ] Add a background cube map, the black is getting annoying.
 - [ ] Investigate the jittering issue from the vehicle driving around. A post on the Bullet forums mentioned it possibly being due to large bodies.
+- [ ] Make spline deformation better.
+  - [ ] Use the total arc length to create N meshes, where N ~= (arc length)/(mesh length)
+  - [ ] Add a scale on y and z axis for scaling the meshes. It should be linearly interpolated for between control points.
+  - [ ] Test with more than 2 control points.
+  - [ ] Actually upload the damn thing each frame
+- [ ] Add buffers for often updated geometry, the current method of writing all the data each frame is horribly slow.
+  - Care needs to be taken when and how they are deleted/written to, as a currently used buffer is considered off limits.
+  - Possibly have SwapChainImages persistently mapped buffers for each kind of this data. Like I have for lines.
+    - Then just a call to update them which updates them over the next N frames before they are used.
 
 ### Descriptor Layout Idea
 
@@ -298,5 +308,29 @@ void runSystems() {
     }
   }
   runAllReady();
+}
+```
+
+### Making registry thread safe
+
+According to the [entt documentation](https://github.com/skypjack/entt/wiki/Crash-Course:-entity-component-system#multithreading), the registry is not thread safe.
+This is not a huge problem as the system graph avoids multiple components being written to at the same time.
+But the System type needs to be expanded to have `Creates<>` which takes all the types it creates.
+Create types should be treated like writes, but not given as parameters to the update function, as the view cant find them yet.
+`entt::registry::create` probably needs to happen with a lock.
+Deletion of a entity should happen by adding a deletion tag which are then deleted by a single system later, as it modifies all components on an entity.
+
+### Parallel system
+
+Each system could also be parallelized as they only operate on a single entity.
+Then the ISystem could check if the class is a Parallel system if it is give it access to it's thread pool.
+Through some scheduling is probably needed to make sure it does not starve other systems from starting.
+
+```cpp
+
+struct ParallelSystem<Self, size_t GroupSize, Reads<Read...>, Writes<Write...>, Others<Other...>> : virtual ISystem {
+  void initParallel(thread_pool pool); 
+
+  void update() // Get GroupSize entities and start a task with them in the thread pool. 
 }
 ```

@@ -162,6 +162,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - Also some way to only delete part of it probably.
       - Malloc, Alloc style.
     - <https://stackoverflow.com/questions/62182124/most-generally-correct-way-of-updating-a-vertex-buffer-in-vulkan>
+- [ ] Add some better ambient light <https://learnopengl.com/Lighting/Basic-Lighting>
 
 ### Descriptor Layout Idea
 

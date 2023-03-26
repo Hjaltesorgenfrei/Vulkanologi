@@ -217,7 +217,7 @@ void App::onSensorDestroyed(entt::registry &registry, entt::entity entity)
     if (sensor == nullptr) {
         return;
     }
-    physicsWorld->removeGhost(sensor->ghost);
+    physicsWorld->removeSensor(sensor->ghost);
 }
 
 void App::onCarDestroyed(entt::registry &registry, entt::entity entity)
@@ -409,6 +409,10 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
+    auto physicsPaths = physicsWorld->getDebugLines();
+    frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
+    frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
+
     for (auto entity : registry.view<SelectedTag>()) {
         drawDebugForSelectedEntity(entity, frameInfo);
     }
@@ -468,11 +472,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 
     if (rigidBody) {
         drawRigidBodyDebugInfo(rigidBody);
-    }       
-
-    auto physicsPaths = physicsWorld->getDebugLines();
-    frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
-    frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
+    }
 
     if (rigidBody) {
         auto transform = rigidBody->getWorldTransform();
@@ -564,9 +564,7 @@ void App::setupWorld() {
 
     createSpawnPoints();
 
-    for (int i = 0; i < 12; i++) {
-        addPlayer(KeyboardInput {});
-    }
+    addPlayer(KeyboardInput {});
 
     setupControllerPlayers();
 
@@ -649,7 +647,7 @@ void App::bezierTesting() {
         ghostObject->setCollisionShape(sphere);
         ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
         ghostObject->setUserIndex((int)entity);
-        physicsWorld->addGhost(ghostObject);
+        physicsWorld->addSensor(ghostObject);
         registry.emplace<Transform>(entity);
         registry.emplace<Sensor>(entity, ghostObject);
         registry.emplace<ControlPointPtr>(entity);
@@ -721,7 +719,7 @@ void App::createSpawnPoints()
         ghostObject->setCollisionShape(sphere);
         ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
         ghostObject->setUserIndex((int)entity);
-        physicsWorld->addGhost(ghostObject);
+        physicsWorld->addSensor(ghostObject);
         registry.emplace<Sensor>(entity, ghostObject);
     }
 }

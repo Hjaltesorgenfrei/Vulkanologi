@@ -55,12 +55,12 @@ void PhysicsWorld::removeBody(btRigidBody *body)
     dynamicsWorld->removeRigidBody(body);
 }
 
-void PhysicsWorld::addGhost(btGhostObject *ghost)
+void PhysicsWorld::addSensor(btGhostObject *ghost)
 {
     dynamicsWorld->addCollisionObject(ghost, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::SensorTrigger);
 }
 
-void PhysicsWorld::removeGhost(btGhostObject *ghost)
+void PhysicsWorld::removeSensor(btGhostObject *ghost)
 {
     dynamicsWorld->removeCollisionObject(ghost);
 }
@@ -101,18 +101,18 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     bool isFrontWheel = true;
     btScalar suspensionRestLength(0.6f);
     btScalar wheelRadius(0.5f);
-    vehicle->addWheel(btVector3(-1.3, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1.3, -0.001f, 2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1.3f, -0.001f, 2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1.3f, -0.001f, 2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     isFrontWheel = false;
-    vehicle->addWheel(btVector3(-1.3, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1.3, -0.001f, -2), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(-1.3f, -0.001f, -2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(btVector3(1.3f, -0.001f, -2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
     for (int i = 0; i < vehicle->getNumWheels(); i++) {
         btWheelInfo& wheel = vehicle->getWheelInfo(i);
-        wheel.m_suspensionStiffness = 20.f;
-        wheel.m_wheelsDampingRelaxation = 2.3f;
-        wheel.m_wheelsDampingCompression = 4.4f;
-        wheel.m_frictionSlip = 1000.f;
-        wheel.m_rollInfluence = 0.1f;
+        wheel.m_suspensionStiffness = 750.f;
+        wheel.m_wheelsDampingRelaxation = 200.f;
+        wheel.m_wheelsDampingCompression = 500.4f;
+        wheel.m_frictionSlip = 0.45f;
+        wheel.m_rollInfluence = 0.04f;
     }
     vehicle->setCoordinateSystem(0, 1, 2);
 

@@ -23,9 +23,9 @@ public:
 
     void removeBody(btRigidBody* body);
 
-    void addGhost(btGhostObject* ghost);
+    void addSensor(btGhostObject* ghost);
 
-    void removeGhost(btGhostObject* ghost);
+    void removeSensor(btGhostObject* ghost);
 
     void closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback);
 

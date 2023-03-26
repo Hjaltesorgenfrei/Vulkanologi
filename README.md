@@ -163,6 +163,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
       - Malloc, Alloc style.
     - <https://stackoverflow.com/questions/62182124/most-generally-correct-way-of-updating-a-vertex-buffer-in-vulkan>
 - [ ] Add some better ambient light <https://learnopengl.com/Lighting/Basic-Lighting>
+- [ ] Make groups for collision so that sensor cant collide with the world.
+- [ ] Add to the systems that they may write to other registers without getting them as parameters.
 
 ### Descriptor Layout Idea
 

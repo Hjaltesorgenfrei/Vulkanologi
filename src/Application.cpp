@@ -17,6 +17,7 @@
 #include "systems/ControllerSystem.hpp"
 #include "systems/TransformSystems.hpp"
 #include "Colors.hpp"
+#include "Util.hpp"
 
 void App::run() {
     instance = this;
@@ -740,6 +741,35 @@ void App::mainLoop() {
         physicsWorld->update(delta.count() / 1000.f);
 
         systemGraph.update(registry, delta.count());
+        
+        // Get KillPlanes
+        for (auto& entity : registry.view<Player, Car, Transform>()) {
+            auto& player = registry.get<Player>(entity);
+            auto& transform = registry.get<Transform>(entity);
+            auto& car = registry.get<Car>(entity);
+            if (car.vehicle->getRigidBody()->getWorldTransform().getOrigin().getY() < -20) {
+                player.lives--;
+                if (player.lives == 0) {
+                    registry.emplace<MarkForDeletionTag>(entity);
+                }
+                else {
+                    std::vector<SpawnPoint> spawnPoints;
+                    registry.view<SpawnPoint>().each([&](auto entity, auto& spawnPoint) {
+                        spawnPoints.push_back(spawnPoint);
+                    });
+                    auto spawnPoint = spawnPoints[rand() % spawnPoints.size()];
+                    auto position = spawnPoint.position;
+                    auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
+                    glm::mat4 model = glm::mat4(1.0f);
+                    model = glm::rotate(model, glm::angle(rotation), glm::axis(rotation));
+                    model = glm::translate(model, position);
+                    car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
+                    car.vehicle->resetSuspension();
+                    car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
+                    car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+                }
+            }
+        }
         
         if (updateWindowSize) {
             renderer->recreateSwapchain();

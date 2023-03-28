@@ -677,7 +677,7 @@ void App::setupWorld() {
     registry.emplace<RigidBody>(entity, body);
 
     // Swipers
-    // addSwiper(Axis::Z, -0.01f);
+    addSwiper(Axis::Z, -0.01f);
 }
 
 void App::bezierTesting() {

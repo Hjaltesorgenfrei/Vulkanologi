@@ -75,8 +75,8 @@ struct Car {
     float acceleration = 0.0f;
     float brake = 0.0f;
     float maxSteering = 0.5f;
-    float maxAcceleration = 4000.0f;
-    float maxBrake = 100.0f;
+    float maxAcceleration = 3000.0f;
+    float maxBrake = 200.0f;
 };
 
 struct CarControl {

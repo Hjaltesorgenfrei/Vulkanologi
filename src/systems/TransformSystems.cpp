@@ -25,6 +25,8 @@ void RigidBodySystem::update(entt::registry &registry, float delta, entt::entity
 void CarTransformSystem::update(entt::registry &registry, float delta, entt::entity ent, Car const &car, Transform &transform) const
 {
     transform.modelMatrix = fromCollisionObject(car.vehicle->getRigidBody());
+    // A nasty hack to make the car look like it's on the ground and not in the ground
+    transform.modelMatrix = glm::translate(transform.modelMatrix, glm::vec3(0, 0.5f, 0));
 }
 
 void TransformControlPointsSystem::update(entt::registry &registry, float delta, entt::entity ent, Transform const &transform, ControlPointPtr &controlPoint) const

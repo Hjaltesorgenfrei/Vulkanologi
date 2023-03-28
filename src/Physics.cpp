@@ -76,13 +76,29 @@ void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayT
     }
 }
 
+#define CUBE_HALF_EXTENTS 1
+float wheelWidth = 0.4f;
+float wheelRadius = 0.5f;
+int rightIndex = 0;
+int upIndex = 1;
+int forwardIndex = 2;
+float wheelFriction = 1000;  //BT_LARGE_FLOAT;
+float suspensionStiffness = 20.f;
+float suspensionDamping = 2.3f;
+float suspensionCompression = 4.4f;
+float rollInfluence = 0.1f;  //1.0f;
+btVector3 wheelDirectionCS0(0, -1, 0);
+btVector3 wheelAxleCS(-1, 0, 0);
+btScalar suspensionRestLength(1.f);
+
 btRaycastVehicle* PhysicsWorld::createVehicle()
 {
-    btCollisionShape* chassisShape = new btBoxShape(btVector3(1.3f, 1.f, 2.6f));
+    btCollisionShape* chassisShape = new btBoxShape(btVector3(1.3f, 0.5f, 2.6f));
     btCompoundShape* compound = new btCompoundShape();
     btTransform localTrans;
-    localTrans.setIdentity();
-    localTrans.setOrigin(btVector3(0, 1, 0));
+	localTrans.setIdentity();
+	//localTrans effectively shifts the center of mass with respect to the chassis
+	localTrans.setOrigin(btVector3(0, 1, 0));
     compound->addChildShape(localTrans, chassisShape);
     btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 2, 0)));
     btScalar mass = 800;
@@ -96,23 +112,33 @@ btRaycastVehicle* PhysicsWorld::createVehicle()
     btVehicleRaycaster* raycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
     btRaycastVehicle* vehicle = new btRaycastVehicle(tuning, chassis, raycaster);
     dynamicsWorld->addAction(vehicle);
-    btVector3 wheelDirectionCS0(0, -1, 0);
-    btVector3 wheelAxleCS(-1, 0, 0);
+    float connectionHeight = 1.2f;
+
     bool isFrontWheel = true;
-    btScalar suspensionRestLength(0.6f);
-    btScalar wheelRadius(0.5f);
-    vehicle->addWheel(btVector3(-1.3f, -0.001f, 2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1.3f, -0.001f, 2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+
+    //choose coordinate system
+    vehicle->setCoordinateSystem(rightIndex, upIndex, forwardIndex);
+
+    btVector3 connectionPointCS0(CUBE_HALF_EXTENTS - (0.3 * wheelWidth), connectionHeight, 2 * CUBE_HALF_EXTENTS - wheelRadius);
+
+    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS + (0.3 * wheelWidth), connectionHeight, 2 * CUBE_HALF_EXTENTS - wheelRadius);
+
+    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS + (0.3 * wheelWidth), connectionHeight, -2 * CUBE_HALF_EXTENTS + wheelRadius);
     isFrontWheel = false;
-    vehicle->addWheel(btVector3(-1.3f, -0.001f, -2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    vehicle->addWheel(btVector3(1.3f, -0.001f, -2.f), wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+    connectionPointCS0 = btVector3(CUBE_HALF_EXTENTS - (0.3 * wheelWidth), connectionHeight, -2 * CUBE_HALF_EXTENTS + wheelRadius);
+    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+
+
     for (int i = 0; i < vehicle->getNumWheels(); i++) {
         btWheelInfo& wheel = vehicle->getWheelInfo(i);
-        wheel.m_suspensionStiffness = 750.f;
-        wheel.m_wheelsDampingRelaxation = 200.f;
-        wheel.m_wheelsDampingCompression = 500.4f;
-        wheel.m_frictionSlip = 0.45f;
-        wheel.m_rollInfluence = 0.04f;
+        wheel.m_suspensionStiffness = suspensionStiffness;
+        wheel.m_wheelsDampingRelaxation = suspensionDamping;
+        wheel.m_wheelsDampingCompression = suspensionCompression;
+        wheel.m_frictionSlip = wheelFriction;
+        wheel.m_rollInfluence = rollInfluence;
     }
     vehicle->setCoordinateSystem(0, 1, 2);
 

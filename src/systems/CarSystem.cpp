@@ -16,9 +16,9 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
     float desiredAcceleration = std::clamp(acceleration, -(car.maxAcceleration * 0.5f), car.maxAcceleration);
     float desiredBrake = std::clamp(brake, 0.0f, car.maxBrake);
 
-    car.steering = glm::mix(currentSteering, desiredSteering, 0.01f * delta);
-    car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.01f * delta);
-    car.brake = glm::mix(currentBrake, desiredBrake, 0.01f * delta);
+    car.steering = glm::mix(currentSteering, desiredSteering, 0.02f * delta);
+    car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.5f * delta);
+    car.brake = glm::mix(currentBrake, desiredBrake, 0.05f * delta);
 
     car.vehicle->applyEngineForce(car.acceleration, 2);
     car.vehicle->applyEngineForce(car.acceleration, 3);

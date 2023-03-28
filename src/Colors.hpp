@@ -6,19 +6,19 @@ struct Color {
     // Red, Blue, Teal, Purple, Yellow, Orange, Green, Pink, Grey, Light Blue, Dark Green, Brown
 
 
-    glm::vec3 random() {
+    static glm::vec3 random() {
         return glm::vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX);
     }
 
-    glm::vec3 randomBright() {
+    static glm::vec3 randomBright() {
         return glm::vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX) * 0.5f + 0.5f;
     }
 
-    glm::vec3 randomPastel() {
+    static glm::vec3 randomPastel() {
         return glm::vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX) * 0.5f + 0.25f;
     }
 
-    glm::vec3 randomDark() {
+    static glm::vec3 randomDark() {
         return glm::vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX) * 0.5f;
     }
 

@@ -30,8 +30,9 @@ private:
     entt::registry registry;
     std::unordered_set<entt::entity> entities;
     SystemGraph systemGraph;
-    std::shared_ptr<Mesh> carMesh;
+    std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;
     Material carMaterial;
+    Material noMaterial;
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
@@ -61,6 +62,8 @@ private:
 
     template <typename T>
     entt::entity addPlayer(T input);
+
+    entt::entity addSwiper(Axis direction, float speed);
 
     void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
     void onSensorDestroyed(entt::registry &registry, entt::entity entity);

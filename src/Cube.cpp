@@ -87,6 +87,7 @@ std::shared_ptr<Mesh> createCubeMesh()
 
     mesh->_vertices = vertices;
     mesh->_indices = indices;
+    mesh->_texturePaths = { "./resources/white.png" };
 
     return mesh;
 }

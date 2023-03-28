@@ -9,6 +9,7 @@
 #include <btBulletDynamicsCommon.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include "curves/Curves.hpp"
+#include "Util.hpp"
 
 struct Transform {
     glm::mat4 modelMatrix = glm::mat4(1.0f);
@@ -100,6 +101,11 @@ struct Player {
 struct SpawnPoint {
     glm::vec3 position;
     glm::vec3 forward;
+};
+
+struct Swiper {
+    Axis axis;
+    float speed = 0.0f;
 };
 
 // TAGS

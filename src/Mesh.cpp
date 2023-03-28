@@ -120,6 +120,9 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
     }
 
     for (const auto &material: materials) {
+        if (material.diffuse_texname.empty()) {
+            continue;
+        }
         mesh->_texturePaths.push_back("./resources/" + material.diffuse_texname);
     }
 

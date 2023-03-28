@@ -4,6 +4,11 @@
 #include <glm/glm.hpp>
 #include <btBulletDynamicsCommon.h>
 
+enum Axis {
+    X,
+    Y,
+    Z
+};
 
 glm::vec3 toGlm(const btVector3& v);
 btVector3 toBullet(const glm::vec3& v);

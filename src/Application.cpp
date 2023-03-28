@@ -16,6 +16,7 @@
 #include "systems/CarSystem.hpp"
 #include "systems/ControllerSystem.hpp"
 #include "systems/TransformSystems.hpp"
+#include "systems/SwiperSystem.hpp"
 #include "Colors.hpp"
 #include "Util.hpp"
 
@@ -199,7 +200,50 @@ entt::entity App::addPlayer(T input)
     registry.emplace<Car>(entity, vehicle);
     registry.emplace<CarStateLastUpdate>(entity);
     registry.emplace<CarControl>(entity);
-    registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(carMesh, carMaterial));
+    registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
+    return entity;
+}
+
+entt::entity App::addSwiper(Axis direction, float speed)
+{
+    // Find "swipe1" in meshes
+    if (meshes.find("swiper_1") == meshes.end()) {
+        std::vector<std::shared_ptr<RenderObject>> objects;
+        objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/swiper_1.obj")));
+        renderer->uploadMeshes(objects);
+        meshes["swiper_1"] = objects[0]->mesh;
+    }
+
+    auto entity = registry.create();
+    registry.emplace<Transform>(entity);
+    auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["swiper_1"], noMaterial));
+    object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
+    // Make a rigid body with triangle mesh
+    btTriangleMesh* triangleMesh = new btTriangleMesh();
+    auto& vertices = meshes["swiper_1"]->_vertices;
+    auto& indices = meshes["swiper_1"]->_indices;
+    
+    for (int i = 0; i < indices.size(); i += 3) {
+        auto& v1 = vertices[indices[i]];
+        auto& v2 = vertices[indices[i + 1]];
+        auto& v3 = vertices[indices[i + 2]];
+        triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
+    }
+    auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
+    auto startTransform = btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(btVector3(0, -40, 80));
+    auto myMotionState = new btDefaultMotionState(startTransform);
+    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
+    auto body = new btRigidBody(rbInfo);
+    // Match scale of arena
+    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
+    body->setUserIndex((int)entity);
+    body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+    body->setActivationState( DISABLE_DEACTIVATION );
+    physicsWorld->addBody(body);
+    registry.emplace<RigidBody>(entity, body);
+    registry.emplace<Swiper>(entity, direction, speed);
     return entity;
 }
 
@@ -244,12 +288,6 @@ float bytesToMegaBytes(uint64_t bytes) {
 //     }
 //     return path;
 // }
-
-enum Axis {
-    X,
-    Y,
-    Z
-};
 
 Axis axis = X;
 
@@ -548,8 +586,6 @@ void App::setupWorld() {
     // objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
     objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
-    objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
-    objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
     objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
     objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
 
@@ -560,7 +596,11 @@ void App::setupWorld() {
     registry.on_destroy<Car>().connect<&App::onCarDestroyed>(this);
 
     renderer->uploadMeshes(objects);
-    carMesh = objects.back()->mesh;
+    meshes["road"] = objects[0]->mesh;
+    meshes["cube"] = objects[1]->mesh;
+    meshes["sphere"] = objects[2]->mesh;
+    meshes["car"] = objects[3]->mesh;
+    noMaterial = objects[1]->material;
     carMaterial = objects.back()->material;
 
     createSpawnPoints();
@@ -635,6 +675,9 @@ void App::setupWorld() {
     body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
     body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
     registry.emplace<RigidBody>(entity, body);
+
+    // Swipers
+    addSwiper(Axis::Z, -0.01f);
 }
 
 void App::bezierTesting() {
@@ -678,6 +721,7 @@ void App::setupSystems()
     systemGraph.addSystem<RigidBodySystem>();
     systemGraph.addSystem<CarTransformSystem>();
     systemGraph.addSystem<TransformControlPointsSystem>();
+    systemGraph.addSystem<SwiperSystem>();
     
     systemGraph.init(registry);
     systemGraph.debugPrint();

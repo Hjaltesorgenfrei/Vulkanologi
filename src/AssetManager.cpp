@@ -67,7 +67,7 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 	texture->height = texHeight;
 
 	if (!pixels) {
-		throw std::runtime_error("Failed to load texture image!");
+		throw std::runtime_error("Failed to load texture image \"" + std::string(filename) + "\"!");
 	}
 
 	std::span<stbi_uc> dataSpan{pixels, static_cast<size_t>(imageSize)};

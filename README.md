@@ -165,6 +165,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Add some better ambient light <https://learnopengl.com/Lighting/Basic-Lighting>
 - [ ] Make groups for collision so that sensor cant collide with the world.
 - [ ] Add to the systems that they may write to other registers without getting them as parameters.
+- [ ] Figure out why ray cast vehicle glitches through the ground.
 
 ### Descriptor Layout Idea
 

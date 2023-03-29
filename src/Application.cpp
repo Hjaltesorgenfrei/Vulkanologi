@@ -735,22 +735,32 @@ void App::createSpawnPoints()
     0 0 0 // Spawn point 1 position
     1 0 0 // Spawn point 1 forward
     */
-    std::ifstream file("resources/SPAWNPOINTS.txt");
-    int numSpawnPoints;
-    file >> numSpawnPoints;
+    int num = 12;
+    float height = 2.0f;
+    float pi = 3.14159265359f;
+    float radius = 22.f;
+
+    float centerX = 3.f;
+    float centerY = 7.5f;
     std::vector<SpawnPoint> spawnPoints;
-    for (int i = 0; i < numSpawnPoints; i++) {
+    for (int i = 0; i < num; i++) {
         float x, y, z;
-        file >> x >> y >> z;
+        float angle = (2 * pi / num) * i;
+        x = centerX + radius * cos(angle);
+        z = centerY + radius * sin(angle);
+        y = height;
         glm::vec3 position = glm::vec3(x, y, z);
-        file >> x >> y >> z;
+
+        angle = (2 * pi / num) * i;
+        x = cos(angle);
+        z = sin(angle);
+        y = 0;
         glm::vec3 forward = glm::vec3(x, y, z);
         spawnPoints.push_back(SpawnPoint{position, forward});
     }
-    file.close();
 
     // Create spawn points
-    for (int i = 0; i < numSpawnPoints; i++) {
+    for (int i = 0; i < num; i++) {
         auto entity = registry.create();
         entities.insert(entity);
         registry.emplace<Transform>(entity);

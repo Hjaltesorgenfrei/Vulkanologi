@@ -210,6 +210,29 @@ entt::entity App::addSwiper(Axis direction, float speed)
     if (meshes.find("swiper_1") == meshes.end()) {
         std::vector<std::shared_ptr<RenderObject>> objects;
         objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/swiper_1.obj")));
+          // Fix the origin of the mesh
+        auto& vertices = objects[0]->mesh->_vertices;
+        struct BoundingBox {
+            glm::vec3 min;
+            glm::vec3 max;
+        } boundingBox;
+
+        boundingBox.min = vertices[0].pos;
+        boundingBox.max = vertices[0].pos;
+
+        for (auto& vertex : vertices) {
+            boundingBox.min = glm::min(boundingBox.min, vertex.pos);
+            boundingBox.max = glm::max(boundingBox.max, vertex.pos);
+        }
+
+        // Make a new origin at the middle bottom of the bounding box
+        glm::vec3 origin = (boundingBox.min + boundingBox.max) / 2.0f;
+        origin.y = boundingBox.min.y;
+
+        for (auto& vertex : vertices) {
+            vertex.pos -= origin;
+        } 
+        
         renderer->uploadMeshes(objects);
         meshes["swiper_1"] = objects[0]->mesh;
     }
@@ -222,7 +245,7 @@ entt::entity App::addSwiper(Axis direction, float speed)
     btTriangleMesh* triangleMesh = new btTriangleMesh();
     auto& vertices = meshes["swiper_1"]->_vertices;
     auto& indices = meshes["swiper_1"]->_indices;
-    
+
     for (int i = 0; i < indices.size(); i += 3) {
         auto& v1 = vertices[indices[i]];
         auto& v2 = vertices[indices[i + 1]];
@@ -232,7 +255,7 @@ entt::entity App::addSwiper(Axis direction, float speed)
     auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
     auto startTransform = btTransform();
     startTransform.setIdentity();
-    startTransform.setOrigin(btVector3(0, -40, 80));
+    startTransform.setOrigin(btVector3(0, 0, 80));
     auto myMotionState = new btDefaultMotionState(startTransform);
     auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
     auto body = new btRigidBody(rbInfo);

@@ -71,12 +71,15 @@ void CarJoystickSystem::update(entt::registry &registry, float delta, entt::enti
 
     carControl.desiredSteering = -(input.leftStick.x);
     // If we are going forwards, the right trigger controls acceleration
-    if (lastState.speed >= 0.0f) {
-        carControl.desiredAcceleration = input.rightTrigger * 1.0f;
+    carControl.desiredAcceleration += input.rightTrigger * 1.0f;
+    carControl.desiredAcceleration += -input.leftTrigger * 1.0f;
+    carControl.desiredAcceleration = std::clamp(carControl.desiredAcceleration, -1.0f, 1.0f);
+
+
+    if (lastState.speed >= 15.0f) {
         carControl.desiredBrake = input.leftTrigger * 1.0f;
     }
-    else {
-        carControl.desiredAcceleration = -input.leftTrigger * 1.0f;
+    else if(lastState.speed <= -15.0f) {
         carControl.desiredBrake = input.rightTrigger * 1.0f;
     }
 

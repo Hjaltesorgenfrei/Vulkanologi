@@ -1,3 +1,4 @@
+#pragma once
 #include "DependentSystem.hpp"
 #include <memory>
 #include <unordered_map>

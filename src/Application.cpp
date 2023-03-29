@@ -15,10 +15,8 @@
 #include "Cube.hpp"
 #include "Sphere.hpp"
 #include "Components.hpp"
-#include "systems/CarSystem.hpp"
-#include "systems/ControllerSystem.hpp"
-#include "systems/TransformSystems.hpp"
-#include "systems/SwiperSystem.hpp"
+#include "systems/Systems.hpp"
+
 #include "Colors.hpp"
 #include "Util.hpp"
 
@@ -739,7 +737,9 @@ void App::setupWorld() {
         registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
 
-    setupSystems();
+
+    setupSystems(systemGraph);
+    systemGraph.init(registry);
     systemGraph.update(registry, 0.0f);
     physicsWorld->update(0.0f);
 
@@ -783,10 +783,29 @@ void App::setupWorld() {
     body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
     registry.emplace<RigidBody>(entity, body);
 
+    auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
+    renderer->uploadMeshes({rat});
+    auto ratEntity = registry.create();
+    entities.insert(ratEntity);
+    auto& transform = registry.emplace<Transform>(ratEntity);
+    registry.emplace<std::shared_ptr<RenderObject>>(ratEntity, rat);
+    auto position = glm::vec3(86, 5, 67);
+    auto forward = glm::vec3(1, 0, 1);
+    forward = glm::normalize(forward);
+    auto up = glm::vec3(0, 1, 0);
+    auto transform2 = glm::mat4(1.f);
+    auto scale = 10.f;
+    transform2 = glm::translate(transform2, position);
+    transform2 = glm::rotate(transform2, glm::angle(glm::quatLookAt(forward, up)), glm::axis(glm::quatLookAt(forward, up)));
+    transform2 = glm::scale(transform2, glm::vec3(scale));
+    transform.modelMatrix = transform2;
+
+
+
     // Swipers
     loadSwipers();
     float offset = 80;
-    for (int i = 0; i < swiperNames.size(); i++ ) {
+    for (int i = 0; i < 0; i++ ) {
         addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();
@@ -821,22 +840,6 @@ void App::bezierTesting() {
         Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
         registry.emplace<Bezier>(entity, bezier);
     }
-}
-
-void App::setupSystems()
-{
-    systemGraph.addSystem<CarKeyboardSystem>();
-    systemGraph.addSystem<CarJoystickSystem>();
-    systemGraph.addSystem<ControllerSystem>();
-    systemGraph.addSystem<CarSystem>();
-    systemGraph.addSystem<SensorTransformSystem>();
-    systemGraph.addSystem<RigidBodySystem>();
-    systemGraph.addSystem<CarTransformSystem>();
-    systemGraph.addSystem<TransformControlPointsSystem>();
-    systemGraph.addSystem<SwiperSystem>();
-    
-    systemGraph.init(registry);
-    systemGraph.debugPrint();
 }
 
 void App::createSpawnPoints()

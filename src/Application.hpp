@@ -49,7 +49,6 @@ private:
     bool drawImGuizmo(glm::mat4* matrix);
     void setupWorld();
     void bezierTesting();
-    void setupSystems();
     void createSpawnPoints();
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);

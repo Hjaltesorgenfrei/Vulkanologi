@@ -325,6 +325,7 @@ void App::placeSwipers()
 
     float offset = 80.f;
     float speedIncrease = -0.005f;
+    float extraOffset = 2000.f;
     for (auto& entt : swipers) {
         auto& swiper = registry.get<Swiper>(entt);
         auto& body = registry.get<RigidBody>(entt);
@@ -345,7 +346,7 @@ void App::placeSwipers()
         transform.setOrigin(position);
         rigidBody->getMotionState()->setWorldTransform(transform);
         rigidBody->setWorldTransform(transform);
-        offset += 40.f;
+        offset += 40.f + (extraOffset * (swiper.speed * -1.f)); 
     }
 }
 
@@ -805,7 +806,7 @@ void App::setupWorld() {
     // Swipers
     loadSwipers();
     float offset = 80;
-    for (int i = 0; i < 0; i++ ) {
+    for (int i = 0; i < swiperNames.size(); i++ ) {
         addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();

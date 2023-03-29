@@ -168,6 +168,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Figure out why ray cast vehicle glitches through the ground.
   - Was due to the wheel ray cast origin not being inside the collision shape.
 - [ ] Make a collision editor and a serialization system for collision shapes.
+- [ ] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
+  - This change could be upstreamed <https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=6365>
+  - Also it has a todo in the code to add driving on moving platforms.
 
 ### Descriptor Layout Idea
 

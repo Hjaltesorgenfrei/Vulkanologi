@@ -15,6 +15,9 @@ void SwiperSystem::update(entt::registry &registry, float delta, entt::entity en
     } else if (axis == Axis::Z) {
         position.setZ(position.getZ() + speed * delta);
     }
+    auto velocity = position - transform.getOrigin();
     transform.setOrigin(position);
     rigidBody->getMotionState()->setWorldTransform(transform);
+    rigidBody->setWorldTransform(transform);
+    rigidBody->setLinearVelocity(velocity);
 }

@@ -207,9 +207,9 @@ entt::entity App::addPlayer(T input)
 entt::entity App::addSwiper(Axis direction, float speed)
 {
     // Find "swipe1" in meshes
-    if (meshes.find("swiper_1") == meshes.end()) {
+    if (meshes.find("swiper_2") == meshes.end()) {
         std::vector<std::shared_ptr<RenderObject>> objects;
-        objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/swiper_1.obj")));
+        objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/swiper_2.obj")));
           // Fix the origin of the mesh
         auto& vertices = objects[0]->mesh->_vertices;
         struct BoundingBox {
@@ -231,20 +231,21 @@ entt::entity App::addSwiper(Axis direction, float speed)
 
         for (auto& vertex : vertices) {
             vertex.pos -= origin;
+            vertex.color = glm::vec4(1.0f); // White
         } 
         
         renderer->uploadMeshes(objects);
-        meshes["swiper_1"] = objects[0]->mesh;
+        meshes["swiper_2"] = objects[0]->mesh;
     }
 
     auto entity = registry.create();
     registry.emplace<Transform>(entity);
-    auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["swiper_1"], noMaterial));
+    auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["swiper_2"], noMaterial));
     object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
     // Make a rigid body with triangle mesh
     btTriangleMesh* triangleMesh = new btTriangleMesh();
-    auto& vertices = meshes["swiper_1"]->_vertices;
-    auto& indices = meshes["swiper_1"]->_indices;
+    auto& vertices = meshes["swiper_2"]->_vertices;
+    auto& indices = meshes["swiper_2"]->_indices;
 
     for (int i = 0; i < indices.size(); i += 3) {
         auto& v1 = vertices[indices[i]];
@@ -255,7 +256,7 @@ entt::entity App::addSwiper(Axis direction, float speed)
     auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
     auto startTransform = btTransform();
     startTransform.setIdentity();
-    startTransform.setOrigin(btVector3(0, 0, 80));
+    startTransform.setOrigin(btVector3(0, 0, 140));
     auto myMotionState = new btDefaultMotionState(startTransform);
     auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
     auto body = new btRigidBody(rbInfo);

@@ -7,6 +7,8 @@
 #include <thread>
 #include <glm/gtc/type_ptr.hpp>
 #include <fstream>
+#include <filesystem>
+#include <random>
 
 #include "Renderer.hpp"
 #include "Application.hpp"
@@ -204,21 +206,94 @@ entt::entity App::addPlayer(T input)
     return entity;
 }
 
-entt::entity App::addSwiper(Axis direction, float speed)
+void App::resetRound()
 {
-    // Find "swipe1" in meshes
-    if (meshes.find("swiper_2") == meshes.end()) {
-        std::vector<std::shared_ptr<RenderObject>> objects;
-        objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/swiper_2.obj")));
-          // Fix the origin of the mesh
-        auto& vertices = objects[0]->mesh->_vertices;
+    std::vector<SpawnPoint> spawnPoints;
+    registry.view<SpawnPoint>().each([&](auto entity, auto& spawnPoint) {
+        spawnPoints.push_back(spawnPoint);
+    });
+    registry.view<Car, Player>().each([&](auto entity, auto& car, auto& player) {
+        if (player.lives <= 0) {
+            return;
+        }
+        player.isAlive = true;
+        auto spawnPoint = spawnPoints[player.id % spawnPoints.size()];
+        auto position = spawnPoint.position;
+        auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::angle(rotation), glm::axis(rotation));
+        model = glm::translate(model, position);
+        car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
+        car.vehicle->resetSuspension();
+        car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
+        car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+    });
+
+    registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
+       swiper.speed = -0.005f; 
+    });
+    placeSwipers();
+}
+
+entt::entity App::addSwiper(Axis direction, float speed, int swiper)
+{
+    auto mesh = meshes[swiperNames[swiper]];
+    auto entity = registry.create();
+    registry.emplace<Transform>(entity);
+    auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
+    object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
+    // Make a rigid body with triangle mesh
+    btTriangleMesh* triangleMesh = new btTriangleMesh();
+    auto& vertices = mesh->_vertices;
+    auto& indices = mesh->_indices;
+
+    for (int i = 0; i < indices.size(); i += 3) {
+        auto& v1 = vertices[indices[i]];
+        auto& v2 = vertices[indices[i + 1]];
+        auto& v3 = vertices[indices[i + 2]];
+        triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
+    }
+    auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
+    auto startTransform = btTransform();
+    startTransform.setIdentity();
+    startTransform.setOrigin(btVector3(0, 0, 0));
+    auto myMotionState = new btDefaultMotionState(startTransform);
+    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
+    auto body = new btRigidBody(rbInfo);
+    // Match scale of arena
+    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
+    body->setUserIndex((int)entity);
+    body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+    body->setActivationState( DISABLE_DEACTIVATION );
+    physicsWorld->addBody(body);
+    registry.emplace<RigidBody>(entity, body);
+    registry.emplace<Swiper>(entity, direction, speed);
+    return entity;
+}
+
+void App::loadSwipers()
+{
+    std::vector<std::string> files;
+    std::vector<std::shared_ptr<RenderObject>> objects;
+    for (const auto& entry : std::filesystem::directory_iterator("resources")) {
+        if (entry.path().filename().string().find("swiper_") == 0 && entry.path().extension() == ".obj") {
+            files.push_back(entry.path().string());
+            swiperNames.push_back(entry.path().filename().string());
+            objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj(entry.path().string().c_str())));
+        }
+    }
+
+    for (int i = 0; i < files.size(); i++) {
+        meshes[swiperNames[i]] = objects[i]->mesh;
+        // Fix the origin of the mesh
+        auto& vertices = objects[i]->mesh->_vertices;
         struct BoundingBox {
             glm::vec3 min;
             glm::vec3 max;
         } boundingBox;
 
-        boundingBox.min = vertices[0].pos;
-        boundingBox.max = vertices[0].pos;
+        boundingBox.min = vertices[i].pos;
+        boundingBox.max = vertices[i].pos;
 
         for (auto& vertex : vertices) {
             boundingBox.min = glm::min(boundingBox.min, vertex.pos);
@@ -233,42 +308,47 @@ entt::entity App::addSwiper(Axis direction, float speed)
             vertex.pos -= origin;
             vertex.color = glm::vec4(1.0f); // White
         } 
-        
-        renderer->uploadMeshes(objects);
-        meshes["swiper_2"] = objects[0]->mesh;
     }
 
-    auto entity = registry.create();
-    registry.emplace<Transform>(entity);
-    auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["swiper_2"], noMaterial));
-    object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
-    // Make a rigid body with triangle mesh
-    btTriangleMesh* triangleMesh = new btTriangleMesh();
-    auto& vertices = meshes["swiper_2"]->_vertices;
-    auto& indices = meshes["swiper_2"]->_indices;
+    renderer->uploadMeshes(objects);
+}
 
-    for (int i = 0; i < indices.size(); i += 3) {
-        auto& v1 = vertices[indices[i]];
-        auto& v2 = vertices[indices[i + 1]];
-        auto& v3 = vertices[indices[i + 2]];
-        triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
+void App::placeSwipers()
+{
+    std::vector<entt::entity> swipers;
+    registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
+        swipers.push_back(entity);
+    });
+
+    // Shuffle the swipers
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(swipers.begin(), swipers.end(), g);
+
+    float offset = 80.f;
+    float speedIncrease = -0.005f;
+    for (auto& entt : swipers) {
+        auto& swiper = registry.get<Swiper>(entt);
+        auto& body = registry.get<RigidBody>(entt);
+        swiper.speed += speedIncrease;
+        auto rigidBody = body.body;
+        auto axis = swiper.axis;
+        auto speed = swiper.speed;
+        btTransform transform;
+        rigidBody->getMotionState()->getWorldTransform(transform);
+        auto position = transform.getOrigin();
+        if (axis == Axis::X) {
+            position.setX(offset);
+        } else if (axis == Axis::Y) {
+            position.setY(offset);
+        } else if (axis == Axis::Z) {
+            position.setZ(offset);
+        }
+        transform.setOrigin(position);
+        rigidBody->getMotionState()->setWorldTransform(transform);
+        rigidBody->setWorldTransform(transform);
+        offset += 40.f;
     }
-    auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
-    auto startTransform = btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(btVector3(0, 0, 140));
-    auto myMotionState = new btDefaultMotionState(startTransform);
-    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
-    auto body = new btRigidBody(rbInfo);
-    // Match scale of arena
-    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
-    body->setUserIndex((int)entity);
-    body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-    body->setActivationState( DISABLE_DEACTIVATION );
-    physicsWorld->addBody(body);
-    registry.emplace<RigidBody>(entity, body);
-    registry.emplace<Swiper>(entity, direction, speed);
-    return entity;
 }
 
 void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
@@ -386,6 +466,9 @@ int App::drawFrame(float delta) {
         auto transform = registry.get<Transform>(entity);
         auto player = registry.try_get<Player>(entity);
         if (player != nullptr) {
+            if(player->isAlive == false) {
+                continue; // Don't render dead players   
+            }
             renderObject->transformMatrix.color = glm::vec4(player->color, 1.0f);
         }
         renderObject->transformMatrix.model = transform.modelMatrix;
@@ -701,7 +784,12 @@ void App::setupWorld() {
     registry.emplace<RigidBody>(entity, body);
 
     // Swipers
-    addSwiper(Axis::Z, -0.01f);
+    loadSwipers();
+    float offset = 80;
+    for (int i = 0; i < swiperNames.size(); i++ ) {
+        addSwiper(Axis::Z, -0.005f, i);
+    }
+    placeSwipers();
 }
 
 void App::bezierTesting() {
@@ -821,34 +909,42 @@ void App::mainLoop() {
         systemGraph.update(registry, delta.count());
         
         // Get KillPlanes
+        int playersAlive = 0;
+        int playersDead = 0;
         for (auto& entity : registry.view<Player, Car, Transform>()) {
             auto& player = registry.get<Player>(entity);
             auto& transform = registry.get<Transform>(entity);
             auto& car = registry.get<Car>(entity);
-            if (car.vehicle->getRigidBody()->getWorldTransform().getOrigin().getY() < -20) {
+            auto org = car.vehicle->getRigidBody()->getWorldTransform().getOrigin();
+            playersAlive += player.isAlive;
+            playersDead += !player.isAlive;
+            if (player.isAlive && (org.getY() < -20 || org.getY() > 100 || org.getX() < -100 || org.getX() > 100 || org.getZ() < -100 || org.getZ() > 100)) {
                 player.lives--;
+                player.isAlive = false;
                 if (player.lives == 0) {
                     registry.emplace<MarkForDeletionTag>(entity);
-                }
-                else {
-                    std::vector<SpawnPoint> spawnPoints;
-                    registry.view<SpawnPoint>().each([&](auto entity, auto& spawnPoint) {
-                        spawnPoints.push_back(spawnPoint);
-                    });
-                    auto spawnPoint = spawnPoints[rand() % spawnPoints.size()];
-                    auto position = spawnPoint.position;
-                    auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
-                    glm::mat4 model = glm::mat4(1.0f);
-                    model = glm::rotate(model, glm::angle(rotation), glm::axis(rotation));
-                    model = glm::translate(model, position);
-                    car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
-                    car.vehicle->resetSuspension();
-                    car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
-                    car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
                 }
             }
         }
         
+        if (playersAlive < 2 && playersDead > 0) {
+            resetRound();
+        } else {
+            int swipersDoneCount = 0;
+            registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
+                btTransform transform;
+                rigidBody.body->getMotionState()->getWorldTransform(transform);
+                auto pos = transform.getOrigin();
+                if (pos.getZ() < -30) {
+                    swipersDoneCount++;
+                }
+            });
+            if (swipersDoneCount == registry.view<Swiper>().size()) {
+                placeSwipers();
+            }
+        }
+
+
         if (updateWindowSize) {
             renderer->recreateSwapchain();
             updateWindowSize = false;

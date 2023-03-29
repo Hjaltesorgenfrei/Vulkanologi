@@ -31,6 +31,7 @@ private:
     std::unordered_set<entt::entity> entities;
     SystemGraph systemGraph;
     std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;
+    std::vector<std::string> swiperNames;
     Material carMaterial;
     Material noMaterial;
 
@@ -62,8 +63,11 @@ private:
 
     template <typename T>
     entt::entity addPlayer(T input);
+    void resetRound();
 
-    entt::entity addSwiper(Axis direction, float speed);
+    entt::entity addSwiper(Axis direction, float speed, int swiper);
+    void loadSwipers();
+    void placeSwipers();
 
     void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
     void onSensorDestroyed(entt::registry &registry, entt::entity entity);

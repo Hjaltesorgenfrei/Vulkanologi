@@ -513,7 +513,9 @@ glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
 
 glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
 {
-	return glm::vec3(1.0f); // TODO: Implement (Does not appear that jolt has easy scaling)
+	auto &body_interface = physicsSystem->GetBodyInterface();
+	auto scale = body_interface.GetTransformedShape(bodyID).GetShapeScale();
+	return glm::vec3(scale.GetX(), scale.GetY(), scale.GetZ());
 }
 
 glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
@@ -538,7 +540,10 @@ void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
 
 void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 {
-	// TODO: Implement (Does not appear that jolt has easy scaling)
+	auto &body_interface = physicsSystem->GetBodyLockInterfaceNoLock();
+	BodyLockWrite lock(body_interface, bodyID);
+	lock.GetBody().GetShape()->ScaleShape(Vec3Arg(scale.x, scale.y, scale.z));
+	
 }
 
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)

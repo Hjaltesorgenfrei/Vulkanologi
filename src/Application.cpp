@@ -28,7 +28,6 @@ void App::run() {
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
     physicsWorld->addFloor(registry.create(), {0, -10.0f, 0});
-    physicsWorld->addSphere(registry.create(), {0, 0, 0}, 1.0f);
     setupWorld();
     mainLoop();
 }
@@ -721,26 +720,12 @@ void App::setupWorld() {
     setupControllerPlayers();
 
 
-    for (int i = 0; i < 0; i++) {
-        // auto entity = registry.create();
-        // entities.insert(entity);
-
-        // auto colShape = new btBoxShape(btVector3(0.5f, 0.5f, 0.5f));
-        // auto startTransform = btTransform();
-        // startTransform.setIdentity();
-        // auto mass = 1.f;
-        // auto localInertia = btVector3(0, 0, 0);
-        // colShape->calculateLocalInertia(mass, localInertia);
-        // startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
-        // auto myMotionState = new btDefaultMotionState(startTransform);
-        // auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-        // auto body = new btRigidBody(rbInfo);
-        // body->setUserIndex((int)entity);
-        // physicsWorld->addBody(body);
-
-        // registry.emplace<Transform>(entity);
-        // registry.emplace<RigidBody>(entity, body);
-        // registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
+    for (int i = 0; i < 4; i++) {
+        auto entity = registry.create();
+        entities.insert(entity);
+        registry.emplace<PhysicsBody>(entity, physicsWorld->addBox(entity, glm::vec3(0, 5, 0), glm::vec3(1, 1, 1)));
+        registry.emplace<Transform>(entity);
+        registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
 
 
@@ -759,12 +744,12 @@ void App::setupWorld() {
     for (auto index : arena->mesh->_indices) {
         indices.push_back(index);
     }
-    registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, {0, -10.f, 0}, MotionType::Kinematic));
+    registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices));
 
     setupSystems(systemGraph);
     systemGraph.init(registry);
     systemGraph.update(registry, 0.0f);
-    physicsWorld->update(0.0f);
+    physicsWorld->update(0.0f, registry);
 
     auto beziers = registry.view<Bezier>();
     for (auto bezier : beziers) {
@@ -812,7 +797,7 @@ void App::setupWorld() {
     loadSwipers();
     float offset = 80;
     for (int i = 0; i < swiperNames.size(); i++ ) {
-        addSwiper(Axis::Z, -0.005f, i);
+        //addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();
 }
@@ -913,7 +898,7 @@ void App::mainLoop() {
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
         
-        physicsWorld->update(delta.count() / 1000.f);
+        physicsWorld->update(delta.count() / 1000.f, registry);
 
         systemGraph.update(registry, delta.count());
         

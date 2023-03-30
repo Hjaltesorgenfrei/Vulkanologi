@@ -51,7 +51,7 @@ public:
     PhysicsWorld();
     ~PhysicsWorld();
 
-    void update(float dt);
+    void update(float dt, entt::registry& registry);
 
     PhysicsBody addFloor(entt::entity entity, glm::vec3 position);
     PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);

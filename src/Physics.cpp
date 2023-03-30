@@ -563,7 +563,7 @@ void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 {
 }
 
-void PhysicsWorld::update(float dt)
+void PhysicsWorld::update(float dt, entt::registry& registry)
 {
 	accumulator += dt;
 	while (accumulator >= cDeltaTime)
@@ -589,5 +589,10 @@ void PhysicsWorld::update(float dt)
 
 		// Step the world
 		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
+
+		// Update the bodies
+		registry.view<PhysicsBody>().each([this](entt::entity entity, PhysicsBody& body) {
+			getBody(body.bodyID, body);
+		});
 	}
 }

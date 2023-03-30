@@ -76,6 +76,6 @@ private:
 
     int drawFrame(float delta);
     void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
-    void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
+    // void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
     void drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo);
 };

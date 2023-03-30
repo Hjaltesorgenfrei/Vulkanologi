@@ -38,13 +38,13 @@
 	url = https://github.com/KhronosGroup/KTX-Software
 	ignore = dirty
 	shallow = true
-[submodule "third_party/bullet3"]
-	path = third_party/bullet3
-	url = https://github.com/bulletphysics/bullet3
-	ignore = dirty
-	shallow = true
 [submodule "third_party/entt"]
 	path = third_party/entt
 	url = https://github.com/skypjack/entt
+	ignore = dirty
+	shallow = true
+[submodule "third_party/JoltPhysics"]
+	path = third_party/JoltPhysics
+	url = https://github.com/jrouwe/JoltPhysics
 	ignore = dirty
 	shallow = true

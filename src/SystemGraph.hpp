@@ -2,6 +2,7 @@
 #include "DependentSystem.hpp"
 #include <memory>
 #include <unordered_map>
+#include <iostream>
 
 struct SystemNode {
     std::shared_ptr<ISystem> system;

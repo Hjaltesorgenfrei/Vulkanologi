@@ -1,5 +1,6 @@
 #include "Bezier.hpp"
 #include "Interpolation.hpp"
+#include <algorithm>
 
 Bezier::Bezier(glm::vec3 color) : color(color)
 {

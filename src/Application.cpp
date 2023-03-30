@@ -78,29 +78,29 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         }
     }
     else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && app->shiftPressed) {
-        // raytest with bullet
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-        auto pos = app->camera.getCameraPosition();
-        auto dir = app->camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
-        btVector3 rayFromWorld(pos.x, pos.y, pos.z);
-        const int maxRayLength = 1000;
-        btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
-        for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
-            app->registry.remove<SelectedTag>(entity);
-        }
-        app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](const btCollisionObject* body, const btVector3& point, const btVector3& normal) {
-            if (body->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT) {
-                return;
-            }
-            auto entity = static_cast<entt::entity>(body->getUserIndex());
-            app->registry.emplace<SelectedTag>(entity);
-        });
+        // // raytest with bullet
+        // double x, y;
+        // glfwGetCursorPos(window, &x, &y);
+        // auto pos = app->camera.getCameraPosition();
+        // auto dir = app->camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
+        // btVector3 rayFromWorld(pos.x, pos.y, pos.z);
+        // const int maxRayLength = 1000;
+        // btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
+        // for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
+        //     app->registry.remove<SelectedTag>(entity);
+        // }
+        // app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](const btCollisionObject* body, const btVector3& point, const btVector3& normal) {
+        //     if (body->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT) {
+        //         return;
+        //     }
+        //     auto entity = static_cast<entt::entity>(body->getUserIndex());
+        //     app->registry.emplace<SelectedTag>(entity);
+        // });
 
-        glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
-        glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
-        rays.clear();
-        rays.push_back(LinePath(rayFromWorldGlm, rayToWorldGlm, glm::vec3(1, 0, 0)));
+        // glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
+        // glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
+        // rays.clear();
+        // rays.push_back(LinePath(rayFromWorldGlm, rayToWorldGlm, glm::vec3(1, 0, 0)));
 
     }
     else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE) {
@@ -186,18 +186,18 @@ entt::entity App::addPlayer(T input)
         spawnPoints.push_back(spawnPoint);
     }
     auto entity = registry.create();
-    auto vehicle = physicsWorld->createVehicle();
-    // Move vehicle to spawn point
-    auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-    vehicle->getRigidBody()->getWorldTransform().setOrigin(btVector3(spawnPoint.position.x, spawnPoint.position.y, spawnPoint.position.z));
-    auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
-    vehicle->getRigidBody()->getWorldTransform().setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
-    auto color = Color::playerColor(playerId);
-    vehicle->getRigidBody()->setUserIndex((int)entity);
+    // auto vehicle = physicsWorld->createVehicle();
+    // // Move vehicle to spawn point
+    // auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+    // vehicle->getRigidBody()->getWorldTransform().setOrigin(btVector3(spawnPoint.position.x, spawnPoint.position.y, spawnPoint.position.z));
+    // auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
+    // vehicle->getRigidBody()->getWorldTransform().setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
+    // vehicle->getRigidBody()->setUserIndex((int)entity);
     registry.emplace<T>(entity, input);
+    auto color = Color::playerColor(playerId);
     registry.emplace<Player>(entity, playerId, color);
     registry.emplace<Transform>(entity);
-    registry.emplace<Car>(entity, vehicle);
+    // registry.emplace<Car>(entity, vehicle);
     registry.emplace<CarStateLastUpdate>(entity);
     registry.emplace<CarControl>(entity);
     registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
@@ -221,10 +221,10 @@ void App::resetRound()
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::rotate(model, glm::angle(rotation), glm::axis(rotation));
         model = glm::translate(model, position);
-        car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
-        car.vehicle->resetSuspension();
-        car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
-        car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
+        // car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
+        // car.vehicle->resetSuspension();
+        // car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
+        // car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
     });
 
     registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
@@ -241,30 +241,30 @@ entt::entity App::addSwiper(Axis direction, float speed, int swiper)
     auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
     object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
     // Make a rigid body with triangle mesh
-    btTriangleMesh* triangleMesh = new btTriangleMesh();
-    auto& vertices = mesh->_vertices;
-    auto& indices = mesh->_indices;
+    // btTriangleMesh* triangleMesh = new btTriangleMesh();
+    // auto& vertices = mesh->_vertices;
+    // auto& indices = mesh->_indices;
 
-    for (int i = 0; i < indices.size(); i += 3) {
-        auto& v1 = vertices[indices[i]];
-        auto& v2 = vertices[indices[i + 1]];
-        auto& v3 = vertices[indices[i + 2]];
-        triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
-    }
-    auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
-    auto startTransform = btTransform();
-    startTransform.setIdentity();
-    startTransform.setOrigin(btVector3(0, 0, 0));
-    auto myMotionState = new btDefaultMotionState(startTransform);
-    auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
-    auto body = new btRigidBody(rbInfo);
-    // Match scale of arena
-    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
-    body->setUserIndex((int)entity);
-    body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-    body->setActivationState( DISABLE_DEACTIVATION );
-    physicsWorld->addBody(body);
-    registry.emplace<RigidBody>(entity, body);
+    // for (int i = 0; i < indices.size(); i += 3) {
+    //     auto& v1 = vertices[indices[i]];
+    //     auto& v2 = vertices[indices[i + 1]];
+    //     auto& v3 = vertices[indices[i + 2]];
+    //     triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
+    // }
+    // auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
+    // auto startTransform = btTransform();
+    // startTransform.setIdentity();
+    // startTransform.setOrigin(btVector3(0, 0, 0));
+    // auto myMotionState = new btDefaultMotionState(startTransform);
+    // auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
+    // auto body = new btRigidBody(rbInfo);
+    // // Match scale of arena
+    // body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
+    // body->setUserIndex((int)entity);
+    // body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+    // body->setActivationState( DISABLE_DEACTIVATION );
+    // physicsWorld->addBody(body);
+    // registry.emplace<RigidBody>(entity, body);
     registry.emplace<Swiper>(entity, direction, speed);
     return entity;
 }
@@ -330,51 +330,51 @@ void App::placeSwipers()
         auto& swiper = registry.get<Swiper>(entt);
         auto& body = registry.get<RigidBody>(entt);
         swiper.speed += speedIncrease;
-        auto rigidBody = body.body;
         auto axis = swiper.axis;
         auto speed = swiper.speed;
-        btTransform transform;
-        rigidBody->getMotionState()->getWorldTransform(transform);
-        auto position = transform.getOrigin();
-        if (axis == Axis::X) {
-            position.setX(offset);
-        } else if (axis == Axis::Y) {
-            position.setY(offset);
-        } else if (axis == Axis::Z) {
-            position.setZ(offset);
-        }
-        transform.setOrigin(position);
-        rigidBody->getMotionState()->setWorldTransform(transform);
-        rigidBody->setWorldTransform(transform);
-        offset += 40.f + (extraOffset * (swiper.speed * -1.f)); 
+        // auto rigidBody = body.body;
+        // btTransform transform;
+        // rigidBody->getMotionState()->getWorldTransform(transform);
+        // auto position = transform.getOrigin();
+        // if (axis == Axis::X) {
+        //     position.setX(offset);
+        // } else if (axis == Axis::Y) {
+        //     position.setY(offset);
+        // } else if (axis == Axis::Z) {
+        //     position.setZ(offset);
+        // }
+        // transform.setOrigin(position);
+        // rigidBody->getMotionState()->setWorldTransform(transform);
+        // rigidBody->setWorldTransform(transform);
+        // offset += 40.f + (extraOffset * (swiper.speed * -1.f)); 
     }
 }
 
 void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
 {
-    auto *rigidBody = registry.try_get<RigidBody>(entity);
-    if (rigidBody == nullptr) {
-        return;
-    }
-    physicsWorld->removeBody(rigidBody->body);
+    // auto *rigidBody = registry.try_get<RigidBody>(entity);
+    // if (rigidBody == nullptr) {
+    //     return;
+    // }
+    // physicsWorld->removeBody(rigidBody->body);
 }
 
 void App::onSensorDestroyed(entt::registry &registry, entt::entity entity)
 {
-    auto *sensor = registry.try_get<Sensor>(entity);
-    if (sensor == nullptr) {
-        return;
-    }
-    physicsWorld->removeSensor(sensor->ghost);
+    // auto *sensor = registry.try_get<Sensor>(entity);
+    // if (sensor == nullptr) {
+    //     return;
+    // }
+    // physicsWorld->removeSensor(sensor->ghost);
 }
 
 void App::onCarDestroyed(entt::registry &registry, entt::entity entity)
 {
-    auto *car = registry.try_get<Car>(entity);
-    if (car == nullptr) {
-        return;
-    }
-    physicsWorld->removeVehicle(car->vehicle);
+    // auto *car = registry.try_get<Car>(entity);
+    // if (car == nullptr) {
+    //     return;
+    // }
+    // physicsWorld->removeVehicle(car->vehicle);
 }
 
 float bytesToMegaBytes(uint64_t bytes) {
@@ -554,8 +554,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
-    auto physicsPaths = physicsWorld->getDebugLines();
-    frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
+    // auto physicsPaths = physicsWorld->getDebugLines();
+    // frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
     frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
 
     for (auto entity : registry.view<SelectedTag>()) {
@@ -563,37 +563,37 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     }
 }
 
-void App::drawRigidBodyDebugInfo(btRigidBody* body)
-{
-    auto transform = body->getWorldTransform();
-    auto scale = body->getCollisionShape()->getLocalScaling();
+// void App::drawRigidBodyDebugInfo(btRigidBody* body)
+// {
+//     auto transform = body->getWorldTransform();
+//     auto scale = body->getCollisionShape()->getLocalScaling();
 
-    // Show with ImGui
-    ImGui::Begin("Rigid Body Info");
-    ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
-    ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
-    ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-    ImGui::Text("Mass: %f", body->getInvMass());
-    ImGui::Text("Friction: %f", body->getFriction());
-    ImGui::Text("Restitution: %f", body->getRestitution());
-    ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
-    ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
-    ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
-    ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
-    ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
-    ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
-    ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
-    ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
-    ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
-    ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
-    ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
+//     // Show with ImGui
+//     ImGui::Begin("Rigid Body Info");
+//     ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
+//     ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
+//     ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
+//     ImGui::Text("Mass: %f", body->getInvMass());
+//     ImGui::Text("Friction: %f", body->getFriction());
+//     ImGui::Text("Restitution: %f", body->getRestitution());
+//     ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
+//     ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
+//     ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
+//     ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
+//     ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
+//     ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
+//     ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
+//     ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
+//     ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
+//     ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
+//     ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
 
-    if (ImGui::Button("Set Active")) {
-        body->activate(true);
-    }
+//     if (ImGui::Button("Set Active")) {
+//         body->activate(true);
+//     }
 
-    ImGui::End();
-}
+//     ImGui::End();
+// }
 
 void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo)
 {
@@ -605,86 +605,86 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
         frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
     }
 
-    btRigidBody *rigidBody = nullptr;
-    if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
-        rigidBody = rigidBodyComponent->body;
-    }
-    else if (auto car = registry.try_get<Car>(selectedEntity)) {
-        rigidBody = car->vehicle->getRigidBody();
-    }
+    // btRigidBody *rigidBody = nullptr;
+    // if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
+    //     rigidBody = rigidBodyComponent->body;
+    // }
+    // else if (auto car = registry.try_get<Car>(selectedEntity)) {
+    //     rigidBody = car->vehicle->getRigidBody();
+    // }
 
-    auto sensor = registry.try_get<Sensor>(selectedEntity);
+    // auto sensor = registry.try_get<Sensor>(selectedEntity);
 
-    if (rigidBody) {
-        drawRigidBodyDebugInfo(rigidBody);
-    }
+    // if (rigidBody) {
+    //     drawRigidBodyDebugInfo(rigidBody);
+    // }
 
-    if (rigidBody) {
-        auto transform = rigidBody->getWorldTransform();
-        auto scale = rigidBody->getCollisionShape()->getLocalScaling();
-        // convert to glm
-        glm::mat4 modelMatrix;
-        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+    // if (rigidBody) {
+    //     auto transform = rigidBody->getWorldTransform();
+    //     auto scale = rigidBody->getCollisionShape()->getLocalScaling();
+    //     // convert to glm
+    //     glm::mat4 modelMatrix;
+    //     transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
 
-        if (currentGizmoOperation == ImGuizmo::SCALE) {
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-            auto scaleMatrix = glm::mat4(1.0f);
-            ImGuizmo::BeginFrame();
-            ImGuizmo::Enable(true);
-            auto [width, height] = window->getFramebufferSize();
-            auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
-            proj[1][1] *= -1; // ImGuizmo Expects the opposite
-            ImGuiIO& io = ImGui::GetIO();
-            ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-            if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
-                // Add the scale to the current scale
-                btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
-                newScale *= scale;
-                rigidBody->getCollisionShape()->setLocalScaling(newScale);
-            }
-        }
+    //     if (currentGizmoOperation == ImGuizmo::SCALE) {
+    //         modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+    //         auto scaleMatrix = glm::mat4(1.0f);
+    //         ImGuizmo::BeginFrame();
+    //         ImGuizmo::Enable(true);
+    //         auto [width, height] = window->getFramebufferSize();
+    //         auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+    //         proj[1][1] *= -1; // ImGuizmo Expects the opposite
+    //         ImGuiIO& io = ImGui::GetIO();
+    //         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    //         if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
+    //             // Add the scale to the current scale
+    //             btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
+    //             newScale *= scale;
+    //             rigidBody->getCollisionShape()->setLocalScaling(newScale);
+    //         }
+    //     }
 
-        else if (drawImGuizmo(&modelMatrix)) {
-            // convert back to bullet
-            btTransform newTransform;
-            newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-            rigidBody->setWorldTransform(newTransform);
-        }
+    //     else if (drawImGuizmo(&modelMatrix)) {
+    //         // convert back to bullet
+    //         btTransform newTransform;
+    //         newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
+    //         rigidBody->setWorldTransform(newTransform);
+    //     }
 
-    }
-    if (sensor != nullptr) {
-        auto body = sensor->ghost;
-        auto transform = body->getWorldTransform();
-        auto scale = body->getCollisionShape()->getLocalScaling();
-        // convert to glm
-        glm::mat4 modelMatrix;
-        transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+    // }
+    // if (sensor != nullptr) {
+    //     auto body = sensor->ghost;
+    //     auto transform = body->getWorldTransform();
+    //     auto scale = body->getCollisionShape()->getLocalScaling();
+    //     // convert to glm
+    //     glm::mat4 modelMatrix;
+    //     transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
 
-        if (currentGizmoOperation == ImGuizmo::SCALE) {
-            modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-            auto scaleMatrix = glm::mat4(1.0f);
-            ImGuizmo::BeginFrame();
-            ImGuizmo::Enable(true);
-            auto [width, height] = window->getFramebufferSize();
-            auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
-            proj[1][1] *= -1; // ImGuizmo Expects the opposite
-            ImGuiIO& io = ImGui::GetIO();
-            ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-            if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
-                // Add the scale to the current scale
-                btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
-                newScale *= scale;
-                body->getCollisionShape()->setLocalScaling(newScale);
-            }
-        }
+    //     if (currentGizmoOperation == ImGuizmo::SCALE) {
+    //         modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
+    //         auto scaleMatrix = glm::mat4(1.0f);
+    //         ImGuizmo::BeginFrame();
+    //         ImGuizmo::Enable(true);
+    //         auto [width, height] = window->getFramebufferSize();
+    //         auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+    //         proj[1][1] *= -1; // ImGuizmo Expects the opposite
+    //         ImGuiIO& io = ImGui::GetIO();
+    //         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+    //         if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
+    //             // Add the scale to the current scale
+    //             btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
+    //             newScale *= scale;
+    //             body->getCollisionShape()->setLocalScaling(newScale);
+    //         }
+    //     }
 
-        else if (drawImGuizmo(&modelMatrix)) {
-            // convert back to bullet
-            btTransform newTransform;
-            newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-            body->setWorldTransform(newTransform);
-        }
-    }
+    //     else if (drawImGuizmo(&modelMatrix)) {
+    //         // convert back to bullet
+    //         btTransform newTransform;
+    //         newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
+    //         body->setWorldTransform(newTransform);
+    //     }
+    // }
 }
 
 void App::setupWorld() {
@@ -717,25 +717,25 @@ void App::setupWorld() {
 
 
     for (int i = 0; i < 0; i++) {
-        auto entity = registry.create();
-        entities.insert(entity);
+        // auto entity = registry.create();
+        // entities.insert(entity);
 
-        auto colShape = new btBoxShape(btVector3(0.5f, 0.5f, 0.5f));
-        auto startTransform = btTransform();
-        startTransform.setIdentity();
-        auto mass = 1.f;
-        auto localInertia = btVector3(0, 0, 0);
-        colShape->calculateLocalInertia(mass, localInertia);
-        startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
-        auto myMotionState = new btDefaultMotionState(startTransform);
-        auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
-        auto body = new btRigidBody(rbInfo);
-        body->setUserIndex((int)entity);
-        physicsWorld->addBody(body);
+        // auto colShape = new btBoxShape(btVector3(0.5f, 0.5f, 0.5f));
+        // auto startTransform = btTransform();
+        // startTransform.setIdentity();
+        // auto mass = 1.f;
+        // auto localInertia = btVector3(0, 0, 0);
+        // colShape->calculateLocalInertia(mass, localInertia);
+        // startTransform.setOrigin(btVector3(static_cast<btScalar>(5), 10, 2));
+        // auto myMotionState = new btDefaultMotionState(startTransform);
+        // auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(mass, myMotionState, colShape, localInertia);
+        // auto body = new btRigidBody(rbInfo);
+        // body->setUserIndex((int)entity);
+        // physicsWorld->addBody(body);
 
-        registry.emplace<Transform>(entity);
-        registry.emplace<RigidBody>(entity, body);
-        registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
+        // registry.emplace<Transform>(entity);
+        // registry.emplace<RigidBody>(entity, body);
+        // registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
 
 
@@ -746,43 +746,43 @@ void App::setupWorld() {
 
     auto beziers = registry.view<Bezier>();
     for (auto bezier : beziers) {
-        auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-        auto& bezierComponent = registry.get<Bezier>(bezier);
-        // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
-        // registry.emplace<SplineMesh>(bezier, splineMesh);
-        bezierComponent.recomputeIfDirty();
-        road->mesh = deformMesh(bezierComponent, road->mesh);
-        registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-        registry.emplace<Transform>(bezier);
-        // Make a bullet3 polygonal mesh
-        std::vector<btVector3> vertices;
-        for (auto index : road->mesh->_indices) {
-            vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y, road->mesh->_vertices[index].pos.z));
-        }
+        // auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+        // auto& bezierComponent = registry.get<Bezier>(bezier);
+        // // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
+        // // registry.emplace<SplineMesh>(bezier, splineMesh);
+        // bezierComponent.recomputeIfDirty();
+        // road->mesh = deformMesh(bezierComponent, road->mesh);
+        // registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+        // registry.emplace<Transform>(bezier);
+        // // Make a bullet3 polygonal mesh
+        // std::vector<btVector3> vertices;
+        // for (auto index : road->mesh->_indices) {
+        //     vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y, road->mesh->_vertices[index].pos.z));
+        // }
 
-        auto body = physicsWorld->createWorldGeometry(vertices);
-        body->setUserIndex((int)bezier);
-        registry.emplace<RigidBody>(bezier, body);
-        renderer->uploadMeshes({road});
+        // auto body = physicsWorld->createWorldGeometry(vertices);
+        // body->setUserIndex((int)bezier);
+        // registry.emplace<RigidBody>(bezier, body);
+        // renderer->uploadMeshes({road});
     }
     
 
     // Arena
-    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
-    renderer->uploadMeshes({arena});
-    auto entity = registry.create();
-    entities.insert(entity);
-    registry.emplace<Transform>(entity);
-    registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
-    std::vector<btVector3> vertices;
-    for (auto index : arena->mesh->_indices) {
-        vertices.push_back(btVector3(arena->mesh->_vertices[index].pos.x, arena->mesh->_vertices[index].pos.y, arena->mesh->_vertices[index].pos.z));
-    }
-    auto body = physicsWorld->createWorldGeometry(vertices);
-    body->setUserIndex((int)entity);
-    body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
-    body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
-    registry.emplace<RigidBody>(entity, body);
+    // auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
+    // renderer->uploadMeshes({arena});
+    // auto entity = registry.create();
+    // entities.insert(entity);
+    // registry.emplace<Transform>(entity);
+    // registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
+    // std::vector<btVector3> vertices;
+    // for (auto index : arena->mesh->_indices) {
+    //     vertices.push_back(btVector3(arena->mesh->_vertices[index].pos.x, arena->mesh->_vertices[index].pos.y, arena->mesh->_vertices[index].pos.z));
+    // }
+    // auto body = physicsWorld->createWorldGeometry(vertices);
+    // body->setUserIndex((int)entity);
+    // body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
+    // body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
+    // registry.emplace<RigidBody>(entity, body);
 
     auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
     renderer->uploadMeshes({rat});
@@ -814,19 +814,19 @@ void App::setupWorld() {
 
 void App::bezierTesting() {
     for (int i = 0; i < 2; i++){
-        auto entity = registry.create();
-        entities.insert(entity);
-        // Create a ghost object using btGhostObject, same way i need to do control points
-        btGhostObject* ghostObject = new btGhostObject();
-        ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
-        btConvexShape* sphere = new btSphereShape(0.1f);
-        ghostObject->setCollisionShape(sphere);
-        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-        ghostObject->setUserIndex((int)entity);
-        physicsWorld->addSensor(ghostObject);
-        registry.emplace<Transform>(entity);
-        registry.emplace<Sensor>(entity, ghostObject);
-        registry.emplace<ControlPointPtr>(entity);
+        // auto entity = registry.create();
+        // entities.insert(entity);
+        // // Create a ghost object using btGhostObject, same way i need to do control points
+        // btGhostObject* ghostObject = new btGhostObject();
+        // ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i * 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2))));
+        // btConvexShape* sphere = new btSphereShape(0.1f);
+        // ghostObject->setCollisionShape(sphere);
+        // ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+        // ghostObject->setUserIndex((int)entity);
+        // physicsWorld->addSensor(ghostObject);
+        // registry.emplace<Transform>(entity);
+        // registry.emplace<Sensor>(entity, ghostObject);
+        // registry.emplace<ControlPointPtr>(entity);
     }
 
     std::vector<std::shared_ptr<ControlPoint>> controlPoints;
@@ -877,21 +877,21 @@ void App::createSpawnPoints()
 
     // Create spawn points
     for (int i = 0; i < num; i++) {
-        auto entity = registry.create();
-        entities.insert(entity);
-        registry.emplace<Transform>(entity);
-        registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
-        btGhostObject* ghostObject = new btGhostObject();
-        auto position = spawnPoints[i].position;
-        auto forward = spawnPoints[i].forward;
-        auto rotation = glm::quatLookAt(forward, glm::vec3(0, 1, 0));
-        ghostObject->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z))));
-        btConvexShape* sphere = new btSphereShape(0.1f);
-        ghostObject->setCollisionShape(sphere);
-        ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-        ghostObject->setUserIndex((int)entity);
-        physicsWorld->addSensor(ghostObject);
-        registry.emplace<Sensor>(entity, ghostObject);
+        // auto entity = registry.create();
+        // entities.insert(entity);
+        // registry.emplace<Transform>(entity);
+        // registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
+        // btGhostObject* ghostObject = new btGhostObject();
+        // auto position = spawnPoints[i].position;
+        // auto forward = spawnPoints[i].forward;
+        // auto rotation = glm::quatLookAt(forward, glm::vec3(0, 1, 0));
+        // ghostObject->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z))));
+        // btConvexShape* sphere = new btSphereShape(0.1f);
+        // ghostObject->setCollisionShape(sphere);
+        // ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+        // ghostObject->setUserIndex((int)entity);
+        // physicsWorld->addSensor(ghostObject);
+        // registry.emplace<Sensor>(entity, ghostObject);
     }
 }
 
@@ -919,16 +919,16 @@ void App::mainLoop() {
             auto& player = registry.get<Player>(entity);
             auto& transform = registry.get<Transform>(entity);
             auto& car = registry.get<Car>(entity);
-            auto org = car.vehicle->getRigidBody()->getWorldTransform().getOrigin();
             playersAlive += player.isAlive;
             playersDead += !player.isAlive;
-            if (player.isAlive && (org.getY() < -20 || org.getY() > 100 || org.getX() < -100 || org.getX() > 100 || org.getZ() < -100 || org.getZ() > 100)) {
-                player.lives--;
-                player.isAlive = false;
-                if (player.lives == 0) {
-                    registry.emplace<MarkForDeletionTag>(entity);
-                }
-            }
+            // auto org = car.vehicle->getRigidBody()->getWorldTransform().getOrigin();
+            // if (player.isAlive && (org.getY() < -20 || org.getY() > 100 || org.getX() < -100 || org.getX() > 100 || org.getZ() < -100 || org.getZ() > 100)) {
+            //     player.lives--;
+            //     player.isAlive = false;
+            //     if (player.lives == 0) {
+            //         registry.emplace<MarkForDeletionTag>(entity);
+            //     }
+            // }
         }
         
         if (playersAlive < 1 && playersDead > 0) {
@@ -936,12 +936,12 @@ void App::mainLoop() {
         } else {
             int swipersDoneCount = 0;
             registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
-                btTransform transform;
-                rigidBody.body->getMotionState()->getWorldTransform(transform);
-                auto pos = transform.getOrigin();
-                if (pos.getZ() < -30) {
-                    swipersDoneCount++;
-                }
+                // btTransform transform;
+                // rigidBody.body->getMotionState()->getWorldTransform(transform);
+                // auto pos = transform.getOrigin();
+                // if (pos.getZ() < -30) {
+                //     swipersDoneCount++;
+                // }
             });
             if (swipersDoneCount == registry.view<Swiper>().size()) {
                 placeSwipers();

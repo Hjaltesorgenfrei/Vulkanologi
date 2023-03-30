@@ -4,34 +4,34 @@
 
 void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, Car &car, CarStateLastUpdate &lastState) const
 {
-    auto currentSteering = car.vehicle->getSteeringValue(0);
-    auto currentAcceleration = car.vehicle->getWheelInfo(2).m_engineForce;
-    auto currentBrake = car.vehicle->getWheelInfo(2).m_brake;
+    // auto currentSteering = car.vehicle->getSteeringValue(0);
+    // auto currentAcceleration = car.vehicle->getWheelInfo(2).m_engineForce;
+    // auto currentBrake = car.vehicle->getWheelInfo(2).m_brake;
     
-    auto steering = carControl.desiredSteering * car.maxSteering;
-    auto acceleration = carControl.desiredAcceleration * car.maxAcceleration;
-    auto brake = carControl.desiredBrake * car.maxBrake;
+    // auto steering = carControl.desiredSteering * car.maxSteering;
+    // auto acceleration = carControl.desiredAcceleration * car.maxAcceleration;
+    // auto brake = carControl.desiredBrake * car.maxBrake;
 
-    float desiredSteering = std::clamp(steering, -car.maxSteering, car.maxSteering);
-    float desiredAcceleration = std::clamp(acceleration, -(car.maxAcceleration * 0.5f), car.maxAcceleration);
-    float desiredBrake = std::clamp(brake, 0.0f, car.maxBrake);
+    // float desiredSteering = std::clamp(steering, -car.maxSteering, car.maxSteering);
+    // float desiredAcceleration = std::clamp(acceleration, -(car.maxAcceleration * 0.5f), car.maxAcceleration);
+    // float desiredBrake = std::clamp(brake, 0.0f, car.maxBrake);
 
-    car.steering = glm::mix(currentSteering, desiredSteering, 0.02f * delta);
-    car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.04f * delta);
-    car.brake = glm::mix(currentBrake, desiredBrake, 0.03f * delta);
+    // car.steering = glm::mix(currentSteering, desiredSteering, 0.02f * delta);
+    // car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.04f * delta);
+    // car.brake = glm::mix(currentBrake, desiredBrake, 0.03f * delta);
 
-    car.vehicle->applyEngineForce(car.acceleration, 2);
-    car.vehicle->applyEngineForce(car.acceleration, 3);
-    car.vehicle->setSteeringValue(car.steering, 0);
-    car.vehicle->setSteeringValue(car.steering, 1);
-    car.vehicle->setBrake(car.brake, 0);
-    car.vehicle->setBrake(car.brake, 1);
-    car.vehicle->setBrake(car.brake, 2);
-    car.vehicle->setBrake(car.brake, 3);
+    // car.vehicle->applyEngineForce(car.acceleration, 2);
+    // car.vehicle->applyEngineForce(car.acceleration, 3);
+    // car.vehicle->setSteeringValue(car.steering, 0);
+    // car.vehicle->setSteeringValue(car.steering, 1);
+    // car.vehicle->setBrake(car.brake, 0);
+    // car.vehicle->setBrake(car.brake, 1);
+    // car.vehicle->setBrake(car.brake, 2);
+    // car.vehicle->setBrake(car.brake, 3);
 
-    lastState.speed = car.vehicle->getCurrentSpeedKmHour();
-    lastState.direction = toGlm(car.vehicle->getForwardVector());
-    lastState.position = toGlm(car.vehicle->getChassisWorldTransform().getOrigin());
+    // lastState.speed = car.vehicle->getCurrentSpeedKmHour();
+    // lastState.direction = toGlm(car.vehicle->getForwardVector());
+    // lastState.position = toGlm(car.vehicle->getChassisWorldTransform().getOrigin());
 }
 
 void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const

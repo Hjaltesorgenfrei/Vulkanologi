@@ -6,8 +6,6 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
-#include <btBulletDynamicsCommon.h>
-#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include "curves/Curves.hpp"
 #include "Util.hpp"
 
@@ -16,11 +14,13 @@ struct Transform {
 };
 
 struct RigidBody {
-    btRigidBody* body;
+    int lol;
+    // btRigidBody* body;
 };
 
 struct Sensor {
-    btGhostObject* ghost;
+    int lol;
+    // btGhostObject* ghost;
 };
 
 struct ControlPointPtr {
@@ -70,7 +70,7 @@ struct GamepadInput {
 };
 
 struct Car {
-    btRaycastVehicle* vehicle;
+    // btRaycastVehicle* vehicle;
     float steering = 0.0f;
     float acceleration = 0.0f;
     float brake = 0.0f;

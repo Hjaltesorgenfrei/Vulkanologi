@@ -18,25 +18,6 @@ add_subdirectory(tinyobjloader)
 # VMA
 add_subdirectory(VulkanMemoryAllocator)
 
-# bullet3
-set(BUILD_BULLET2_DEMOS OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_CPU_DEMOS OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_ENET OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_EXTRAS OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_OPENGL3_DEMOS OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_SHARED_LIBS  OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(BUILD_UNIT_TESTS OFF CACHE BOOL "Bullet Lib only" FORCE)
-set(USE_MSVC_RUNTIME_LIBRARY_DLL ON CACHE BOOL "Bullet Lib only" FORCE)
-set(USE_MSVC_INCREMENTAL_LINKING ON CACHE BOOL "Bullet Lib only" FORCE)
-
-set(INSTALL_LIBS CACHE BOOL "Bullet Lib only" FORCE)
-set(INSTALL_CMAKE_FILES CACHE BOOL "Bullet Lib only" FORCE)
-
-add_subdirectory(bullet3)
-add_library(bullet3 INTERFACE)  # dummy target to make bullet3 a dependency
-target_link_libraries(bullet3 INTERFACE BulletDynamics BulletCollision LinearMath Bullet3Common)
-target_include_directories(bullet3 INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/bullet3/src)
-
 # Imgui
 include_directories(imgui)
 
@@ -144,3 +125,7 @@ target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
 
 # EnTT
 add_subdirectory(entt)
+
+# JoltPhysics
+
+add_subdirectory(JoltPhysics/Build)

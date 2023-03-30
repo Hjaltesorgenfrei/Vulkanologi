@@ -241,31 +241,16 @@ entt::entity App::addSwiper(Axis direction, float speed, int swiper)
     registry.emplace<Transform>(entity);
     auto& object = registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
     object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
-    // Make a rigid body with triangle mesh
-    // btTriangleMesh* triangleMesh = new btTriangleMesh();
-    // auto& vertices = mesh->_vertices;
-    // auto& indices = mesh->_indices;
-
-    // for (int i = 0; i < indices.size(); i += 3) {
-    //     auto& v1 = vertices[indices[i]];
-    //     auto& v2 = vertices[indices[i + 1]];
-    //     auto& v3 = vertices[indices[i + 2]];
-    //     triangleMesh->addTriangle(btVector3(v1.pos.x, v1.pos.y, v1.pos.z), btVector3(v2.pos.x, v2.pos.y, v2.pos.z), btVector3(v3.pos.x, v3.pos.y, v3.pos.z));
-    // }
-    // auto shape = new btBvhTriangleMeshShape(triangleMesh, true);
-    // auto startTransform = btTransform();
-    // startTransform.setIdentity();
-    // startTransform.setOrigin(btVector3(0, 0, 0));
-    // auto myMotionState = new btDefaultMotionState(startTransform);
-    // auto rbInfo = btRigidBody::btRigidBodyConstructionInfo(0, myMotionState, shape);
-    // auto body = new btRigidBody(rbInfo);
-    // // Match scale of arena
-    // body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
-    // body->setUserIndex((int)entity);
-    // body->setCollisionFlags( body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-    // body->setActivationState( DISABLE_DEACTIVATION );
-    // physicsWorld->addBody(body);
-    // registry.emplace<RigidBody>(entity, body);
+    auto vertices = std::vector<glm::vec3>();
+    auto indices = std::vector<uint32_t>();
+    for (auto vertex : mesh->_vertices) {
+        vertices.push_back(vertex.pos);
+    }
+    for (auto index : mesh->_indices) {
+        indices.push_back(index);
+    }
+    auto& body = registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, {swiper * 30,-10,0}, MotionType::Kinematic));
+    physicsWorld->setBodyVelocity(body.bodyID, {0,1,0});
     registry.emplace<Swiper>(entity, direction, speed);
     return entity;
 }
@@ -797,7 +782,7 @@ void App::setupWorld() {
     loadSwipers();
     float offset = 80;
     for (int i = 0; i < swiperNames.size(); i++ ) {
-        //addSwiper(Axis::Z, -0.005f, i);
+        addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();
 }

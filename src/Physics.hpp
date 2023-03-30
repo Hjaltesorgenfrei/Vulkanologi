@@ -64,7 +64,8 @@ public:
     PhysicsBody getBody(IDType bodyID);
     void getBody(IDType bodyID, PhysicsBody &body);
     void updateBody(IDType bodyID, PhysicsBody body);
-
+    
+    // This should probably take in the entity ID instead of the body ID
     MotionType getMotionType(IDType bodyID);
     glm::vec3 getBodyPosition(IDType bodyID);
     glm::vec4 getBodyRotation(IDType bodyID);

@@ -380,7 +380,7 @@ PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::v
 	return getBody(box_id);
 }
 
-PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position,MotionType motionType)
+PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, MotionType motionType)
 {
 	auto &body_interface = physicsSystem->GetBodyInterface();
 
@@ -410,13 +410,13 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 		mesh_settings.mMassPropertiesOverride = MassProperties();
 		mesh_settings.mMassPropertiesOverride.mMass = 1.0f;
 	}
-	else // motionType == Dynamic for meshes is not supported by Jolt 
+	else // motionType == Dynamic for meshes is not supported by Jolt
 	{
 		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 	}
 
 	auto mesh_id = body_interface.CreateAndAddBody(mesh_settings, EActivation::Activate);
-
+	
 	if (mesh_id.IsInvalid())
 	{
 		handleInvalidId("Failed to create mesh", mesh_id);
@@ -532,22 +532,20 @@ void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 
 void PhysicsWorld::update(float dt)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
-	// Now we're ready to simulate the body, keep simulating until it goes to sleep
-	uint step = 0;
-	while (std::any_of(bodies.begin(), bodies.end(), [&](auto id)
-					   { return body_interface.IsActive(id); }))
+	accumulator += dt;
+	while (accumulator >= cDeltaTime)
 	{
-		// Next step
-		++step;
+		accumulator -= cDeltaTime;
+		BodyInterface &body_interface = physicsSystem->GetBodyInterface();
 
 		for (auto id : bodies)
 		{
+			if (body_interface.IsActive(id) == false)
+				continue;
 			// Output current position and velocity of the sphere
 			RVec3 position = body_interface.GetCenterOfMassPosition(id);
 			Vec3 velocity = body_interface.GetLinearVelocity(id);
-			cout << "Step " << step << ", ID " << id.GetIndex() << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
+			cout << "ID " << id.GetIndex() << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
 		}
 
 		// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).

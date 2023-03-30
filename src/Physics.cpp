@@ -323,7 +323,7 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 	// Create the settings for the collision volume (the shape).
 	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
 	BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
-	
+
 	// Create the shape
 	ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
 	ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
@@ -380,7 +380,7 @@ PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::v
 	return getBody(box_id);
 }
 
-PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices)
+PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position,MotionType motionType)
 {
 	auto &body_interface = physicsSystem->GetBodyInterface();
 
@@ -399,10 +399,21 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 		inTriangles.emplace_back(indices[i], indices[i + 1], indices[i + 2]);
 	}
 
-	BodyCreationSettings mesh_settings(new MeshShapeSettings(inVertices, inTriangles), RVec3(0.0f, 0.0f, 0.0f), Quat::sIdentity(), EMotionType::Kinematic, Layers::MOVING);
-	mesh_settings.mOverrideMassProperties = EOverrideMassProperties::MassAndInertiaProvided;
-	mesh_settings.mMassPropertiesOverride = MassProperties();
-	mesh_settings.mMassPropertiesOverride.mMass = 1.0f;
+	BodyCreationSettings mesh_settings;
+	RVec3 pos(position.x, position.y, position.z);
+	auto meshShapeSettings = new MeshShapeSettings(inVertices, inTriangles);
+
+	if (motionType == MotionType::Kinematic)
+	{
+		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Kinematic, Layers::MOVING);
+		mesh_settings.mOverrideMassProperties = EOverrideMassProperties::MassAndInertiaProvided;
+		mesh_settings.mMassPropertiesOverride = MassProperties();
+		mesh_settings.mMassPropertiesOverride.mMass = 1.0f;
+	}
+	else // motionType == Dynamic for meshes is not supported by Jolt 
+	{
+		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+	}
 
 	auto mesh_id = body_interface.CreateAndAddBody(mesh_settings, EActivation::Activate);
 
@@ -430,8 +441,7 @@ PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 		getMotionType(bodyID),
 		getBodyPosition(bodyID),
 		getBodyRotation(bodyID),
-		getBodyScale(bodyID)
-	};
+		getBodyScale(bodyID)};
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
@@ -451,7 +461,7 @@ void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
 
 MotionType PhysicsWorld::getMotionType(IDType bodyID)
 {
-    auto &body_interface = physicsSystem->GetBodyInterface();
+	auto &body_interface = physicsSystem->GetBodyInterface();
 	auto motion_type = body_interface.GetMotionType(bodyID);
 	switch (motion_type)
 	{

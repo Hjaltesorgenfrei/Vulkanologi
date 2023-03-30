@@ -55,7 +55,7 @@ public:
     PhysicsBody addFloor(entt::entity entity, glm::vec3 position);
     PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
-    PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices);
+    PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
 
     void removeBody(IDType bodyID);
     PhysicsBody getBody(IDType bodyID);

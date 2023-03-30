@@ -17,8 +17,8 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
     float desiredBrake = std::clamp(brake, 0.0f, car.maxBrake);
 
     car.steering = glm::mix(currentSteering, desiredSteering, 0.02f * delta);
-    car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.01f * delta);
-    car.brake = glm::mix(currentBrake, desiredBrake, 0.05f * delta);
+    car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.04f * delta);
+    car.brake = glm::mix(currentBrake, desiredBrake, 0.03f * delta);
 
     car.vehicle->applyEngineForce(car.acceleration, 2);
     car.vehicle->applyEngineForce(car.acceleration, 3);
@@ -34,8 +34,11 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
     lastState.position = toGlm(car.vehicle->getChassisWorldTransform().getOrigin());
 }
 
-void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input, CarControl &carControl) const
+void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input, CarStateLastUpdate const &lastState, CarControl &carControl) const
 {
+    carControl.desiredAcceleration = 0.0f;
+    carControl.desiredBrake = 0.0f;
+
     if (input.keys[GLFW_KEY_RIGHT]) {
         carControl.desiredSteering = -1.f;
     }
@@ -56,11 +59,15 @@ void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::enti
         carControl.desiredAcceleration = 0.0f;
     }
 
-    if (input.keys[GLFW_KEY_SPACE]) {
+    if (lastState.speed >= 15.0f && input.keys[GLFW_KEY_DOWN]) {
         carControl.desiredBrake = 1.0f;
     }
-    else {
-        carControl.desiredBrake = 0.0f;
+    else if(lastState.speed <= -15.0f && input.keys[GLFW_KEY_UP]) {
+        carControl.desiredBrake = 1.0f;
+    }
+
+    if (input.keys[GLFW_KEY_SPACE]) {
+        carControl.desiredBrake = 1.0f;
     }
 }
 

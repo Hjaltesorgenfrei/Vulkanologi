@@ -931,7 +931,7 @@ void App::mainLoop() {
             }
         }
         
-        if (playersAlive < 2 && playersDead > 0) {
+        if (playersAlive < 1 && playersDead > 0) {
             resetRound();
         } else {
             int swipersDoneCount = 0;

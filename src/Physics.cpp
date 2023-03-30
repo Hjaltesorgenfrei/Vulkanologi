@@ -24,6 +24,7 @@
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Renderer/DebugRendererRecorder.h>
 
 // STL includes
 #include <iostream>
@@ -416,7 +417,7 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 	}
 
 	auto mesh_id = body_interface.CreateAndAddBody(mesh_settings, EActivation::Activate);
-	
+
 	if (mesh_id.IsInvalid())
 	{
 		handleInvalidId("Failed to create mesh", mesh_id);
@@ -425,6 +426,61 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 	setUserData(mesh_id, entity);
 	bodies.push_back(mesh_id);
 	return getBody(mesh_id);
+}
+
+std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw()
+{
+	BodyManager::DrawSettings settings;
+	class Recorder : public DebugRenderer
+	{
+	public:
+		std::vector<std::pair<glm::vec3, glm::vec3>> lines;
+		void DrawLine(RVec3Arg start, RVec3Arg end, ColorArg color) override
+		{
+			lines.emplace_back(glm::vec3(start.GetX(), start.GetY(), start.GetZ()), glm::vec3(color.r, color.g, color.b));
+			lines.emplace_back(glm::vec3(end.GetX(), end.GetY(), end.GetZ()), glm::vec3(color.r, color.g, color.b));
+		}
+
+		void DrawTriangle(RVec3Arg a, RVec3Arg b, RVec3Arg c, ColorArg color) override
+		{
+			DrawLine(a, b, color);
+			DrawLine(b, c, color);
+			DrawLine(c, a, color);
+		}
+
+		Batch CreateTriangleBatch(const JPH::DebugRenderer::Triangle *inTriangles, int inTriangleCount) override
+		{
+			for (int i = 0; i < inTriangleCount; i++)
+			{
+				auto &t = inTriangles[i];
+				auto &v = t.mV;
+				DrawTriangle(Vec3(v[0].mPosition), Vec3(v[0].mPosition), Vec3(v[0].mPosition), v[0].mColor);
+			}
+			return Batch();
+		}
+
+		Batch CreateTriangleBatch(const JPH::DebugRenderer::Vertex *inVertices, int inVertexCount, const JPH::uint32 *inIndices, int inIndexCount) override
+		{
+			for (int i = 0; i < inIndexCount; i += 3)
+			{
+				auto &v = inVertices;
+				DrawTriangle(Vec3(v[inIndices[i]].mPosition), Vec3(v[inIndices[i + 1]].mPosition), Vec3(v[inIndices[i + 2]].mPosition), v[inIndices[i]].mColor);
+			}
+			return Batch();
+		}
+
+		void DrawText3D(RVec3Arg inPosition, const string_view &inString, ColorArg inColor = Color::sWhite, float inHeight = 0.5f) override
+		{
+			// todo
+		}
+
+		void DrawGeometry(RMat44Arg inModelMatrix, const AABox &inWorldSpaceBounds, float inLODScaleSq, ColorArg inModelColor, const GeometryRef &inGeometry, ECullMode inCullMode = ECullMode::CullBackFace, ECastShadow inCastShadow = ECastShadow::On, EDrawMode inDrawMode = EDrawMode::Solid) {
+			// todo
+		}
+	} recorder;
+
+	physicsSystem->DrawBodies(settings, &recorder);
+	return std::move(recorder.lines);
 }
 
 void PhysicsWorld::removeBody(IDType bodyID)

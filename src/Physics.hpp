@@ -57,6 +57,8 @@ public:
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
     PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
 
+    std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
+
     void removeBody(IDType bodyID);
     PhysicsBody getBody(IDType bodyID);
     void getBody(IDType bodyID, PhysicsBody &body);
@@ -85,6 +87,7 @@ private:
 
     // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
     const float cDeltaTime = 1.0f / 60.0f;
+    float accumulator = 0.0f;
 
     void setUserData(IDType bodyID, entt::entity entity);
     entt::entity getUserData(IDType bodyID);

@@ -556,8 +556,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
         }
     });
 
-    // auto physicsPaths = physicsWorld->getDebugLines();
-    // frameInfo.paths.insert(frameInfo.paths.end(), physicsPaths.begin(), physicsPaths.end());
+    auto physicsPaths = physicsWorld->debugDraw();
+    for (int i = 0; i < physicsPaths.size() + 1; i += 2) {
+        frameInfo.paths.push_back(LinePath(physicsPaths[i].first, physicsPaths[i + 1].first, physicsPaths[i + 1].second));
+    }
+    
     frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
 
     for (auto entity : registry.view<SelectedTag>()) {
@@ -756,7 +759,7 @@ void App::setupWorld() {
     for (auto index : arena->mesh->_indices) {
         indices.push_back(index);
     }
-    registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices));
+    //registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices));
 
     setupSystems(systemGraph);
     systemGraph.init(registry);

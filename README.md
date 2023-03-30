@@ -171,6 +171,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
   - This change could be upstreamed <https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=6365>
   - Also it has a todo in the code to add driving on moving platforms.
+- [ ] Make a precompiled header file, which includes all the files i want to precompile include. Then just include that file everywhere?
+  - Need to look up how this is best done.
 
 ### Descriptor Layout Idea
 

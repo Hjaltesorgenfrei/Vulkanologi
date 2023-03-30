@@ -27,6 +27,8 @@ void App::run() {
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
+    physicsWorld->addFloor(registry.create(), {0, -10.0f, 0});
+    physicsWorld->addSphere(registry.create(), {0, 0, 0}, 1.0f);
     setupWorld();
     mainLoop();
 }

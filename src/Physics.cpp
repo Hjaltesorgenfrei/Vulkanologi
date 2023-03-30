@@ -3,7 +3,11 @@
 // Include btGhostObject header
 
 #include <iostream>
+
+// X11 is stupid and defines None and Convex
 #undef Convex
+#undef None
+
 // The Jolt headers don't include Jolt.h. Always include Jolt.h before including any other Jolt header.
 // You can use Jolt.h in your precompiled header to speed up compilation.
 #include <Jolt/Jolt.h>
@@ -229,16 +233,16 @@ PhysicsWorld::PhysicsWorld()
 	RegisterTypes();
 
 	// We need a temp allocator for temporary allocations during the physics update. We're
-	// pre-allocating 10 MB to avoid having to do allocations during the physics update. 
+	// pre-allocating 10 MB to avoid having to do allocations during the physics update.
 	// B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
 	// If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
 	// malloc / free.
-	TempAllocatorImpl temp_allocator(10 * 1024 * 1024);
+	tempAllocator = std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024);
 
 	// We need a job system that will execute physics jobs on multiple threads. Typically
 	// you would implement the JobSystem interface yourself and let Jolt Physics run on top
 	// of your own job scheduler. JobSystemThreadPool is an example implementation.
-	JobSystemThreadPool job_system(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1);
+	jobSystem = std::make_unique<JobSystemThreadPool>(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1);
 
 	// This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
 	// Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
@@ -273,89 +277,34 @@ PhysicsWorld::PhysicsWorld()
 	// Now we can create the actual physics system.
 	physicsSystem = std::make_unique<PhysicsSystem>();
 	physicsSystem->Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, *bpLayerInterfaceImpl, *objectVsBroadPhaseLayerFilterImpl, *objectLayerPairFilterImpl);
-
+	physicsSystem->SetGravity(Vec3(0, -9.81f, 0));
 	// A body activation listener gets notified when bodies activate and go to sleep
 	// Note that this is called from a job so whatever you do here needs to be thread safe.
 	// Registering one is entirely optional.
-	MyBodyActivationListener body_activation_listener;
-	physicsSystem->SetBodyActivationListener(&body_activation_listener);
+	bodyActivationListener = std::make_unique<MyBodyActivationListener>();
+	physicsSystem->SetBodyActivationListener(bodyActivationListener.get());
 
 	// A contact listener gets notified when bodies (are about to) collide, and when they separate again.
 	// Note that this is called from a job so whatever you do here needs to be thread safe.
 	// Registering one is entirely optional.
-	MyContactListener contact_listener;
-	physicsSystem->SetContactListener(&contact_listener);
-
-	// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-	// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
-	// Next we can create a rigid body to serve as the floor, we make a large box
-	// Create the settings for the collision volume (the shape). 
-	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
-	BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
-
-	// Create the shape
-	ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
-	ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
-
-	// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
-	BodyCreationSettings floor_settings(floor_shape, RVec3(0.0_r, -1.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-
-	// Create the actual rigid body
-	Body *floor = body_interface.CreateBody(floor_settings); // Note that if we run out of bodies this can return nullptr
-
-	// Add it to the world
-	body_interface.AddBody(floor->GetID(), EActivation::DontActivate);
-
-	// Now create a dynamic body to bounce on the floor
-	// Note that this uses the shorthand version of creating and adding a body to the world
-	BodyCreationSettings sphere_settings(new SphereShape(0.5f), RVec3(0.0_r, 2.0_r, 0.0_r), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-	BodyID sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
-
-	// Now you can interact with the dynamic body, in this case we're going to give it a velocity.
-	// (note that if we had used CreateBody then we could have set the velocity straight on the body before adding it to the physics system)
-	body_interface.SetLinearVelocity(sphere_id, Vec3(0.0f, -5.0f, 0.0f));
-
-	// We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
-	const float cDeltaTime = 1.0f / 60.0f;
+	contactListener = std::make_unique<MyContactListener>();
+	physicsSystem->SetContactListener(contactListener.get());
 
 	// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
 	// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
 	// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
 	physicsSystem->OptimizeBroadPhase();
+}
 
-	// Now we're ready to simulate the body, keep simulating until it goes to sleep
-	uint step = 0;
-	while (body_interface.IsActive(sphere_id))
+PhysicsWorld::~PhysicsWorld()
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+
+	for (auto id : bodies)
 	{
-		// Next step
-		++step;
-
-		// Output current position and velocity of the sphere
-		RVec3 position = body_interface.GetCenterOfMassPosition(sphere_id);
-		Vec3 velocity = body_interface.GetLinearVelocity(sphere_id);
-		cout << "Step " << step << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
-
-		// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
-		const int cCollisionSteps = 1;
-
-		// If you want more accurate step results you can do multiple sub steps within a collision step. Usually you would set this to 1.
-		const int cIntegrationSubSteps = 1;
-
-		// Step the world
-		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, &temp_allocator, &job_system);
+		body_interface.RemoveBody(id);
+		body_interface.DestroyBody(id);
 	}
-
-	// Remove the sphere from the physics system. Note that the sphere itself keeps all of its state and can be re-added at any time.
-	body_interface.RemoveBody(sphere_id);
-
-	// Destroy the sphere. After this the sphere ID is no longer valid.
-	body_interface.DestroyBody(sphere_id);
-
-	// Remove and destroy the floor
-	body_interface.RemoveBody(floor->GetID());
-	body_interface.DestroyBody(floor->GetID());
 
 	// Unregisters all types with the factory and cleans up the default material
 	UnregisterTypes();
@@ -365,10 +314,162 @@ PhysicsWorld::PhysicsWorld()
 	Factory::sInstance = nullptr;
 }
 
-PhysicsWorld::~PhysicsWorld()
+PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+
+	// Next we can create a rigid body to serve as the floor, we make a large box
+	// Create the settings for the collision volume (the shape).
+	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
+	BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
+
+	// Create the shape
+	ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
+	ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
+
+	// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
+	BodyCreationSettings floor_settings(floor_shape, RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+
+	// Create the actual rigid body
+	auto floor_id = body_interface.CreateAndAddBody(floor_settings, EActivation::DontActivate); // Note that if we run out of bodies this can return nullptr
+	if (floor_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create floor", floor_id);
+	}
+
+	setUserData(floor_id, entity);
+	bodies.push_back(floor_id);
+	return getBody(floor_id);
+}
+
+PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius)
+{
+	// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
+	// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+
+	// Now create a dynamic body to bounce on the floor
+	// Note that this uses the shorthand version of creating and adding a body to the world
+	BodyCreationSettings sphere_settings(new SphereShape(radius), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+	auto sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
+	if (sphere_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create sphere", sphere_id);
+	}
+
+	setUserData(sphere_id, entity);
+	bodies.push_back(sphere_id);
+	return getBody(sphere_id);
+}
+
+PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::vec3 size)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+
+	BodyCreationSettings box_settings(new BoxShape(Vec3(size.x, size.y, size.z)), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+	auto box_id = body_interface.CreateAndAddBody(box_settings, EActivation::Activate);
+
+	if (box_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create box", box_id);
+	}
+
+	setUserData(box_id, entity);
+	bodies.push_back(box_id);
+	return getBody(box_id);
+}
+
+PhysicsBody PhysicsWorld::getBody(IDType bodyID)
+{
+	return {
+		bodyID,
+		getBodyPosition(bodyID),
+		getBodyRotation(bodyID),
+		getBodyScale(bodyID)
+	};
+}
+
+glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+	RVec3 position = body_interface.GetCenterOfMassPosition(bodyID);
+	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
+}
+
+glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+	Quat rotation = body_interface.GetRotation(bodyID);
+	return glm::vec4(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
+}
+
+glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
+{
+	return glm::vec3(1.0f); // TODO: Implement (Does not appear that jolt has easy scaling)
+}
+
+void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
+{
+	auto &body_interface = physicsSystem->GetBodyInterface();
+	// TODO: Maybe bool for if it should activate?
+	body_interface.SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
+}
+
+void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
+{
+	auto &body_interface = physicsSystem->GetBodyInterface();
+	body_interface.SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
+}
+
+void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
+{
+	// TODO: Implement (Does not appear that jolt has easy scaling)
+}
+
+void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)
+{
+	auto &body_interface = physicsSystem->GetBodyLockInterface();
+	JPH::BodyLockWrite lock(body_interface, bodyID);
+	lock.GetBody().SetUserData(static_cast<uint64_t>(entity));
+}
+
+entt::entity PhysicsWorld::getUserData(IDType bodyID)
+{
+	auto &body_interface = physicsSystem->GetBodyInterface();
+	return static_cast<entt::entity>(body_interface.GetUserData(bodyID));
+}
+
+void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 {
 }
 
 void PhysicsWorld::update(float dt)
 {
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+
+	// Now we're ready to simulate the body, keep simulating until it goes to sleep
+	uint step = 0;
+	while (std::any_of(bodies.begin(), bodies.end(), [&](auto id)
+					   { return body_interface.IsActive(id); }))
+	{
+		// Next step
+		++step;
+
+		for (auto id : bodies)
+		{
+			// Output current position and velocity of the sphere
+			RVec3 position = body_interface.GetCenterOfMassPosition(id);
+			Vec3 velocity = body_interface.GetLinearVelocity(id);
+			cout << "Step " << step << ", ID " << id.GetIndex() << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
+		}
+
+		// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
+		const int cCollisionSteps = 1;
+
+		// If you want more accurate step results you can do multiple sub steps within a collision step. Usually you would set this to 1.
+		const int cIntegrationSubSteps = 1;
+
+		// Step the world
+		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
+	}
 }

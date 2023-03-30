@@ -468,6 +468,7 @@ void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
 	body.position = getBodyPosition(bodyID);
 	body.rotation = getBodyRotation(bodyID);
 	body.scale = getBodyScale(bodyID);
+	body.velocity = getBodyVelocity(bodyID);
 }
 
 void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
@@ -475,6 +476,7 @@ void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
 	setBodyPosition(bodyID, body.position);
 	setBodyRotation(bodyID, body.rotation);
 	setBodyScale(bodyID, body.scale);
+	setBodyVelocity(bodyID, body.velocity);
 }
 
 MotionType PhysicsWorld::getMotionType(IDType bodyID)
@@ -513,6 +515,13 @@ glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
 	return glm::vec3(1.0f); // TODO: Implement (Does not appear that jolt has easy scaling)
 }
 
+glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+	Vec3 velocity = body_interface.GetLinearVelocity(bodyID);
+	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
+}
+
 void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
 {
 	auto &body_interface = physicsSystem->GetBodyInterface();
@@ -529,6 +538,12 @@ void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
 void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 {
 	// TODO: Implement (Does not appear that jolt has easy scaling)
+}
+
+void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)
+{
+	auto &body_interface = physicsSystem->GetBodyInterface();
+	body_interface.SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
 }
 
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)

@@ -440,6 +440,7 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw()
 {
 	BodyManager::DrawSettings settings;
+	settings.mDrawBoundingBox = true;
 	physicsSystem->DrawBodies(settings, recorder);
 	recorder->EndFrame();
 	return {};

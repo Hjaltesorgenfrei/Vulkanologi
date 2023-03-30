@@ -11,7 +11,8 @@
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/BodyID.h>
 
-namespace JPH {
+namespace JPH
+{
     class PhysicsSystem;
     class Body;
     class JobSystem;
@@ -20,7 +21,6 @@ namespace JPH {
     class BodyActivationListener;
 }
 
-
 // TODO: These might be able to swapped with name space interfaces instead which would be a bit cleaner as we can hide implementation details
 class BPLayerInterfaceImpl;
 class ObjectVsBroadPhaseLayerFilterImpl;
@@ -28,14 +28,24 @@ class ObjectLayerPairFilterImpl;
 
 typedef JPH::BodyID IDType;
 
-struct PhysicsBody {
+enum class MotionType : uint8_t
+{
+    Static,
+    Kinematic,
+    Dynamic,
+};
+
+struct PhysicsBody
+{
     IDType bodyID;
+    MotionType physicsType;
     glm::vec3 position;
     glm::vec4 rotation;
     glm::vec3 scale;
 };
 
-class PhysicsWorld {
+class PhysicsWorld
+{
 public:
     PhysicsWorld();
     ~PhysicsWorld();
@@ -45,8 +55,14 @@ public:
     PhysicsBody addFloor(entt::entity entity, glm::vec3 position);
     PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
-    
+    PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices);
+
+    void removeBody(IDType bodyID);
     PhysicsBody getBody(IDType bodyID);
+    void getBody(IDType bodyID, PhysicsBody &body);
+    void updateBody(IDType bodyID, PhysicsBody body);
+
+    MotionType getMotionType(IDType bodyID);
     glm::vec3 getBodyPosition(IDType bodyID);
     glm::vec4 getBodyRotation(IDType bodyID);
     glm::vec3 getBodyScale(IDType bodyID);
@@ -67,14 +83,13 @@ private:
     // Lifetime of bodies is managed by the physics system
     std::vector<IDType> bodies;
 
-	// We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
-	const float cDeltaTime = 1.0f / 60.0f;
+    // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
+    const float cDeltaTime = 1.0f / 60.0f;
 
     void setUserData(IDType bodyID, entt::entity entity);
     entt::entity getUserData(IDType bodyID);
 
     void handleInvalidId(std::string error, IDType bodyID);
 };
-
 
 #endif

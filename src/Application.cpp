@@ -741,6 +741,23 @@ void App::setupWorld() {
     }
 
 
+     // Arena
+    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
+    renderer->uploadMeshes({arena});
+    auto entity = registry.create();
+    entities.insert(entity);
+    registry.emplace<Transform>(entity);
+    registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
+    auto vertices = std::vector<glm::vec3>();
+    auto indices = std::vector<uint32_t>();
+    for (auto vertex : arena->mesh->_vertices) {
+        vertices.push_back(vertex.pos);
+    }
+    for (auto index : arena->mesh->_indices) {
+        indices.push_back(index);
+    }
+    registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices));
+
     setupSystems(systemGraph);
     systemGraph.init(registry);
     systemGraph.update(registry, 0.0f);
@@ -768,23 +785,6 @@ void App::setupWorld() {
         // renderer->uploadMeshes({road});
     }
     
-
-    // Arena
-    // auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
-    // renderer->uploadMeshes({arena});
-    // auto entity = registry.create();
-    // entities.insert(entity);
-    // registry.emplace<Transform>(entity);
-    // registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
-    // std::vector<btVector3> vertices;
-    // for (auto index : arena->mesh->_indices) {
-    //     vertices.push_back(btVector3(arena->mesh->_vertices[index].pos.x, arena->mesh->_vertices[index].pos.y, arena->mesh->_vertices[index].pos.z));
-    // }
-    // auto body = physicsWorld->createWorldGeometry(vertices);
-    // body->setUserIndex((int)entity);
-    // body->getCollisionShape()->setLocalScaling(btVector3(5, 5, 5));
-    // body->getWorldTransform().setOrigin(btVector3(0, -40, 60));
-    // registry.emplace<RigidBody>(entity, body);
 
     auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
     renderer->uploadMeshes({rat});

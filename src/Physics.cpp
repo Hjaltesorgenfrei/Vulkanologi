@@ -21,6 +21,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
@@ -322,7 +323,7 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 	// Create the settings for the collision volume (the shape).
 	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
 	BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
-
+	
 	// Create the shape
 	ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
 	ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
@@ -379,14 +380,90 @@ PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::v
 	return getBody(box_id);
 }
 
+PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices)
+{
+	auto &body_interface = physicsSystem->GetBodyInterface();
+
+	VertexList inVertices;
+	inVertices.reserve(vertices.size());
+	IndexedTriangleList inTriangles;
+	inTriangles.reserve(indices.size());
+
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		inVertices.emplace_back(vertices[i].x, vertices[i].y, vertices[i].z);
+	}
+
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		inTriangles.emplace_back(indices[i], indices[i + 1], indices[i + 2]);
+	}
+
+	BodyCreationSettings mesh_settings(new MeshShapeSettings(inVertices, inTriangles), RVec3(0.0f, 0.0f, 0.0f), Quat::sIdentity(), EMotionType::Kinematic, Layers::MOVING);
+	mesh_settings.mOverrideMassProperties = EOverrideMassProperties::MassAndInertiaProvided;
+	mesh_settings.mMassPropertiesOverride = MassProperties();
+	mesh_settings.mMassPropertiesOverride.mMass = 1.0f;
+
+	auto mesh_id = body_interface.CreateAndAddBody(mesh_settings, EActivation::Activate);
+
+	if (mesh_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create mesh", mesh_id);
+	}
+
+	setUserData(mesh_id, entity);
+	bodies.push_back(mesh_id);
+	return getBody(mesh_id);
+}
+
+void PhysicsWorld::removeBody(IDType bodyID)
+{
+	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
+	body_interface.RemoveBody(bodyID);
+	body_interface.DestroyBody(bodyID);
+}
+
 PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 {
 	return {
 		bodyID,
+		getMotionType(bodyID),
 		getBodyPosition(bodyID),
 		getBodyRotation(bodyID),
 		getBodyScale(bodyID)
 	};
+}
+
+void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
+{
+	body.bodyID = bodyID;
+	body.position = getBodyPosition(bodyID);
+	body.rotation = getBodyRotation(bodyID);
+	body.scale = getBodyScale(bodyID);
+}
+
+void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
+{
+	setBodyPosition(bodyID, body.position);
+	setBodyRotation(bodyID, body.rotation);
+	setBodyScale(bodyID, body.scale);
+}
+
+MotionType PhysicsWorld::getMotionType(IDType bodyID)
+{
+    auto &body_interface = physicsSystem->GetBodyInterface();
+	auto motion_type = body_interface.GetMotionType(bodyID);
+	switch (motion_type)
+	{
+	case EMotionType::Static:
+		return MotionType::Static;
+	case EMotionType::Dynamic:
+		return MotionType::Dynamic;
+	case EMotionType::Kinematic:
+		return MotionType::Kinematic;
+	default:
+		return MotionType::Static;
+	}
 }
 
 glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID)

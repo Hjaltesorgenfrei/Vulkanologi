@@ -27,10 +27,12 @@ public:
     SystemGraph& operator=(SystemGraph&&) = delete;
     ~SystemGraph() = default;
 
+    // Use the returned pointer if the system needs initialization
     template <typename T>
-    void addSystem()
+    std::shared_ptr<T> addSystem()
     {
-        nodes.push_back({std::make_shared<T>(), nodes.size()});
+        auto system = std::make_shared<T>();
+        nodes.push_back({system, nodes.size()});
         auto node = nodes.back().index;
         if (systemMap.find(typeid(T)) != systemMap.end()) {
             auto name = nodes[node]->name();
@@ -57,6 +59,7 @@ public:
                 nodes[node].dependencies.push_back(write);
             }
         }
+        return system;
     }
 
     void init(entt::registry& registry) {

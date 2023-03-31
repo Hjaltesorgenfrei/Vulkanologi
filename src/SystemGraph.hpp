@@ -28,10 +28,11 @@ public:
     ~SystemGraph() = default;
 
     // Use the returned pointer if the system needs initialization
-    template <typename T>
-    std::shared_ptr<T> addSystem()
+    // Or use the constructor
+    template <typename T, typename... Args>
+    std::shared_ptr<T> addSystem(Args&&... args)
     {
-        auto system = std::make_shared<T>();
+        auto system = std::make_shared<T>(args...);
         nodes.push_back({system, nodes.size()});
         auto node = nodes.back().index;
         if (systemMap.find(typeid(T)) != systemMap.end()) {

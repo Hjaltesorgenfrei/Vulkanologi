@@ -19,6 +19,8 @@ namespace JPH
     class TempAllocator;
     class ContactListener;
     class BodyActivationListener;
+    class BodyInterface;
+    class VehicleConstraint;
 }
 
 // TODO: These might be able to swapped with name space interfaces instead which would be a bit cleaner as we can hide implementation details
@@ -45,6 +47,10 @@ struct PhysicsBody
     glm::vec3 velocity;
 };
 
+struct CarPhysicsBody : PhysicsBody {
+    std::shared_ptr<JPH::VehicleConstraint> constraint;
+};
+
 class PhysicsWorld
 {
 public:
@@ -57,6 +63,7 @@ public:
     PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
     PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
+    CarPhysicsBody addCar(entt::entity entity, glm::vec3 position, glm::vec3 size);
 
     std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
 
@@ -92,6 +99,8 @@ private:
     // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
     const float cDeltaTime = 1.0f / 60.0f;
     float accumulator = 0.0f;
+    
+    JPH::BodyInterface * bodyInterface = nullptr;
 
     void setUserData(IDType bodyID, entt::entity entity);
     entt::entity getUserData(IDType bodyID);

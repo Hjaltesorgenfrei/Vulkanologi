@@ -26,6 +26,10 @@
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Renderer/DebugRendererRecorder.h>
 #include <Jolt/Core/StreamWrapper.h>
+#include <Jolt/Physics/Vehicle/VehicleCollisionTester.h>
+#include <Jolt/Physics/Vehicle/WheeledVehicleController.h>
+#include <Jolt/Physics/Vehicle/VehicleConstraint.h>
+#include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
 
 // STL includes
 #include <iostream>
@@ -303,16 +307,15 @@ PhysicsWorld::PhysicsWorld()
 	// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
 	physicsSystem->OptimizeBroadPhase();
 	recorder = new DebugRendererRecorder(renderer_stream);
+    bodyInterface = &physicsSystem->GetBodyInterface();
 }
 
 PhysicsWorld::~PhysicsWorld()
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
 	for (auto id : bodies)
 	{
-		body_interface.RemoveBody(id);
-		body_interface.DestroyBody(id);
+		bodyInterface->RemoveBody(id);
+		bodyInterface->DestroyBody(id);
 	}
 
 	// Unregisters all types with the factory and cleans up the default material
@@ -325,8 +328,6 @@ PhysicsWorld::~PhysicsWorld()
 
 PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
 	// Next we can create a rigid body to serve as the floor, we make a large box
 	// Create the settings for the collision volume (the shape).
 	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
@@ -340,7 +341,7 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 	BodyCreationSettings floor_settings(floor_shape, RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 
 	// Create the actual rigid body
-	auto floor_id = body_interface.CreateAndAddBody(floor_settings, EActivation::DontActivate); // Note that if we run out of bodies this can return nullptr
+	auto floor_id = bodyInterface->CreateAndAddBody(floor_settings, EActivation::DontActivate); // Note that if we run out of bodies this can return nullptr
 	if (floor_id.IsInvalid())
 	{
 		handleInvalidId("Failed to create floor", floor_id);
@@ -353,14 +354,10 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 
 PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius)
 {
-	// The main way to interact with the bodies in the physics system is through the body interface. There is a locking and a non-locking
-	// variant of this. We're going to use the locking version (even though we're not planning to access bodies from multiple threads)
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
 	// Now create a dynamic body to bounce on the floor
 	// Note that this uses the shorthand version of creating and adding a body to the world
 	BodyCreationSettings sphere_settings(new SphereShape(radius), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-	auto sphere_id = body_interface.CreateAndAddBody(sphere_settings, EActivation::Activate);
+	auto sphere_id = bodyInterface->CreateAndAddBody(sphere_settings, EActivation::Activate);
 	if (sphere_id.IsInvalid())
 	{
 		handleInvalidId("Failed to create sphere", sphere_id);
@@ -373,10 +370,8 @@ PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, flo
 
 PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::vec3 size)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-
 	BodyCreationSettings box_settings(new BoxShape(Vec3(size.x, size.y, size.z)), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
-	auto box_id = body_interface.CreateAndAddBody(box_settings, EActivation::Activate);
+	auto box_id = bodyInterface->CreateAndAddBody(box_settings, EActivation::Activate);
 
 	if (box_id.IsInvalid())
 	{
@@ -388,10 +383,181 @@ PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::v
 	return getBody(box_id);
 }
 
+CarPhysicsBody PhysicsWorld::addCar(entt::entity entity, glm::vec3 positionIn, glm::vec3 size)
+{
+    const float wheel_radius = 0.3f;
+	const float wheel_width = 0.1f;
+	const float half_vehicle_length = 2.0f;
+	const float half_vehicle_width = 0.9f;
+	const float half_vehicle_height = 0.2f;
+    
+    float	sInitialRollAngle = 0;
+    float	sMaxRollAngle = DegreesToRadians(60.0f);
+    float	sMaxSteeringAngle = DegreesToRadians(30.0f);
+    int	    sCollisionMode = 2;
+    bool	sFourWheelDrive = false;
+    bool	sAntiRollbar = true;
+    bool	sLimitedSlipDifferentials = true;
+    float	sMaxEngineTorque = 500.0f;
+    float	sClutchStrength = 10.0f;
+    float	sFrontCasterAngle = 0.0f;
+    float 	sFrontKingPinAngle = 0.0f;
+    float	sFrontCamber = 0.0f;
+    float	sFrontToe = 0.0f;
+    float	sFrontSuspensionForwardAngle = 0.0f;
+    float	sFrontSuspensionSidewaysAngle = 0.0f;
+    float	sFrontSuspensionMinLength = 0.3f;
+    float	sFrontSuspensionMaxLength = 0.5f;
+    float	sFrontSuspensionFrequency = 1.5f;
+    float	sFrontSuspensionDamping = 0.5f;
+    float	sRearSuspensionForwardAngle = 0.0f;
+    float	sRearSuspensionSidewaysAngle = 0.0f;
+    float 	sRearCasterAngle = 0.0f;
+    float 	sRearKingPinAngle = 0.0f;
+    float	sRearCamber = 0.0f;
+    float	sRearToe = 0.0f;
+    float	sRearSuspensionMinLength = 0.3f;
+    float	sRearSuspensionMaxLength = 0.5f;
+    float	sRearSuspensionFrequency = 1.5f;
+    float	sRearSuspensionDamping = 0.5f;
+
+	Body *						mCarBody;									///< The vehicle
+	std::shared_ptr<VehicleConstraint>		mVehicleConstraint;							///< The vehicle constraint
+
+	// Create collision testers
+	auto collisionTester = new VehicleCollisionTesterCastCylinder(Layers::MOVING);
+
+	// Create vehicle body
+	RVec3 position(0, 2, 0);
+	RefConst<Shape> car_shape = OffsetCenterOfMassShapeSettings(Vec3(0, -half_vehicle_height, 0), new BoxShape(Vec3(half_vehicle_width, half_vehicle_height, half_vehicle_length))).Create().Get();
+	BodyCreationSettings car_body_settings(car_shape, position, Quat::sRotation(Vec3::sAxisZ(), sInitialRollAngle), EMotionType::Dynamic, Layers::MOVING);
+	car_body_settings.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+	car_body_settings.mMassPropertiesOverride.mMass = 1500.0f;
+	mCarBody = bodyInterface->CreateBody(car_body_settings);
+	bodyInterface->AddBody(mCarBody->GetID(), EActivation::Activate);
+
+	// Create vehicle constraint
+	VehicleConstraintSettings vehicle;
+	vehicle.mDrawConstraintSize = 0.1f;
+	vehicle.mMaxPitchRollAngle = sMaxRollAngle;
+
+	// Suspension direction
+	Vec3 front_suspension_dir = Vec3(Tan(sFrontSuspensionSidewaysAngle), -1, Tan(sFrontSuspensionForwardAngle)).Normalized();
+	Vec3 front_steering_axis = Vec3(-Tan(sFrontKingPinAngle), 1, -Tan(sFrontCasterAngle)).Normalized();
+	Vec3 front_wheel_up = Vec3(Sin(sFrontCamber), Cos(sFrontCamber), 0);
+	Vec3 front_wheel_forward = Vec3(-Sin(sFrontToe), 0, Cos(sFrontToe));
+	Vec3 rear_suspension_dir = Vec3(Tan(sRearSuspensionSidewaysAngle), -1, Tan(sRearSuspensionForwardAngle)).Normalized();
+	Vec3 rear_steering_axis = Vec3(-Tan(sRearKingPinAngle), 1, -Tan(sRearCasterAngle)).Normalized();
+	Vec3 rear_wheel_up = Vec3(Sin(sRearCamber), Cos(sRearCamber), 0);
+	Vec3 rear_wheel_forward = Vec3(-Sin(sRearToe), 0, Cos(sRearToe));
+	Vec3 flip_x(-1, 1, 1);
+
+	// Wheels, left front
+	WheelSettingsWV *w1 = new WheelSettingsWV;
+	w1->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	w1->mSuspensionDirection = front_suspension_dir;
+	w1->mSteeringAxis = front_steering_axis;
+	w1->mWheelUp = front_wheel_up;
+	w1->mWheelForward = front_wheel_forward;
+	w1->mSuspensionMinLength = sFrontSuspensionMinLength;
+	w1->mSuspensionMaxLength = sFrontSuspensionMaxLength;
+	w1->mSuspensionFrequency = sFrontSuspensionFrequency;
+	w1->mSuspensionDamping = sFrontSuspensionDamping;
+	w1->mMaxSteerAngle = sMaxSteeringAngle;
+	w1->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
+
+	// Right front
+	WheelSettingsWV *w2 = new WheelSettingsWV;
+	w2->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	w2->mSuspensionDirection = flip_x * front_suspension_dir;
+	w2->mSteeringAxis = flip_x * front_steering_axis;
+	w2->mWheelUp = flip_x * front_wheel_up;
+	w2->mWheelForward = flip_x * front_wheel_forward;
+	w2->mSuspensionMinLength = sFrontSuspensionMinLength;
+	w2->mSuspensionMaxLength = sFrontSuspensionMaxLength;
+	w2->mSuspensionFrequency = sFrontSuspensionFrequency;
+	w2->mSuspensionDamping = sFrontSuspensionDamping;
+	w2->mMaxSteerAngle = sMaxSteeringAngle;
+	w2->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
+
+	// Left rear
+	WheelSettingsWV *w3 = new WheelSettingsWV;
+	w3->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w3->mSuspensionDirection = rear_suspension_dir;
+	w3->mSteeringAxis = rear_steering_axis;
+	w3->mWheelUp = rear_wheel_up;
+	w3->mWheelForward = rear_wheel_forward;
+	w3->mSuspensionMinLength = sRearSuspensionMinLength;
+	w3->mSuspensionMaxLength = sRearSuspensionMaxLength;
+	w3->mSuspensionFrequency = sRearSuspensionFrequency;
+	w3->mSuspensionDamping = sRearSuspensionDamping;
+	w3->mMaxSteerAngle = 0.0f;
+
+	// Right rear
+	WheelSettingsWV *w4 = new WheelSettingsWV;
+	w4->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w4->mSuspensionDirection = flip_x * rear_suspension_dir;
+	w4->mSteeringAxis = flip_x * rear_steering_axis;
+	w4->mWheelUp = flip_x * rear_wheel_up;
+	w4->mWheelForward = flip_x * rear_wheel_forward;
+	w4->mSuspensionMinLength = sRearSuspensionMinLength;
+	w4->mSuspensionMaxLength = sRearSuspensionMaxLength;
+	w4->mSuspensionFrequency = sRearSuspensionFrequency;
+	w4->mSuspensionDamping = sRearSuspensionDamping;
+	w4->mMaxSteerAngle = 0.0f;
+
+	vehicle.mWheels = { w1, w2, w3, w4 };
+	
+	for (WheelSettings *w : vehicle.mWheels)
+	{
+		w->mRadius = wheel_radius;
+		w->mWidth = wheel_width;
+	}
+
+	WheeledVehicleControllerSettings *controller = new WheeledVehicleControllerSettings;
+	vehicle.mController = controller;
+
+	// Differential
+	controller->mDifferentials.resize(sFourWheelDrive? 2 : 1);
+	controller->mDifferentials[0].mLeftWheel = 0;
+	controller->mDifferentials[0].mRightWheel = 1;
+	if (sFourWheelDrive)
+	{
+		controller->mDifferentials[1].mLeftWheel = 2;
+		controller->mDifferentials[1].mRightWheel = 3;
+
+		// Split engine torque
+		controller->mDifferentials[0].mEngineTorqueRatio = controller->mDifferentials[1].mEngineTorqueRatio = 0.5f;
+	}
+
+	// Anti rollbars
+	if (sAntiRollbar)
+	{
+		vehicle.mAntiRollBars.resize(2);
+		vehicle.mAntiRollBars[0].mLeftWheel = 0;
+		vehicle.mAntiRollBars[0].mRightWheel = 1;
+		vehicle.mAntiRollBars[1].mLeftWheel = 2;
+		vehicle.mAntiRollBars[1].mRightWheel = 3;
+	}
+
+	mVehicleConstraint = std::make_shared<VehicleConstraint>(*mCarBody, vehicle);
+    mVehicleConstraint->SetVehicleCollisionTester(collisionTester);
+	physicsSystem->AddConstraint(mVehicleConstraint.get());
+	physicsSystem->AddStepListener(mVehicleConstraint.get());
+    auto body = getBody(mCarBody->GetID());
+    return {
+        body.bodyID,
+        body.physicsType,
+        body.position,
+        body.rotation,
+        body.scale,
+        body.velocity,
+        mVehicleConstraint
+    };
+}
+
 PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, MotionType motionType)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-
 	VertexList inVertices;
 	inVertices.reserve(vertices.size());
 	IndexedTriangleList inTriangles;
@@ -423,9 +589,9 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
 	}
 
-	auto mesh_id = body_interface.CreateAndAddBody(mesh_settings, EActivation::Activate);
+	auto mesh_id = bodyInterface->CreateAndAddBody(mesh_settings, EActivation::Activate);
 
-	body_interface.SetLinearVelocity(mesh_id, Vec3(0.01f, 0.0f, 1.0f));
+	bodyInterface->SetLinearVelocity(mesh_id, Vec3(0.01f, 0.0f, 1.0f));
 
 	if (mesh_id.IsInvalid())
 	{
@@ -448,9 +614,8 @@ std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw()
 
 void PhysicsWorld::removeBody(IDType bodyID)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-	body_interface.RemoveBody(bodyID);
-	body_interface.DestroyBody(bodyID);
+	bodyInterface->RemoveBody(bodyID);
+	bodyInterface->DestroyBody(bodyID);
 }
 
 PhysicsBody PhysicsWorld::getBody(IDType bodyID)
@@ -460,7 +625,8 @@ PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 		getMotionType(bodyID),
 		getBodyPosition(bodyID),
 		getBodyRotation(bodyID),
-		getBodyScale(bodyID)};
+		getBodyScale(bodyID)
+    };
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
@@ -482,8 +648,7 @@ void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
 
 MotionType PhysicsWorld::getMotionType(IDType bodyID)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-	auto motion_type = body_interface.GetMotionType(bodyID);
+	auto motion_type = bodyInterface->GetMotionType(bodyID);
 	switch (motion_type)
 	{
 	case EMotionType::Static:
@@ -499,43 +664,37 @@ MotionType PhysicsWorld::getMotionType(IDType bodyID)
 
 glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-	RVec3 position = body_interface.GetCenterOfMassPosition(bodyID);
+	RVec3 position = bodyInterface->GetCenterOfMassPosition(bodyID);
 	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
 }
 
 glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-	Quat rotation = body_interface.GetRotation(bodyID);
+	Quat rotation = bodyInterface->GetRotation(bodyID);
 	return glm::vec4(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
 }
 
 glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-	auto scale = body_interface.GetTransformedShape(bodyID).GetShapeScale();
+	auto scale = bodyInterface->GetTransformedShape(bodyID).GetShapeScale();
 	return glm::vec3(scale.GetX(), scale.GetY(), scale.GetZ());
 }
 
 glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
 {
-	BodyInterface &body_interface = physicsSystem->GetBodyInterface();
-	Vec3 velocity = body_interface.GetLinearVelocity(bodyID);
+	Vec3 velocity = bodyInterface->GetLinearVelocity(bodyID);
 	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
 }
 
 void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
 	// TODO: Maybe bool for if it should activate?
-	body_interface.SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
+	bodyInterface->SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-	body_interface.SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
+	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
@@ -548,8 +707,7 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-	body_interface.SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
+	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
 }
 
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)
@@ -561,8 +719,7 @@ void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)
 
 entt::entity PhysicsWorld::getUserData(IDType bodyID)
 {
-	auto &body_interface = physicsSystem->GetBodyInterface();
-	return static_cast<entt::entity>(body_interface.GetUserData(bodyID));
+	return static_cast<entt::entity>(bodyInterface->GetUserData(bodyID));
 }
 
 void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
@@ -575,15 +732,14 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 	while (accumulator >= cDeltaTime)
 	{
 		accumulator -= cDeltaTime;
-		BodyInterface &body_interface = physicsSystem->GetBodyInterface();
 
 		for (auto id : bodies)
 		{
-			if (body_interface.IsActive(id) == false)
+			if (bodyInterface->IsActive(id) == false)
 				continue;
 			// Output current position and velocity of the sphere
-			RVec3 position = body_interface.GetCenterOfMassPosition(id);
-			Vec3 velocity = body_interface.GetLinearVelocity(id);
+			RVec3 position = bodyInterface->GetCenterOfMassPosition(id);
+			Vec3 velocity = bodyInterface->GetLinearVelocity(id);
 			cout << "ID " << id.GetIndex() << ": Position = (" << position.GetX() << ", " << position.GetY() << ", " << position.GetZ() << "), Velocity = (" << velocity.GetX() << ", " << velocity.GetY() << ", " << velocity.GetZ() << ")" << endl;
 		}
 

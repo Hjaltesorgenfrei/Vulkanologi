@@ -606,9 +606,6 @@ void PhysicsWorld::removeBody(IDType bodyID)
 
 PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 {
-	auto transform = bodyInterface->GetWorldTransform(bodyID);
-	glm::mat4 transformResult; 
-	transform.StoreFloat4x4((Float4*)&transformResult[0]);
 	return {
 		bodyID,
 		getMotionType(bodyID),
@@ -616,21 +613,18 @@ PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 		getBodyRotation(bodyID),
 		getBodyScale(bodyID),
 		getBodyVelocity(bodyID),
-		transformResult
+		getBodyTransform(bodyID),
     };
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
 {
-	auto transform = bodyInterface->GetWorldTransform(bodyID);
-	glm::mat4 transformResult; 
-	transform.StoreFloat4x4((Float4*)&transformResult[0]);
 	body.bodyID = bodyID;
 	body.position = getBodyPosition(bodyID);
 	body.rotation = getBodyRotation(bodyID);
 	body.scale = getBodyScale(bodyID);
 	body.velocity = getBodyVelocity(bodyID);
-	body.transform = transformResult;
+	body.transform = getBodyTransform(bodyID);
 }
 
 void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
@@ -679,6 +673,14 @@ glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
 {
 	Vec3 velocity = bodyInterface->GetLinearVelocity(bodyID);
 	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
+}
+
+glm::mat4 PhysicsWorld::getBodyTransform(IDType bodyID)
+{
+	auto transform = bodyInterface->GetWorldTransform(bodyID);
+	glm::mat4 transformResult; 
+	transform.StoreFloat4x4((Float4*)&transformResult[0]);
+	return transformResult;
 }
 
 void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)

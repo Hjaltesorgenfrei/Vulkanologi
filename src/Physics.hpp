@@ -79,6 +79,7 @@ public:
     glm::vec4 getBodyRotation(IDType bodyID);
     glm::vec3 getBodyScale(IDType bodyID);
     glm::vec3 getBodyVelocity(IDType bodyID);
+    glm::mat4 getBodyTransform(IDType bodyID);
     void setBodyPosition(IDType bodyID, glm::vec3 position);
     void setBodyRotation(IDType bodyID, glm::vec4 rotation);
     void setBodyScale(IDType bodyID, glm::vec3 scale);

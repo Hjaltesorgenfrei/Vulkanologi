@@ -337,7 +337,7 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 
 	// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
 	BodyCreationSettings floor_settings(floor_shape, RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-
+	floor_settings.mFriction = 1.0f;
 	// Create the actual rigid body
 	auto floor_id = bodyInterface->CreateAndAddBody(floor_settings, EActivation::DontActivate); // Note that if we run out of bodies this can return nullptr
 	if (floor_id.IsInvalid())

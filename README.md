@@ -175,6 +175,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Need to look up how this is best done.
 - [ ] Add lateral and longitudinalFriction to the car physics.
 - [ ] Create debugging UI for the Car which allows for changing its settings while running.
+  - `VehicleConstraint::GetConstraintSettings()` is not implemented and it is marked const.
+  - So I probably need to recreate the constraint if it is changed.
 
 ### Descriptor Layout Idea
 

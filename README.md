@@ -173,6 +173,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Also it has a todo in the code to add driving on moving platforms.
 - [ ] Make a precompiled header file, which includes all the files i want to precompile include. Then just include that file everywhere?
   - Need to look up how this is best done.
+- [ ] Add lateral and longitudinalFriction to the car physics.
+- [ ] Create debugging UI for the Car which allows for changing its settings while running.
 
 ### Descriptor Layout Idea
 

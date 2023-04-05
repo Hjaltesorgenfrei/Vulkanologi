@@ -606,22 +606,31 @@ void PhysicsWorld::removeBody(IDType bodyID)
 
 PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 {
+	auto transform = bodyInterface->GetWorldTransform(bodyID);
+	glm::mat4 transformResult; 
+	transform.StoreFloat4x4((Float4*)&transformResult[0]);
 	return {
 		bodyID,
 		getMotionType(bodyID),
 		getBodyPosition(bodyID),
 		getBodyRotation(bodyID),
-		getBodyScale(bodyID)
+		getBodyScale(bodyID),
+		getBodyVelocity(bodyID),
+		transformResult
     };
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
 {
+	auto transform = bodyInterface->GetWorldTransform(bodyID);
+	glm::mat4 transformResult; 
+	transform.StoreFloat4x4((Float4*)&transformResult[0]);
 	body.bodyID = bodyID;
 	body.position = getBodyPosition(bodyID);
 	body.rotation = getBodyRotation(bodyID);
 	body.scale = getBodyScale(bodyID);
 	body.velocity = getBodyVelocity(bodyID);
+	body.transform = transformResult;
 }
 
 void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
@@ -687,8 +696,12 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 {
 	auto &body_interface = physicsSystem->GetBodyLockInterfaceNoLock();
 	BodyLockWrite lock(body_interface, bodyID);
-	lock.GetBody().GetShape()->ScaleShape(Vec3Arg(scale.x, scale.y, scale.z));
-	
+	auto result = lock.GetBody().GetShape()->ScaleShape(Vec3Arg(scale.x, scale.y, scale.z));
+	if (result.HasError())
+	{
+		handleInvalidId("Failed to scale body", bodyID);
+	}
+	bodyInterface->SetShape(bodyID, result.Get(), true, EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)

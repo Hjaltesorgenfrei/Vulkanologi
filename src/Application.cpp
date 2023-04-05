@@ -726,7 +726,8 @@ void App::setupWorld() {
     for (auto index : arena->mesh->_indices) {
         indices.push_back(index);
     }
-    registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices));
+    auto physicsBody = registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, glm::vec3(0, -10, 0)));
+    physicsWorld->setBodyScale(physicsBody.bodyID, glm::vec3(2, 2, 2));
 
     setupSystems(systemGraph);
     systemGraph.init(registry);

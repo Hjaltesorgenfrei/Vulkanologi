@@ -43,8 +43,9 @@ struct PhysicsBody
     MotionType physicsType;
     glm::vec3 position;
     glm::vec4 rotation;
-    glm::vec3 scale;
+    glm::vec3 scale; // Currently Broken sadly :(
     glm::vec3 velocity;
+    glm::mat4 transform;
 };
 
 struct CarPhysics {

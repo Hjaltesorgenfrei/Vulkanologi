@@ -187,18 +187,15 @@ entt::entity App::addPlayer(T input)
         spawnPoints.push_back(spawnPoint);
     }
     auto entity = registry.create();
-    // auto vehicle = physicsWorld->createVehicle();
-    // // Move vehicle to spawn point
-    // auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-    // vehicle->getRigidBody()->getWorldTransform().setOrigin(btVector3(spawnPoint.position.x, spawnPoint.position.y, spawnPoint.position.z));
-    // auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
-    // vehicle->getRigidBody()->getWorldTransform().setRotation(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w));
-    // vehicle->getRigidBody()->setUserIndex((int)entity);
+    auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+    auto [body, car] = physicsWorld->addCar(entity, spawnPoint.position);
+    // TODO: rotate the car to face the spawn point
+    registry.emplace<PhysicsBody>(entity, body);
+    registry.emplace<CarPhysics>(entity, car);
     registry.emplace<T>(entity, input);
     auto color = Color::playerColor(playerId);
     registry.emplace<Player>(entity, playerId, color);
     registry.emplace<Transform>(entity);
-    // registry.emplace<Car>(entity, vehicle);
     registry.emplace<CarStateLastUpdate>(entity);
     registry.emplace<CarControl>(entity);
     registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
@@ -852,10 +849,10 @@ void App::createSpawnPoints()
 
     // Create spawn points
     for (int i = 0; i < num; i++) {
-        // auto entity = registry.create();
-        // entities.insert(entity);
-        // registry.emplace<Transform>(entity);
-        // registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
+        auto entity = registry.create();
+        entities.insert(entity);
+        registry.emplace<Transform>(entity);
+        registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
         // btGhostObject* ghostObject = new btGhostObject();
         // auto position = spawnPoints[i].position;
         // auto forward = spawnPoints[i].forward;

@@ -47,8 +47,8 @@ struct PhysicsBody
     glm::vec3 velocity;
 };
 
-struct CarPhysicsBody : PhysicsBody {
-    std::shared_ptr<JPH::VehicleConstraint> constraint;
+struct CarPhysics {
+    JPH::VehicleConstraint * constraint;
 };
 
 class PhysicsWorld
@@ -63,7 +63,7 @@ public:
     PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
     PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
-    CarPhysicsBody addCar(entt::entity entity, glm::vec3 position, glm::vec3 size);
+    std::pair<PhysicsBody, CarPhysics> addCar(entt::entity entity, glm::vec3 position);
 
     std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
 

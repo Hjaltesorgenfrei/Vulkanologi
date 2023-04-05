@@ -1,9 +1,10 @@
 #pragma once
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
+#include "../Physics.hpp"
 
-struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<Car>, Others<CarStateLastUpdate>> {
-    void update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, Car &car, CarStateLastUpdate &lastState) const;
+struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<CarPhysics>, Others<CarStateLastUpdate>> {
+    void update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, CarPhysics &car, CarStateLastUpdate &lastState) const;
 };
 
 struct CarKeyboardSystem : System<CarKeyboardSystem, Reads<KeyboardInput, CarStateLastUpdate>, Writes<CarControl>, Others<>> {

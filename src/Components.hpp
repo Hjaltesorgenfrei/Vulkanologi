@@ -70,7 +70,6 @@ struct GamepadInput {
 };
 
 struct Car {
-    // btRaycastVehicle* vehicle;
     float steering = 0.0f;
     float acceleration = 0.0f;
     float brake = 0.0f;

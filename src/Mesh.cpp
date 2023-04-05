@@ -96,6 +96,14 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
                         .materialIndex = static_cast<uint8_t>(shape.mesh.material_ids[f]) // Index of material which is loaded later
                 };
 
+                // if there is colors in the obj file
+                if (attrib.colors.size() > 0) {
+                    vertex.color = {
+                            attrib.colors[3 * index.vertex_index + 0],
+                            attrib.colors[3 * index.vertex_index + 1],
+                            attrib.colors[3 * index.vertex_index + 2]};
+                }
+
                 if (index.normal_index >= 0) {
                     vertex.normal = {
                             attrib.normals[3 * index.normal_index + 0],
@@ -119,7 +127,18 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
         }
     }
 
-    for (const auto &material: materials) {
+    
+    for (int materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
+        auto &material = materials[materialIndex];
+        for (int i = 0; i < mesh->_vertices.size(); i++) {
+            if (mesh->_vertices[i].materialIndex == materialIndex) {
+                mesh->_vertices[i].color = {
+                        material.diffuse[0],
+                        material.diffuse[1],
+                        material.diffuse[2]
+                };
+            }
+        }
         if (material.diffuse_texname.empty()) {
             continue;
         }

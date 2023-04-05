@@ -27,7 +27,6 @@ void App::run() {
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>();
-    physicsWorld->addFloor(registry.create(), {0, -10.0f, 0});
     setupWorld();
     mainLoop();
 }
@@ -717,7 +716,11 @@ void App::setupWorld() {
 
 
      // Arena
-    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/arena.obj"));
+    auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/map.obj"));
+    for (auto& vertex : arena->mesh->_vertices) {
+        vertex.materialIndex = 0;
+    }
+    arena->mesh->_texturePaths = {"resources/white.png"};
     renderer->uploadMeshes({arena});
     auto entity = registry.create();
     entities.insert(entity);
@@ -784,7 +787,7 @@ void App::setupWorld() {
     // Swipers
     loadSwipers();
     float offset = 80;
-    for (int i = 0; i < swiperNames.size(); i++ ) {
+    for (int i = 0; i < 0; i++ ) {
         addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();

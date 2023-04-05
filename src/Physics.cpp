@@ -18,6 +18,7 @@
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Renderer/DebugRendererRecorder.h>
@@ -613,7 +614,6 @@ PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 		getBodyRotation(bodyID),
 		getBodyScale(bodyID),
 		getBodyVelocity(bodyID),
-		getBodyTransform(bodyID),
     };
 }
 
@@ -624,7 +624,6 @@ void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
 	body.rotation = getBodyRotation(bodyID);
 	body.scale = getBodyScale(bodyID);
 	body.velocity = getBodyVelocity(bodyID);
-	body.transform = getBodyTransform(bodyID);
 }
 
 void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
@@ -665,22 +664,22 @@ glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
 
 glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
 {
-	auto scale = bodyInterface->GetTransformedShape(bodyID).GetShapeScale();
-	return glm::vec3(scale.GetX(), scale.GetY(), scale.GetZ());
+	const Shape * shape = bodyInterface->GetShape(bodyID);
+	if (shape->GetSubType() == EShapeSubType::Scaled)
+	{
+		// Might not always be valid, as the more decorations can be on the shape
+		// In this case we would have to descent down the shapes and add the scale up.
+		auto scaledShape = static_cast<const ScaledShape *>(shape); 
+		auto scale = scaledShape->GetScale();
+		return glm::vec3(scale.GetX(), scale.GetY(), scale.GetZ());
+	}
+	return glm::vec3(1, 1, 1);
 }
 
 glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
 {
 	Vec3 velocity = bodyInterface->GetLinearVelocity(bodyID);
 	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
-}
-
-glm::mat4 PhysicsWorld::getBodyTransform(IDType bodyID)
-{
-	auto transform = bodyInterface->GetWorldTransform(bodyID);
-	glm::mat4 transformResult; 
-	transform.StoreFloat4x4((Float4*)&transformResult[0]);
-	return transformResult;
 }
 
 void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
@@ -743,18 +742,11 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 		registry.view<CarPhysics, CarControl>().each([this](entt::entity entity, CarPhysics& carPhysics, CarControl& carControl) {
 			if (carControl.desiredAcceleration != 0.0f || carControl.desiredBrake != 0.0f || carControl.desiredSteering != 0.0f) {
 				auto id = carPhysics.constraint->GetVehicleBody()->GetID();
-				auto rotation = getBodyRotation(id);
-				cout << "Car Rotation: " << rotation.x << ", " << rotation.y << ", " << rotation.z << ", " << rotation.w << endl;
 				bodyInterface->ActivateBody(id);
 			}
 		});
 
 		// Step the world
 		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
-
-		// Update the bodies
-		registry.view<PhysicsBody>().each([this](entt::entity entity, PhysicsBody& body) {
-			getBody(body.bodyID, body);
-		});
 	}
 }

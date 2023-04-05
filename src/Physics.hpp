@@ -43,9 +43,8 @@ struct PhysicsBody
     MotionType physicsType;
     glm::vec3 position;
     glm::vec4 rotation;
-    glm::vec3 scale; // Currently Broken sadly :(
+    glm::vec3 scale;
     glm::vec3 velocity;
-    glm::mat4 transform;
 };
 
 struct CarPhysics {
@@ -79,7 +78,6 @@ public:
     glm::vec4 getBodyRotation(IDType bodyID);
     glm::vec3 getBodyScale(IDType bodyID);
     glm::vec3 getBodyVelocity(IDType bodyID);
-    glm::mat4 getBodyTransform(IDType bodyID);
     void setBodyPosition(IDType bodyID, glm::vec3 position);
     void setBodyRotation(IDType bodyID, glm::vec4 rotation);
     void setBodyScale(IDType bodyID, glm::vec3 scale);

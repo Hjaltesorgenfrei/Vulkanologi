@@ -15,6 +15,8 @@ BehCamera::BehCamera() {
 }
 
 glm::mat4 BehCamera::viewMatrix() const {
+    if (hasTarget)
+        return glm::lookAt(cameraPosition, cameraTarget, cameraUp);
     return glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 }
 
@@ -77,6 +79,11 @@ glm::vec3 BehCamera::getCameraPosition() const
     return cameraPosition;
 }
 
+void BehCamera::setCameraPosition(const glm::vec3 &value)
+{
+    cameraPosition = value;
+}
+
 glm::vec3 BehCamera::getRayDirection(float xPos, float yPos, float width, float height) const
 {
     glm::vec4 rayClip = glm::vec4((2.0f * xPos) / width - 1.0f, 1.0f - (2.0f * yPos) / height, -1.0f, 1.0f);
@@ -97,4 +104,10 @@ glm::mat4 BehCamera::getCameraProjection(float width, float height) const {
     auto proj = glm::perspective(glm::radians(fovY), width / height, 0.1f, 1000.0f);
     proj[1][1] *= -1; // GLM was originally designed for OpenGL, where the Y coordinate of the clip coordinates is inverted.
     return proj;
+}
+
+void BehCamera::setTarget(glm::vec3 target, float speed)
+{
+    hasTarget = true;
+    cameraTarget = target;
 }

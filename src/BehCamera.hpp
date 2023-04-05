@@ -25,17 +25,23 @@ public:
 
     glm::vec3 getCameraPosition() const;
 
+    void setCameraPosition(const glm::vec3 &value);
+
     glm::vec3 getRayDirection(float xPos, float yPos, float width, float height) const;
 
     glm::mat4 getCameraProjection(float width, float height) const;
+
+    void setTarget(glm::vec3 target, float speed);
 
 private:
 
     glm::vec3 cameraPosition;
     glm::vec3 cameraFront;
     glm::vec3 cameraUp;
+    glm::vec3 cameraTarget;
     float cameraYaw;
     float cameraPitch;
+    bool hasTarget = false;
 
     float fovY = 45.0f;
 

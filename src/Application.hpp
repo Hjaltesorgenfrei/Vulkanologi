@@ -37,7 +37,6 @@ private:
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
-    BehCamera camera{};
     bool showDebugInfo = false;
     bool updateWindowSize = false;
     bool cursorHidden = false;
@@ -52,6 +51,7 @@ private:
     void createSpawnPoints();
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
+    BehCamera& getCamera();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);

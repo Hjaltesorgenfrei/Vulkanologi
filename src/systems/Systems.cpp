@@ -15,4 +15,5 @@ void setupSystems(SystemGraph& systemGraph)
     systemGraph.addSystem<CarTransformSystem>();
     systemGraph.addSystem<TransformControlPointsSystem>();
     systemGraph.addSystem<SwiperSystem>();
+    systemGraph.addSystem<CarCameraSystem>();
 }

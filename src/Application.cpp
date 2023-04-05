@@ -52,13 +52,15 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
     if (app->cursorHidden) {
         auto xPos = static_cast<float>(xPosIn);
         auto yPos = static_cast<float>(yPosIn);
-        app->camera.newCursorPos(xPos, yPos);
+        auto& camera = app->getCamera();
+        camera.newCursorPos(xPos, yPos);
     }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-    app->camera.resetCursorPos();
+    auto& camera = app->getCamera();
+    camera.resetCursorPos();
 }
 
 std::vector<Path> rays;
@@ -71,10 +73,11 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     }
 
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
+    auto& camera = app->getCamera();
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !app->shiftPressed) {
         if (!app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            app->camera.resetCursorPos();
+            camera.resetCursorPos();
             app->cursorHidden = true;
         }
     }
@@ -438,7 +441,8 @@ int App::drawFrame(float delta) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
+    
+    auto& camera = getCamera();
     FrameInfo frameInfo{};
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
@@ -697,7 +701,8 @@ void App::setupWorld() {
 
     createSpawnPoints();
 
-    addPlayer(KeyboardInput {});
+    auto keyboardPlayer = addPlayer(KeyboardInput {});
+    registry.emplace<BehCamera>(keyboardPlayer);
 
     setupControllerPlayers();
 
@@ -960,6 +965,7 @@ void App::setupControllerPlayers()
 }
 
 bool App::drawImGuizmo(glm::mat4* matrix) {
+    auto& camera = getCamera();
     ImGuizmo::BeginFrame();
     ImGuizmo::Enable(true);
     auto [width, height] = window->getFramebufferSize();
@@ -985,13 +991,27 @@ std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
     return paths;
 }
 
+BehCamera &App::getCamera()
+{
+    BehCamera *cameraResult = nullptr;
+    registry.view<BehCamera>().each([&](auto entity, auto& camera) {
+        cameraResult = &camera;
+    });
+
+    if (cameraResult == nullptr) {
+        throw std::runtime_error("No camera found");
+    }
+
+    return *cameraResult;
+}
+
 void App::processPressedKeys(float delta) {
     auto glfw_window = window->getGLFWwindow();
     float cameraSpeed = 0.005f * delta;
     if (shiftPressed) {
         cameraSpeed *= 4;
     }
-
+    auto& camera = getCamera();
     // TODO: Add camera as an entity which can take input :)
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         camera.moveCameraForward(cameraSpeed);

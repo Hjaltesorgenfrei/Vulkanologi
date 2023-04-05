@@ -579,7 +579,7 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 
 	auto mesh_id = bodyInterface->CreateAndAddBody(mesh_settings, EActivation::Activate);
 
-	bodyInterface->SetLinearVelocity(mesh_id, Vec3(0.01f, 0.0f, 1.0f));
+	bodyInterface->SetAngularVelocity(mesh_id, Vec3(0.0f, 0.1f, 0.0f));
 
 	if (mesh_id.IsInvalid())
 	{
@@ -703,7 +703,7 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 	{
 		handleInvalidId("Failed to scale body", bodyID);
 	}
-	bodyInterface->SetShape(bodyID, result.Get(), true, EActivation::Activate);
+	bodyInterface->SetShape(bodyID, result.Get(), false, EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)

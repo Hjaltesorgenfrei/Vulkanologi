@@ -249,7 +249,7 @@ entt::entity App::addSwiper(Axis direction, float speed, int swiper)
         indices.push_back(index);
     }
     auto& body = registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, {swiper * 30,-10,0}, MotionType::Kinematic));
-    physicsWorld->setBodyVelocity(body.bodyID, {0,1,0});
+    physicsWorld->setBodyScale(body.bodyID, {2.f, 2.f, 2.f});
     registry.emplace<Swiper>(entity, direction, speed);
     return entity;
 }
@@ -792,7 +792,7 @@ void App::setupWorld() {
     // Swipers
     loadSwipers();
     float offset = 80;
-    for (int i = 0; i < 0; i++ ) {
+    for (int i = 0; i < swiperNames.size(); i++ ) {
         addSwiper(Axis::Z, -0.005f, i);
     }
     placeSwipers();

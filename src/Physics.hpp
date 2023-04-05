@@ -97,7 +97,7 @@ private:
     std::vector<IDType> bodies;
 
     // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
-    const float cDeltaTime = 1.0f / 60.0f;
+    const float cDeltaTime = 1.0f / 200.f;
     float accumulator = 0.0f;
     
     JPH::BodyInterface * bodyInterface = nullptr;

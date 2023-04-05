@@ -79,9 +79,9 @@ glm::vec3 BehCamera::getCameraPosition() const
     return cameraPosition;
 }
 
-void BehCamera::setCameraPosition(const glm::vec3 &value)
+void BehCamera::setCameraPosition(const glm::vec3 &value, float delta)
 {
-    cameraPosition = value;
+    cameraPosition = glm::mix(cameraPosition, value, speed * delta);
 }
 
 glm::vec3 BehCamera::getRayDirection(float xPos, float yPos, float width, float height) const
@@ -106,8 +106,8 @@ glm::mat4 BehCamera::getCameraProjection(float width, float height) const {
     return proj;
 }
 
-void BehCamera::setTarget(glm::vec3 target, float speed)
+void BehCamera::setTarget(glm::vec3 target, float targetSpeed, float delta)
 {
     hasTarget = true;
-    cameraTarget = target;
+    cameraTarget = glm::mix(cameraTarget, target, speed * delta);
 }

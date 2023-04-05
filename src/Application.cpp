@@ -519,6 +519,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
     ImGui::End();
 
+    auto& camera = getCamera();
+    ImGui::Begin("Camera");
+    ImGui::SliderFloat("Speed", &camera.speed, 0.0001f, 0.01f);
+    ImGui::End();
+
     registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
         bezier.recomputeIfDirty();
         frameInfo.paths.emplace_back(bezier);

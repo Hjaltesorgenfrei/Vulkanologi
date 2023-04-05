@@ -25,13 +25,15 @@ public:
 
     glm::vec3 getCameraPosition() const;
 
-    void setCameraPosition(const glm::vec3 &value);
+    void setCameraPosition(const glm::vec3 &value, float delta);
 
     glm::vec3 getRayDirection(float xPos, float yPos, float width, float height) const;
 
     glm::mat4 getCameraProjection(float width, float height) const;
 
-    void setTarget(glm::vec3 target, float speed);
+    void setTarget(glm::vec3 target, float targetSpeed, float delta);
+
+    float speed = 0.006f;
 
 private:
 

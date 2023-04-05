@@ -146,6 +146,6 @@ void CarCameraSystem::update(entt::registry &registry, float delta, entt::entity
     auto cameraPosition = carPosition + (forward * -15.0f) + glm::vec3(0.0f, 6.0f, 0.0f) + (speed * -0.2f * forward);
     auto cameraTarget = carPosition + (forward * 10.0f) + glm::vec3(0.0f, 2.0f, 0.0f);
 
-    camera.setCameraPosition(cameraPosition);
-    camera.setTarget(cameraTarget, speed);
+    camera.setCameraPosition(cameraPosition, delta);
+    camera.setTarget(cameraTarget, speed, delta);
 }

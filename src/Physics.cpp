@@ -574,6 +574,7 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 	else // motionType == Dynamic for meshes is not supported by Jolt
 	{
 		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		mesh_settings.mFriction = 0.5f;
 	}
 
 	auto mesh_id = bodyInterface->CreateAndAddBody(mesh_settings, EActivation::Activate);

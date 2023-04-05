@@ -168,15 +168,18 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Figure out why ray cast vehicle glitches through the ground.
   - Was due to the wheel ray cast origin not being inside the collision shape.
 - [ ] Make a collision editor and a serialization system for collision shapes.
-- [ ] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
+- [x] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
   - This change could be upstreamed <https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=6365>
   - Also it has a todo in the code to add driving on moving platforms.
+  - Lol never mind, changed to a different physics library.
 - [ ] Make a precompiled header file, which includes all the files i want to precompile include. Then just include that file everywhere?
   - Need to look up how this is best done.
 - [ ] Add lateral and longitudinalFriction to the car physics.
 - [ ] Create debugging UI for the Car which allows for changing its settings while running.
   - `VehicleConstraint::GetConstraintSettings()` is not implemented and it is marked const.
   - So I probably need to recreate the constraint if it is changed.
+- [ ] Physics should be rendered for next frame and interpolated towards which should reduce stuttering.
+- [ ] Probably set the target position and target look in the camera and call update later.
 
 ### Descriptor Layout Idea
 

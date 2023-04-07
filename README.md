@@ -181,6 +181,11 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - So I probably need to recreate the constraint if it is changed.
 - [ ] Physics should be rendered for next frame and interpolated towards which should reduce stuttering.
 - [ ] Probably set the target position and target look in the camera and call update later.
+- [ ] Make different kind of camera controllers which takes input and controls the camera.
+  - [ ] Free fly, Just takes keyboard.
+  - [ ] Car follow, takes a Car state as input. Probably Needs to be a entity pointer as it might be on another entity.
+    - Can probably just be a physics object it follows in this case. It also has a velocity.
+    - Keyboard should also allow for rotating the camera around the object in any case.
 
 ### Descriptor Layout Idea
 

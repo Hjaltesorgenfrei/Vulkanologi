@@ -265,31 +265,18 @@ void App::loadSwipers()
     renderer->uploadMeshes(objects);
 }
 
-void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
+void App::onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity)
 {
-    // auto *rigidBody = registry.try_get<RigidBody>(entity);
-    // if (rigidBody == nullptr) {
-    //     return;
-    // }
-    // physicsWorld->removeBody(rigidBody->body);
+    if (auto body = registry.try_get<PhysicsBody>(entity)) {
+        physicsWorld->removeBody(body->bodyID);
+    }
 }
 
-void App::onSensorDestroyed(entt::registry &registry, entt::entity entity)
+void App::onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity)
 {
-    // auto *sensor = registry.try_get<Sensor>(entity);
-    // if (sensor == nullptr) {
-    //     return;
-    // }
-    // physicsWorld->removeSensor(sensor->ghost);
-}
-
-void App::onCarDestroyed(entt::registry &registry, entt::entity entity)
-{
-    // auto *car = registry.try_get<Car>(entity);
-    // if (car == nullptr) {
-    //     return;
-    // }
-    // physicsWorld->removeVehicle(car->vehicle);
+    if (auto body = registry.try_get<CarPhysics>(entity)) {
+        physicsWorld->removeCar(body->constraint);
+    }
 }
 
 float bytesToMegaBytes(uint64_t bytes) {
@@ -557,42 +544,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
         else if (currentGizmoOperation == ImGuizmo::SCALE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
             physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
         }   
-        
-
     }
-    // if (sensor != nullptr) {
-    //     auto body = sensor->ghost;
-    //     auto transform = body->getWorldTransform();
-    //     auto scale = body->getCollisionShape()->getLocalScaling();
-    //     // convert to glm
-    //     glm::mat4 modelMatrix;
-    //     transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
-
-    //     if (currentGizmoOperation == ImGuizmo::SCALE) {
-    //         modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-    //         auto scaleMatrix = glm::mat4(1.0f);
-    //         ImGuizmo::BeginFrame();
-    //         ImGuizmo::Enable(true);
-    //         auto [width, height] = window->getFramebufferSize();
-    //         auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
-    //         proj[1][1] *= -1; // ImGuizmo Expects the opposite
-    //         ImGuiIO& io = ImGui::GetIO();
-    //         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    //         if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
-    //             // Add the scale to the current scale
-    //             btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
-    //             newScale *= scale;
-    //             body->getCollisionShape()->setLocalScaling(newScale);
-    //         }
-    //     }
-
-    //     else if (drawImGuizmo(&modelMatrix)) {
-    //         // convert back to bullet
-    //         btTransform newTransform;
-    //         newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-    //         body->setWorldTransform(newTransform);
-    //     }
-    // }
 }
 
 void App::setupWorld() {
@@ -605,9 +557,8 @@ void App::setupWorld() {
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
-    registry.on_destroy<RigidBody>().connect<&App::onRigidBodyDestroyed>(this);
-    registry.on_destroy<Sensor>().connect<&App::onSensorDestroyed>(this);
-    registry.on_destroy<Car>().connect<&App::onCarDestroyed>(this);
+    registry.on_destroy<PhysicsBody>().connect<&App::onPhysicsBodyDestroyed>(this);
+    registry.on_destroy<CarPhysics>().connect<&App::onCarPhysicsDestroyed>(this);
 
     renderer->uploadMeshes(objects);
     meshes["road"] = objects[0]->mesh;
@@ -617,7 +568,7 @@ void App::setupWorld() {
     noMaterial = objects[1]->material;
     carMaterial = objects.back()->material;
 
-    createSpawnPoints();
+    createSpawnPoints(10);
 
     auto keyboardPlayer = addPlayer(KeyboardInput {});
     registry.emplace<BehCamera>(keyboardPlayer);
@@ -742,15 +693,8 @@ void App::bezierTesting() {
     }
 }
 
-void App::createSpawnPoints()
+void App::createSpawnPoints(int numberOfSpawns)
 {
-    // Read from text file SPAWNPOINTS.txt
-    /* Format:
-    3 // Number of spawn points
-    0 0 0 // Spawn point 1 position
-    1 0 0 // Spawn point 1 forward
-    */
-    int num = 12;
     float height = 2.0f;
     float pi = 3.14159265359f;
     float radius = 22.f;
@@ -758,15 +702,15 @@ void App::createSpawnPoints()
     float centerX = 3.f;
     float centerY = 7.5f;
     std::vector<SpawnPoint> spawnPoints;
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < numberOfSpawns; i++) {
         float x, y, z;
-        float angle = (2 * pi / num) * i;
+        float angle = (2 * pi / numberOfSpawns) * i;
         x = centerX + radius * cos(angle);
         z = centerY + radius * sin(angle);
         y = height;
         glm::vec3 position = glm::vec3(x, y, z);
 
-        angle = (2 * pi / num) * i;
+        angle = (2 * pi / numberOfSpawns) * i;
         x = cos(angle);
         z = sin(angle);
         y = 0;
@@ -775,22 +719,15 @@ void App::createSpawnPoints()
     }
 
     // Create spawn points
-    for (int i = 0; i < num; i++) {
+    for (int i = 0; i < numberOfSpawns; i++) {
         auto entity = registry.create();
         entities.insert(entity);
         registry.emplace<Transform>(entity);
         registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
-        // btGhostObject* ghostObject = new btGhostObject();
-        // auto position = spawnPoints[i].position;
-        // auto forward = spawnPoints[i].forward;
-        // auto rotation = glm::quatLookAt(forward, glm::vec3(0, 1, 0));
-        // ghostObject->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z))));
-        // btConvexShape* sphere = new btSphereShape(0.1f);
-        // ghostObject->setCollisionShape(sphere);
-        // ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-        // ghostObject->setUserIndex((int)entity);
-        // physicsWorld->addSensor(ghostObject);
-        // registry.emplace<Sensor>(entity, ghostObject);
+        auto position = spawnPoints[i].position;
+        auto forward = spawnPoints[i].forward;
+        registry.emplace<PhysicsBody>(entity, physicsWorld->addSphere(entity, position, 1, true));
+        registry.emplace<SensorTag>(entity);
     }
 }
 
@@ -898,6 +835,7 @@ void App::processPressedKeys(float delta) {
     }
     auto& camera = getCamera();
     // TODO: Add camera as an entity which can take input :)
+    // It is an entity, but it has pretty bad controls right now.
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
         camera.moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)

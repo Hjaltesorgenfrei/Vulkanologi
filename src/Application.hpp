@@ -48,7 +48,7 @@ private:
     bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
     void setupWorld();
     void bezierTesting();
-    void createSpawnPoints();
+    void createSpawnPoints(int numberOfSpawns);
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
     BehCamera& getCamera();
@@ -66,9 +66,8 @@ private:
     entt::entity addSwiper(Axis direction, float speed, int swiper);
     void loadSwipers();
 
-    void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
-    void onSensorDestroyed(entt::registry &registry, entt::entity entity);
-    void onCarDestroyed(entt::registry &registry, entt::entity entity);
+    void onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity);
+    void onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity);
 
     bool shiftPressed = false;
 

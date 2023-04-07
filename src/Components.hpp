@@ -13,16 +13,6 @@ struct Transform {
     glm::mat4 modelMatrix = glm::mat4(1.0f);
 };
 
-struct RigidBody {
-    int lol;
-    // btRigidBody* body;
-};
-
-struct Sensor {
-    int lol;
-    // btGhostObject* ghost;
-};
-
 struct ControlPointPtr {
     const std::shared_ptr<ControlPoint> controlPoint; 
     // If this wrapper goes out of scope we don't crash but the points will only be accessible through the owning curve.
@@ -117,5 +107,7 @@ struct ShowNormalsTag {
 struct MarkForDeletionTag { };
 
 struct SelectedTag { };
+
+struct SensorTag { };
 
 #endif

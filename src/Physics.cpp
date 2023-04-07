@@ -358,11 +358,12 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 	return getBody(floor_id);
 }
 
-PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius)
+PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius, bool isSensor)
 {
 	// Now create a dynamic body to bounce on the floor
 	// Note that this uses the shorthand version of creating and adding a body to the world
-	BodyCreationSettings sphere_settings(new SphereShape(radius), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+	BodyCreationSettings sphere_settings(new SphereShape(radius), RVec3(position.x, position.y, position.z), Quat::sIdentity(), isSensor ? EMotionType::Static : EMotionType::Dynamic, Layers::MOVING);
+	sphere_settings.mIsSensor = isSensor;
 	auto sphere_id = bodyInterface->CreateAndAddBody(sphere_settings, EActivation::Activate);
 	if (sphere_id.IsInvalid())
 	{
@@ -548,6 +549,12 @@ std::pair<PhysicsBody, CarPhysics> PhysicsWorld::addCar(entt::entity entity, glm
 	physicsSystem->AddConstraint(mVehicleConstraint);
 	physicsSystem->AddStepListener(mVehicleConstraint);
     return std::make_pair<PhysicsBody, CarPhysics>(getBody(mCarBody->GetID()), CarPhysics {mVehicleConstraint});
+}
+
+void PhysicsWorld::removeCar(JPH::VehicleConstraint * constraint)
+{
+	physicsSystem->RemoveStepListener(constraint);
+	physicsSystem->RemoveConstraint(constraint);
 }
 
 void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback)
@@ -756,6 +763,7 @@ entt::entity PhysicsWorld::getUserData(IDType bodyID)
 
 void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 {
+	std::cout << error << std::endl;
 }
 
 void PhysicsWorld::update(float dt, entt::registry& registry)

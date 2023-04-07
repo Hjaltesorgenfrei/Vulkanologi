@@ -60,10 +60,11 @@ public:
     void update(float dt, entt::registry& registry);
 
     PhysicsBody addFloor(entt::entity entity, glm::vec3 position);
-    PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius);
+    PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius, bool isSensor = false);
     PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
     PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
     std::pair<PhysicsBody, CarPhysics> addCar(entt::entity entity, glm::vec3 position);
+    void removeCar(JPH::VehicleConstraint * constraint);
 
     void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback);
 

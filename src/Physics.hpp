@@ -65,6 +65,8 @@ public:
     PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
     std::pair<PhysicsBody, CarPhysics> addCar(entt::entity entity, glm::vec3 position);
 
+    void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback);
+
     std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
 
     void removeBody(IDType bodyID);
@@ -83,6 +85,8 @@ public:
     void setBodyScale(IDType bodyID, glm::vec3 scale);
     void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
 
+    // We don't have a setTransform because it can not be seperated again.
+    glm::mat4 getTransform(IDType bodyID);
 private:
     std::unique_ptr<JPH::PhysicsSystem> physicsSystem;
     std::unique_ptr<BPLayerInterfaceImpl> bpLayerInterfaceImpl;

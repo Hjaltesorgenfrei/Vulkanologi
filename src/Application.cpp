@@ -80,25 +80,23 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
             app->cursorHidden = true;
         }
     }
-    else if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && app->shiftPressed) {
-        // // raytest with bullet
-        // double x, y;
-        // glfwGetCursorPos(window, &x, &y);
-        // auto pos = app->camera.getCameraPosition();
-        // auto dir = app->camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
-        // btVector3 rayFromWorld(pos.x, pos.y, pos.z);
-        // const int maxRayLength = 1000;
-        // btVector3 rayToWorld(pos.x + dir.x * maxRayLength, pos.y + dir.y * maxRayLength, pos.z + dir.z * maxRayLength);
-        // for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
-        //     app->registry.remove<SelectedTag>(entity);
-        // }
-        // app->physicsWorld->closestRay(rayFromWorld, rayToWorld, [&](const btCollisionObject* body, const btVector3& point, const btVector3& normal) {
-        //     if (body->getCollisionFlags() & btCollisionObject::CF_KINEMATIC_OBJECT) {
-        //         return;
-        //     }
-        //     auto entity = static_cast<entt::entity>(body->getUserIndex());
-        //     app->registry.emplace<SelectedTag>(entity);
-        // });
+    else if (button == GLFW_MOUSE_BUTTON_3 && action == GLFW_PRESS) {
+        // raytest with bullet
+        double x, y;
+        glfwGetCursorPos(window, &x, &y);
+        auto camera = app->getCamera();
+        auto pos = camera.getCameraPosition();
+        auto dir = camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
+        
+        for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
+            app->registry.remove<SelectedTag>(entity);
+        }
+
+        app->physicsWorld->rayPick(pos, dir, 10000.f, [&](auto entity){
+            app->registry.emplace<SelectedTag>(entity);
+            std::cout << "Selected something :)\n";
+        });
+
 
         // glm::vec3 rayFromWorldGlm(rayFromWorld.x(), rayFromWorld.y(), rayFromWorld.z());
         // glm::vec3 rayToWorldGlm(rayToWorld.x(), rayToWorld.y(), rayToWorld.z());
@@ -531,6 +529,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
         frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
     }
 
+
     // btRigidBody *rigidBody = nullptr;
     // if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
     //     rigidBody = rigidBodyComponent->body;
@@ -545,39 +544,22 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
     //     drawRigidBodyDebugInfo(rigidBody);
     // }
 
-    // if (rigidBody) {
-    //     auto transform = rigidBody->getWorldTransform();
-    //     auto scale = rigidBody->getCollisionShape()->getLocalScaling();
-    //     // convert to glm
-    //     glm::mat4 modelMatrix;
-    //     transform.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+    if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
+        auto transform = physicsWorld->getTransform(body->bodyID);
+        glm::mat4 delta(1.0f);
 
-    //     if (currentGizmoOperation == ImGuizmo::SCALE) {
-    //         modelMatrix = glm::scale(modelMatrix, glm::vec3(scale.x(), scale.y(), scale.z()));
-    //         auto scaleMatrix = glm::mat4(1.0f);
-    //         ImGuizmo::BeginFrame();
-    //         ImGuizmo::Enable(true);
-    //         auto [width, height] = window->getFramebufferSize();
-    //         auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
-    //         proj[1][1] *= -1; // ImGuizmo Expects the opposite
-    //         ImGuiIO& io = ImGui::GetIO();
-    //         ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    //         if(ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &modelMatrix[0][0], &scaleMatrix[0][0])) {
-    //             // Add the scale to the current scale
-    //             btVector3 newScale = btVector3(scaleMatrix[0][0], scaleMatrix[1][1], scaleMatrix[2][2]);
-    //             newScale *= scale;
-    //             rigidBody->getCollisionShape()->setLocalScaling(newScale);
-    //         }
-    //     }
+        if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&transform, &delta)) {
+            physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
+        } 
+        else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
+            physicsWorld->setBodyRotation(body->bodyID, delta * body->rotation);
+        }
+        else if (currentGizmoOperation == ImGuizmo::SCALE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
+            physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
+        }   
+        
 
-    //     else if (drawImGuizmo(&modelMatrix)) {
-    //         // convert back to bullet
-    //         btTransform newTransform;
-    //         newTransform.setFromOpenGLMatrix(glm::value_ptr(modelMatrix));
-    //         rigidBody->setWorldTransform(newTransform);
-    //     }
-
-    // }
+    }
     // if (sensor != nullptr) {
     //     auto body = sensor->ghost;
     //     auto transform = body->getWorldTransform();
@@ -866,7 +848,8 @@ void App::setupControllerPlayers()
     }
 }
 
-bool App::drawImGuizmo(glm::mat4* matrix) {
+bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix) {
+    using namespace glm;
     auto& camera = getCamera();
     ImGuizmo::BeginFrame();
     ImGuizmo::Enable(true);
@@ -875,7 +858,7 @@ bool App::drawImGuizmo(glm::mat4* matrix) {
     proj[1][1] *= -1; // ImGuizmo Expects the opposite
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    return ImGuizmo::Manipulate(&camera.viewMatrix()[0][0], &proj[0][0], currentGizmoOperation, ImGuizmo::LOCAL, &(*matrix)[0][0]);
+    return ImGuizmo::Manipulate(value_ptr(camera.viewMatrix()), value_ptr(proj), currentGizmoOperation, ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix));
 }
 
 // TODO: Enable this by inspection with debug window.

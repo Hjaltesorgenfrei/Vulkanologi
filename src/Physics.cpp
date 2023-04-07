@@ -26,7 +26,14 @@
 #include <Jolt/Physics/Vehicle/VehicleCollisionTester.h>
 #include <Jolt/Physics/Vehicle/WheeledVehicleController.h>
 #include <Jolt/Physics/Vehicle/VehicleConstraint.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 // STL includes
 #include <iostream>
@@ -543,6 +550,19 @@ std::pair<PhysicsBody, CarPhysics> PhysicsWorld::addCar(entt::entity entity, glm
     return std::make_pair<PhysicsBody, CarPhysics>(getBody(mCarBody->GetID()), CarPhysics {mVehicleConstraint});
 }
 
+void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback)
+{
+	auto& narrowPhase = physicsSystem->GetNarrowPhaseQueryNoLock();
+	RRayCast rayCast;
+	rayCast.mOrigin = RVec3(origin.x, origin.y, origin.z);
+	rayCast.mDirection = RVec3(direction.x, direction.y, direction.z) * maxDistance;
+	RayCastResult result;
+	if (narrowPhase.CastRay(rayCast, result)) {
+		auto entity = getUserData(result.mBodyID);
+		callback(entity);
+	}
+}
+
 PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, MotionType motionType)
 {
 	VertexList inVertices;
@@ -691,7 +711,7 @@ void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
 
 void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
 {
-	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
+	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z).Normalized(), EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
@@ -709,6 +729,17 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)
 {
 	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+glm::mat4 PhysicsWorld::getTransform(IDType bodyID)
+{
+	glm::mat4 transform;
+	auto body = getBody(bodyID);
+	glm::quat rotation(body.rotation.x, body.rotation.y, body.rotation.z, body.rotation.w);
+    transform = glm::translate(glm::mat4(1.0f), body.position);
+    transform = glm::rotate(transform, glm::angle(rotation), glm::axis(rotation));
+    transform = glm::scale(transform, body.scale);
+	return transform;
 }
 
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)

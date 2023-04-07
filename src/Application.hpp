@@ -45,7 +45,7 @@ private:
 	void mainLoop();
     void processPressedKeys(float delta);
     void setupCallBacks();
-    bool drawImGuizmo(glm::mat4* matrix);
+    bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
     void setupWorld();
     void bezierTesting();
     void createSpawnPoints();

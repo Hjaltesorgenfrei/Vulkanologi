@@ -127,6 +127,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Should be tied together with the spline
 - [ ] Make a component for if a entity is allowed to be manipulated with the gizmo and which ones.
 - [ ] There is probably a lot of memory leaks from using new in relation to physics.
+  - This might have been fixed when i moved to Jolt. Need to check first
 - [ ] Rework the spline class, it should only compute once it is dirty which should only happen on changes in the transform.
 - [ ] Sensors should not scale. But there should still be a way to scale the control point.
 - [ ] Maybe all buffers should be typed.

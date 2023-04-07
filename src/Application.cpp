@@ -204,35 +204,6 @@ entt::entity App::addPlayer(T input)
     return entity;
 }
 
-void App::resetRound()
-{
-    std::vector<SpawnPoint> spawnPoints;
-    registry.view<SpawnPoint>().each([&](auto entity, auto& spawnPoint) {
-        spawnPoints.push_back(spawnPoint);
-    });
-    registry.view<Car, Player>().each([&](auto entity, auto& car, auto& player) {
-        if (player.lives <= 0) {
-            return;
-        }
-        player.isAlive = true;
-        auto spawnPoint = spawnPoints[player.id % spawnPoints.size()];
-        auto position = spawnPoint.position;
-        auto rotation = glm::quatLookAt(spawnPoint.forward, glm::vec3(0, 1, 0));
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::angle(rotation), glm::axis(rotation));
-        model = glm::translate(model, position);
-        // car.vehicle->getRigidBody()->setWorldTransform(btTransform(btQuaternion(rotation.x, rotation.y, rotation.z, rotation.w), btVector3(static_cast<btScalar>(position.x), static_cast<btScalar>(position.y), static_cast<btScalar>(position.z)))); 
-        // car.vehicle->resetSuspension();
-        // car.vehicle->getRigidBody()->setLinearVelocity(btVector3(0, 0, 0));
-        // car.vehicle->getRigidBody()->setAngularVelocity(btVector3(0, 0, 0));
-    });
-
-    registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
-       swiper.speed = -0.005f; 
-    });
-    placeSwipers();
-}
-
 entt::entity App::addSwiper(Axis direction, float speed, int swiper)
 {
     auto mesh = meshes[swiperNames[swiper]];
@@ -294,45 +265,6 @@ void App::loadSwipers()
     }
 
     renderer->uploadMeshes(objects);
-}
-
-void App::placeSwipers()
-{
-    std::vector<entt::entity> swipers;
-    registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
-        swipers.push_back(entity);
-    });
-
-    // Shuffle the swipers
-    std::random_device rd;
-    std::mt19937 g(rd());
-    std::shuffle(swipers.begin(), swipers.end(), g);
-
-    float offset = 80.f;
-    float speedIncrease = -0.005f;
-    float extraOffset = 2000.f;
-    for (auto& entt : swipers) {
-        auto& swiper = registry.get<Swiper>(entt);
-        auto& body = registry.get<RigidBody>(entt);
-        swiper.speed += speedIncrease;
-        auto axis = swiper.axis;
-        auto speed = swiper.speed;
-        // auto rigidBody = body.body;
-        // btTransform transform;
-        // rigidBody->getMotionState()->getWorldTransform(transform);
-        // auto position = transform.getOrigin();
-        // if (axis == Axis::X) {
-        //     position.setX(offset);
-        // } else if (axis == Axis::Y) {
-        //     position.setY(offset);
-        // } else if (axis == Axis::Z) {
-        //     position.setZ(offset);
-        // }
-        // transform.setOrigin(position);
-        // rigidBody->getMotionState()->setWorldTransform(transform);
-        // rigidBody->setWorldTransform(transform);
-        // offset += 40.f + (extraOffset * (swiper.speed * -1.f)); 
-    }
 }
 
 void App::onRigidBodyDestroyed(entt::registry &registry, entt::entity entity)
@@ -795,7 +727,6 @@ void App::setupWorld() {
     for (int i = 0; i < swiperNames.size(); i++ ) {
         addSwiper(Axis::Z, -0.005f, i);
     }
-    placeSwipers();
 }
 
 void App::bezierTesting() {
@@ -893,51 +824,14 @@ void App::mainLoop() {
 
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
-        
         physicsWorld->update(delta.count() / 1000.f, registry);
-        // Update the bodies
+
+        // Update the bodies based on the physics world
 		registry.view<PhysicsBody>().each([this](entt::entity entity, PhysicsBody& body) {
 			physicsWorld->getBody(body.bodyID, body);
 		});
 
         systemGraph.update(registry, delta.count());
-        
-        // Get KillPlanes
-        int playersAlive = 0;
-        int playersDead = 0;
-        for (auto& entity : registry.view<Player, Car, Transform>()) {
-            auto& player = registry.get<Player>(entity);
-            auto& transform = registry.get<Transform>(entity);
-            auto& car = registry.get<Car>(entity);
-            playersAlive += player.isAlive;
-            playersDead += !player.isAlive;
-            // auto org = car.vehicle->getRigidBody()->getWorldTransform().getOrigin();
-            // if (player.isAlive && (org.getY() < -20 || org.getY() > 100 || org.getX() < -100 || org.getX() > 100 || org.getZ() < -100 || org.getZ() > 100)) {
-            //     player.lives--;
-            //     player.isAlive = false;
-            //     if (player.lives == 0) {
-            //         registry.emplace<MarkForDeletionTag>(entity);
-            //     }
-            // }
-        }
-        
-        if (playersAlive < 1 && playersDead > 0) {
-            resetRound();
-        } else {
-            int swipersDoneCount = 0;
-            registry.view<Swiper, RigidBody>().each([&](auto entity, auto& swiper, auto& rigidBody) {
-                // btTransform transform;
-                // rigidBody.body->getMotionState()->getWorldTransform(transform);
-                // auto pos = transform.getOrigin();
-                // if (pos.getZ() < -30) {
-                //     swipersDoneCount++;
-                // }
-            });
-            if (swipersDoneCount == registry.view<Swiper>().size()) {
-                placeSwipers();
-            }
-        }
-
 
         if (updateWindowSize) {
             renderer->recreateSwapchain();

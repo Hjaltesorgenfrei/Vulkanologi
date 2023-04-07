@@ -62,11 +62,9 @@ private:
 
     template <typename T>
     entt::entity addPlayer(T input);
-    void resetRound();
 
     entt::entity addSwiper(Axis direction, float speed, int swiper);
     void loadSwipers();
-    void placeSwipers();
 
     void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
     void onSensorDestroyed(entt::registry &registry, entt::entity entity);

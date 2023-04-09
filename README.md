@@ -197,6 +197,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] C# scripting could probably be done with .NET hosting. <https://github.com/dotnet/samples/tree/main/core/hosting>
   - Mono is another choice, <http://nilssondev.com/mono-guide/book/>
     - <https://github.com/lambdageek/monovm-embed-sample>
+      - Check the forks if someone has something better first.
 
 ### Descriptor Layout Idea
 

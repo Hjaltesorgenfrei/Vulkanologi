@@ -195,6 +195,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - Keyboard should also allow for rotating the camera around the object in any case.
 - [ ] Possibly move adding/onRemove to Physics file to make sure that the correct components are added and removed.
 - [ ] C# scripting could probably be done with .NET hosting. <https://github.com/dotnet/samples/tree/main/core/hosting>
+  - Mono is another choice, <http://nilssondev.com/mono-guide/book/>
+    - <https://github.com/lambdageek/monovm-embed-sample>
 
 ### Descriptor Layout Idea
 

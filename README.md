@@ -84,7 +84,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Use VMA.hpp instead
 - [ ] Create a style to autoformat with
 - [ ] Move swap chain to its own class
-- [ ] Fix the hash for checking if vertices are equal.
+- [x] Fix the hash for checking if vertices are equal.
 - [x] Fix that cast which are needed because of VMA, probably just put it in a class which has a hpp interface.
   - Currently makes it so new versions of MSVC cant compile the project.
   - Was caused by compiling for 32 bit, so don't do that.
@@ -149,8 +149,10 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Maybe it is possible with a struct as a template variable <https://brevzin.github.io/c++/2019/12/02/named-arguments/>
 - [ ] Remove the need for `Others<>` in the system type.
   - Probably just by making multiple classes that do the same thing.
+  - I don't actually know if this is a good idea. It can be used for coordinating systems.
+    - So might be useful to keep around a while longer.
 - [ ] Add a background cube map, the black is getting annoying.
-- [ ] Investigate the jittering issue from the vehicle driving around. A post on the Bullet forums mentioned it possibly being due to large bodies.
+- [x] Investigate the jittering issue from the vehicle driving around. A post on the Bullet forums mentioned it possibly being due to large bodies.
 - [ ] Make spline deformation better.
   - [ ] Use the total arc length to create N meshes, where N ~= (arc length)/(mesh length)
   - [ ] Add a scale on y and z axis for scaling the meshes. It should be linearly interpolated for between control points.
@@ -163,9 +165,14 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - Also some way to only delete part of it probably.
       - Malloc, Alloc style.
     - <https://stackoverflow.com/questions/62182124/most-generally-correct-way-of-updating-a-vertex-buffer-in-vulkan>
+  - Another way to do this for just the splines would be to index in a buffer of transforms instead of using the push constant.
+    - This would mean that the interpolation happens on the GPU and only the transforms need to uploaded.
 - [ ] Add some better ambient light <https://learnopengl.com/Lighting/Basic-Lighting>
-- [ ] Make groups for collision so that sensor cant collide with the world.
-- [ ] Add to the systems that they may write to other registers without getting them as parameters.
+- [ ] A way to decide what a Sensor is allowed to collide with, maybe by it's tag.
+  - Also maybe adding a function that is executed upon collision would be nice.
+  - The Jolt api for start collision and stop is a bit wonk due to sleep.
+- [x] Add to the systems that they may write to other registers without getting them as parameters.
+  - Can be done with `Others<>`
 - [x] Figure out why ray cast vehicle glitches through the ground.
   - Was due to the wheel ray cast origin not being inside the collision shape.
 - [ ] Make a collision editor and a serialization system for collision shapes.

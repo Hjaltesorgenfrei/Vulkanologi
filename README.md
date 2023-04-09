@@ -113,7 +113,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Might be possible to add normals from both ends and then interpolate between the two linearly along the path.
   - <https://gamedev.stackexchange.com/questions/94098/controlling-roll-rotation-when-travelling-along-bezier-curves>
   - Will probably be a trade off between given the user control and how jank it can look if they mess it up.
-  - Interpolating between the two quaternion from each end should work. It can currently be had by 
+  - Interpolating between the two quaternion from each end should work.
 - [x] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
 - [ ] Rename files and introduce a namespace.
   - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
@@ -349,6 +349,11 @@ Create types should be treated like writes, but not given as parameters to the u
 `entt::registry::create` probably needs to happen with a lock.
 Deletion of a entity should happen by adding a deletion tag which are then deleted by a single system later, as it modifies all components on an entity.
 
+#### Another way to thread safety
+
+Possible using `Others<...>` (and maybe renaming it) could work for everything else the system access.
+So if it creates and deletes entities, it be possible to just use registry as the type it access in Others.
+
 ### Parallel system
 
 Each system could also be parallelized as they only operate on a single entity.
@@ -363,3 +368,11 @@ struct ParallelSystem<Self, size_t GroupSize, Reads<Read...>, Writes<Write...>, 
   void update() // Get GroupSize entities and start a task with them in the thread pool. 
 }
 ```
+
+### Debug Physics view
+
+The old system to show debugging of physics was too slow as it uploaded vertices each frame.
+Instead it should be possible to save the shape in a component and draw each of them.
+As most thing consists of simple geometry it should be possible to use instancing to draw these.
+Mesh colliders and height maps might need to be uploaded and use the mesh handle explained earlier.
+Moving the physics shapes could then be done with the transform.

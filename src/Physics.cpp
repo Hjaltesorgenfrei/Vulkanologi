@@ -1,212 +1,792 @@
 #include "Physics.hpp"
 
-// Include btGhostObject header
+// X11 is stupid and defines None and Convex
+#undef Convex
+#undef None
 
+// The Jolt headers don't include Jolt.h. Always include Jolt.h before including any other Jolt header.
+// You can use Jolt.h in your precompiled header to speed up compilation.
+#include <Jolt/Jolt.h>
+
+// Jolt includes
+#include <Jolt/RegisterTypes.h>
+#include <Jolt/Core/Factory.h>
+#include <Jolt/Core/TempAllocator.h>
+#include <Jolt/Core/JobSystemThreadPool.h>
+#include <Jolt/Physics/PhysicsSettings.h>
+#include <Jolt/Physics/PhysicsSystem.h>
+#include <Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/MeshShape.h>
+#include <Jolt/Physics/Collision/Shape/ScaledShape.h>
+#include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyActivationListener.h>
+#include <Jolt/Renderer/DebugRendererRecorder.h>
+#include <Jolt/Core/StreamWrapper.h>
+#include <Jolt/Physics/Vehicle/VehicleCollisionTester.h>
+#include <Jolt/Physics/Vehicle/WheeledVehicleController.h>
+#include <Jolt/Physics/Vehicle/VehicleConstraint.h>
+#include <Jolt/Physics/Collision/RayCast.h>
+#include <Jolt/Physics/Collision/CastResult.h>
+#include <Jolt/Physics/Collision/Shape/OffsetCenterOfMassShape.h>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+
+// STL includes
 #include <iostream>
+#include <cstdarg>
+#include <thread>
+#include <fstream>
+
+#include "Components.hpp"
+
+// Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store and restore the warning state
+JPH_SUPPRESS_WARNINGS
+
+// All Jolt symbols are in the JPH namespace
+using namespace JPH;
+
+// If you want your code to compile using single or double precision write 0.0_r to get a Real value that compiles to double or float depending if JPH_DOUBLE_PRECISION is set or not.
+using namespace JPH::literals;
+
+// We're also using STL classes in this example
+using namespace std;
+
+// Callback for traces, connect this to your own trace function if you have one
+static void TraceImpl(const char *inFMT, ...)
+{
+	// Format the message
+	va_list list;
+	va_start(list, inFMT);
+	char buffer[1024];
+	vsnprintf(buffer, sizeof(buffer), inFMT, list);
+	va_end(list);
+
+	// Print to the TTY
+	cout << buffer << endl;
+}
+
+#ifdef JPH_ENABLE_ASSERTS
+
+// Callback for asserts, connect this to your own assert handler if you have one
+static bool AssertFailedImpl(const char *inExpression, const char *inMessage, const char *inFile, uint inLine)
+{
+	// Print to the TTY
+	cout << inFile << ":" << inLine << ": (" << inExpression << ") " << (inMessage != nullptr ? inMessage : "") << endl;
+
+	// Breakpoint
+	return true;
+};
+
+#endif // JPH_ENABLE_ASSERTS
+
+// Layer that objects can be in, determines which other objects it can collide with
+// Typically you at least want to have 1 layer for moving bodies and 1 layer for static bodies, but you can have more
+// layers if you want. E.g. you could have a layer for high detail collision (which is not used by the physics simulation
+// but only if you do collision testing).
+namespace Layers
+{
+	static constexpr ObjectLayer NON_MOVING = 0;
+	static constexpr ObjectLayer MOVING = 1;
+	static constexpr ObjectLayer NUM_LAYERS = 2;
+};
+
+/// Class that determines if two object layers can collide
+class ObjectLayerPairFilterImpl : public ObjectLayerPairFilter
+{
+public:
+	virtual bool ShouldCollide(ObjectLayer inObject1, ObjectLayer inObject2) const override
+	{
+		switch (inObject1)
+		{
+		case Layers::NON_MOVING:
+			return inObject2 == Layers::MOVING; // Non moving only collides with moving
+		case Layers::MOVING:
+			return true; // Moving collides with everything
+		default:
+			JPH_ASSERT(false);
+			return false;
+		}
+	}
+};
+
+// Each broadphase layer results in a separate bounding volume tree in the broad phase. You at least want to have
+// a layer for non-moving and moving objects to avoid having to update a tree full of static objects every frame.
+// You can have a 1-on-1 mapping between object layers and broadphase layers (like in this case) but if you have
+// many object layers you'll be creating many broad phase trees, which is not efficient. If you want to fine tune
+// your broadphase layers define JPH_TRACK_BROADPHASE_STATS and look at the stats reported on the TTY.
+namespace BroadPhaseLayers
+{
+	static constexpr BroadPhaseLayer NON_MOVING(0);
+	static constexpr BroadPhaseLayer MOVING(1);
+	static constexpr uint NUM_LAYERS(2);
+};
+
+// BroadPhaseLayerInterface implementation
+// This defines a mapping between object and broadphase layers.
+class BPLayerInterfaceImpl final : public BroadPhaseLayerInterface
+{
+public:
+	BPLayerInterfaceImpl()
+	{
+		// Create a mapping table from object to broad phase layer
+		mObjectToBroadPhase[Layers::NON_MOVING] = BroadPhaseLayers::NON_MOVING;
+		mObjectToBroadPhase[Layers::MOVING] = BroadPhaseLayers::MOVING;
+	}
+
+	virtual uint GetNumBroadPhaseLayers() const override
+	{
+		return BroadPhaseLayers::NUM_LAYERS;
+	}
+
+	virtual BroadPhaseLayer GetBroadPhaseLayer(ObjectLayer inLayer) const override
+	{
+		JPH_ASSERT(inLayer < Layers::NUM_LAYERS);
+		return mObjectToBroadPhase[inLayer];
+	}
+
+#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
+	virtual const char *GetBroadPhaseLayerName(BroadPhaseLayer inLayer) const override
+	{
+		switch ((BroadPhaseLayer::Type)inLayer)
+		{
+		case (BroadPhaseLayer::Type)BroadPhaseLayers::NON_MOVING:
+			return "NON_MOVING";
+		case (BroadPhaseLayer::Type)BroadPhaseLayers::MOVING:
+			return "MOVING";
+		default:
+			JPH_ASSERT(false);
+			return "INVALID";
+		}
+	}
+#endif // JPH_EXTERNAL_PROFILE || JPH_PROFILE_ENABLED
+
+private:
+	BroadPhaseLayer mObjectToBroadPhase[Layers::NUM_LAYERS];
+};
+
+/// Class that determines if an object layer can collide with a broadphase layer
+class ObjectVsBroadPhaseLayerFilterImpl : public ObjectVsBroadPhaseLayerFilter
+{
+public:
+	virtual bool ShouldCollide(ObjectLayer inLayer1, BroadPhaseLayer inLayer2) const override
+	{
+		switch (inLayer1)
+		{
+		case Layers::NON_MOVING:
+			return inLayer2 == BroadPhaseLayers::MOVING;
+		case Layers::MOVING:
+			return true;
+		default:
+			JPH_ASSERT(false);
+			return false;
+		}
+	}
+};
+
+// An example contact listener
+class MyContactListener : public ContactListener
+{
+public:
+	// See: ContactListener
+	virtual ValidateResult OnContactValidate(const Body &inBody1, const Body &inBody2, RVec3Arg inBaseOffset, const CollideShapeResult &inCollisionResult) override
+	{
+		// cout << "Contact validate callback" << endl;
+
+		// Allows you to ignore a contact before it is created (using layers to not make objects collide is cheaper!)
+		return ValidateResult::AcceptAllContactsForThisBodyPair;
+	}
+
+	virtual void OnContactAdded(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
+	{
+		// cout << "A contact was added" << endl;
+	}
+
+	virtual void OnContactPersisted(const Body &inBody1, const Body &inBody2, const ContactManifold &inManifold, ContactSettings &ioSettings) override
+	{
+		// cout << "A contact was persisted" << endl;
+	}
+
+	virtual void OnContactRemoved(const SubShapeIDPair &inSubShapePair) override
+	{
+		// cout << "A contact was removed" << endl;
+	}
+};
+
+// An example activation listener
+class MyBodyActivationListener : public BodyActivationListener
+{
+public:
+	virtual void OnBodyActivated(const BodyID &inBodyID, uint64 inBodyUserData) override
+	{
+		// cout << "A body got activated" << endl;
+	}
+
+	virtual void OnBodyDeactivated(const BodyID &inBodyID, uint64 inBodyUserData) override
+	{
+		// cout << "A body went to sleep" << endl;
+	}
+};
+
+DebugRendererRecorder* recorder;
+ofstream renderer_file("performance_test.jor", ofstream::out | ofstream::binary | ofstream::trunc);
+StreamOutWrapper renderer_stream(renderer_file);
 
 PhysicsWorld::PhysicsWorld()
 {
-    collisionConfiguration = new btDefaultCollisionConfiguration();
-    dispatcher = new btCollisionDispatcher(collisionConfiguration);
-    overlappingPairCache = new btDbvtBroadphase();
-    solver = new btSequentialImpulseConstraintSolver;
-    dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher, overlappingPairCache, solver, collisionConfiguration);
-    dynamicsWorld->setGravity(btVector3(0, -10, 0));
+	// Register allocation hook
+	RegisterDefaultAllocator();
 
-    // Add debug drawing
-    debugDrawer = new DebugDrawer();
-    dynamicsWorld->setDebugDrawer(debugDrawer);
+	// Install callbacks
+	Trace = TraceImpl;
+	JPH_IF_ENABLE_ASSERTS(AssertFailed = AssertFailedImpl;)
 
-    // Create a ground plane
-    // auto groundShape = new btStaticPlaneShape(btVector3(0, 1, 0), 1);
-    // auto groundTransform = btTransform();
-    // groundTransform.setIdentity();
-    // groundTransform.setOrigin(btVector3(0, -1, 0));
-    // auto groundMass = 0.f;
-    // auto groundLocalInertia = btVector3(0, 0, 0);
-    // auto groundMotionState = new btDefaultMotionState(groundTransform);
-    // auto groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(groundMass, groundMotionState, groundShape, groundLocalInertia);
-    // auto groundRigidBody = new btRigidBody(groundRigidBodyCI);
-    // addBody(groundRigidBody);
+	// Create a factory
+	Factory::sInstance = new Factory();
+
+	// Register all Jolt physics types
+	RegisterTypes();
+
+	// We need a temp allocator for temporary allocations during the physics update. We're
+	// pre-allocating 10 MB to avoid having to do allocations during the physics update.
+	// B.t.w. 10 MB is way too much for this example but it is a typical value you can use.
+	// If you don't want to pre-allocate you can also use TempAllocatorMalloc to fall back to
+	// malloc / free.
+	tempAllocator = std::make_unique<TempAllocatorImpl>(10 * 1024 * 1024);
+
+	// We need a job system that will execute physics jobs on multiple threads. Typically
+	// you would implement the JobSystem interface yourself and let Jolt Physics run on top
+	// of your own job scheduler. JobSystemThreadPool is an example implementation.
+	jobSystem = std::make_unique<JobSystemThreadPool>(cMaxPhysicsJobs, cMaxPhysicsBarriers, thread::hardware_concurrency() - 1);
+
+	// This is the max amount of rigid bodies that you can add to the physics system. If you try to add more you'll get an error.
+	// Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
+	const uint cMaxBodies = 1024;
+
+	// This determines how many mutexes to allocate to protect rigid bodies from concurrent access. Set it to 0 for the default settings.
+	const uint cNumBodyMutexes = 0;
+
+	// This is the max amount of body pairs that can be queued at any time (the broad phase will detect overlapping
+	// body pairs based on their bounding boxes and will insert them into a queue for the narrowphase). If you make this buffer
+	// too small the queue will fill up and the broad phase jobs will start to do narrow phase work. This is slightly less efficient.
+	// Note: This value is low because this is a simple test. For a real project use something in the order of 65536.
+	const uint cMaxBodyPairs = 1024;
+
+	// This is the maximum size of the contact constraint buffer. If more contacts (collisions between bodies) are detected than this
+	// number then these contacts will be ignored and bodies will start interpenetrating / fall through the world.
+	// Note: This value is low because this is a simple test. For a real project use something in the order of 10240.
+	const uint cMaxContactConstraints = 1024;
+
+	// Create mapping table from object layer to broadphase layer
+	// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
+	bpLayerInterfaceImpl = std::make_unique<BPLayerInterfaceImpl>();
+
+	// Create class that filters object vs broadphase layers
+	// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
+	objectVsBroadPhaseLayerFilterImpl = std::make_unique<ObjectVsBroadPhaseLayerFilterImpl>();
+
+	// Create class that filters object vs object layers
+	// Note: As this is an interface, PhysicsSystem will take a reference to this so this instance needs to stay alive!
+	objectLayerPairFilterImpl = std::make_unique<ObjectLayerPairFilterImpl>();
+
+	// Now we can create the actual physics system.
+	physicsSystem = std::make_unique<PhysicsSystem>();
+	physicsSystem->Init(cMaxBodies, cNumBodyMutexes, cMaxBodyPairs, cMaxContactConstraints, *bpLayerInterfaceImpl, *objectVsBroadPhaseLayerFilterImpl, *objectLayerPairFilterImpl);
+	physicsSystem->SetGravity(Vec3(0, -9.81f, 0));
+	// A body activation listener gets notified when bodies activate and go to sleep
+	// Note that this is called from a job so whatever you do here needs to be thread safe.
+	// Registering one is entirely optional.
+	bodyActivationListener = std::make_unique<MyBodyActivationListener>();
+	physicsSystem->SetBodyActivationListener(bodyActivationListener.get());
+
+	// A contact listener gets notified when bodies (are about to) collide, and when they separate again.
+	// Note that this is called from a job so whatever you do here needs to be thread safe.
+	// Registering one is entirely optional.
+	contactListener = std::make_unique<MyContactListener>();
+	physicsSystem->SetContactListener(contactListener.get());
+
+	// Optional step: Before starting the physics simulation you can optimize the broad phase. This improves collision detection performance (it's pointless here because we only have 2 bodies).
+	// You should definitely not call this every frame or when e.g. streaming in a new level section as it is an expensive operation.
+	// Instead insert all new objects in batches instead of 1 at a time to keep the broad phase efficient.
+	physicsSystem->OptimizeBroadPhase();
+	recorder = new DebugRendererRecorder(renderer_stream);
+    bodyInterface = &physicsSystem->GetBodyInterface();
 }
 
 PhysicsWorld::~PhysicsWorld()
 {
-    delete debugDrawer;
-    delete dynamicsWorld;
-    delete solver;
-    delete overlappingPairCache;
-    delete dispatcher;
-    delete collisionConfiguration;
+	for (auto id : bodies)
+	{
+		bodyInterface->RemoveBody(id);
+		bodyInterface->DestroyBody(id);
+	}
+
+	// Unregisters all types with the factory and cleans up the default material
+	UnregisterTypes();
+
+	// Destroy the factory
+	delete Factory::sInstance;
+	Factory::sInstance = nullptr;
 }
 
-void PhysicsWorld::update(float dt)
+PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 {
-    dynamicsWorld->stepSimulation(dt, 10);
+	// Next we can create a rigid body to serve as the floor, we make a large box
+	// Create the settings for the collision volume (the shape).
+	// Note that for simple shapes (like boxes) you can also directly construct a BoxShape.
+	BoxShapeSettings floor_shape_settings(Vec3(100.0f, 1.0f, 100.0f));
+
+	// Create the shape
+	ShapeSettings::ShapeResult floor_shape_result = floor_shape_settings.Create();
+	ShapeRefC floor_shape = floor_shape_result.Get(); // We don't expect an error here, but you can check floor_shape_result for HasError() / GetError()
+
+	// Create the settings for the body itself. Note that here you can also set other properties like the restitution / friction.
+	BodyCreationSettings floor_settings(floor_shape, RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+	floor_settings.mFriction = 1.0f;
+	// Create the actual rigid body
+	auto floor_id = bodyInterface->CreateAndAddBody(floor_settings, EActivation::DontActivate); // Note that if we run out of bodies this can return nullptr
+	if (floor_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create floor", floor_id);
+	}
+
+	setUserData(floor_id, entity);
+	bodies.push_back(floor_id);
+	return getBody(floor_id);
 }
 
-void PhysicsWorld::addBody(btRigidBody *body)
+PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius, bool isSensor)
 {
-    dynamicsWorld->addRigidBody(body);
+	// Now create a dynamic body to bounce on the floor
+	// Note that this uses the shorthand version of creating and adding a body to the world
+	BodyCreationSettings sphere_settings(new SphereShape(radius), RVec3(position.x, position.y, position.z), Quat::sIdentity(), isSensor ? EMotionType::Static : EMotionType::Dynamic, Layers::MOVING);
+	sphere_settings.mIsSensor = isSensor;
+	auto sphere_id = bodyInterface->CreateAndAddBody(sphere_settings, EActivation::Activate);
+	if (sphere_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create sphere", sphere_id);
+	}
+
+	setUserData(sphere_id, entity);
+	bodies.push_back(sphere_id);
+	return getBody(sphere_id);
 }
 
-void PhysicsWorld::removeBody(btRigidBody *body)
+PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::vec3 size)
 {
-    dynamicsWorld->removeRigidBody(body);
+	BodyCreationSettings box_settings(new BoxShape(Vec3(size.x, size.y, size.z)), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
+	auto box_id = bodyInterface->CreateAndAddBody(box_settings, EActivation::Activate);
+
+	if (box_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create box", box_id);
+	}
+
+	setUserData(box_id, entity);
+	bodies.push_back(box_id);
+	return getBody(box_id);
 }
 
-void PhysicsWorld::addSensor(btGhostObject *ghost)
+std::pair<PhysicsBody, CarPhysics> PhysicsWorld::addCar(entt::entity entity, glm::vec3 positionIn)
 {
-    dynamicsWorld->addCollisionObject(ghost, btBroadphaseProxy::SensorTrigger, btBroadphaseProxy::AllFilter ^ btBroadphaseProxy::SensorTrigger);
+    const float wheel_radius = 0.3f;
+	const float wheel_width = 0.1f;
+	const float half_vehicle_length = 2.0f;
+	const float half_vehicle_width = 0.9f;
+	const float half_vehicle_height = 0.2f;
+    
+    float	sInitialRollAngle = 0;
+    float	sMaxRollAngle = DegreesToRadians(60.0f);
+    float	sMaxSteeringAngle = DegreesToRadians(30.0f);
+    int	    sCollisionMode = 2;
+    bool	sFourWheelDrive = false;
+    bool	sAntiRollbar = true;
+    float	sFrontCasterAngle = 0.0f;
+    float 	sFrontKingPinAngle = 0.0f;
+    float	sFrontCamber = 0.0f;
+    float	sFrontToe = 0.0f;
+    float	sFrontSuspensionForwardAngle = 0.0f;
+    float	sFrontSuspensionSidewaysAngle = 0.0f;
+    float	sFrontSuspensionMinLength = 0.3f;
+    float	sFrontSuspensionMaxLength = 0.5f;
+    float	sFrontSuspensionFrequency = 1.5f;
+    float	sFrontSuspensionDamping = 0.5f;
+    float	sRearSuspensionForwardAngle = 0.0f;
+    float	sRearSuspensionSidewaysAngle = 0.0f;
+    float 	sRearCasterAngle = 0.0f;
+    float 	sRearKingPinAngle = 0.0f;
+    float	sRearCamber = 0.0f;
+    float	sRearToe = 0.0f;
+    float	sRearSuspensionMinLength = 0.3f;
+    float	sRearSuspensionMaxLength = 0.5f;
+    float	sRearSuspensionFrequency = 1.5f;
+    float	sRearSuspensionDamping = 0.5f;
+
+	Body *						mCarBody;									///< The vehicle
+	VehicleConstraint *		mVehicleConstraint;							///< The vehicle constraint
+
+	// Create collision testers
+	auto collisionTester = new VehicleCollisionTesterCastCylinder(Layers::MOVING);
+
+	// Create vehicle body
+	RVec3 position(positionIn.x, positionIn.y, positionIn.z);
+	RefConst<Shape> car_shape = OffsetCenterOfMassShapeSettings(Vec3(0, -half_vehicle_height, 0), new BoxShape(Vec3(half_vehicle_width, half_vehicle_height, half_vehicle_length))).Create().Get();
+	BodyCreationSettings car_body_settings(car_shape, position, Quat::sRotation(Vec3::sAxisZ(), sInitialRollAngle), EMotionType::Dynamic, Layers::MOVING);
+	car_body_settings.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+	car_body_settings.mMassPropertiesOverride.mMass = 1500.0f;
+	mCarBody = bodyInterface->CreateBody(car_body_settings);
+	bodyInterface->AddBody(mCarBody->GetID(), EActivation::Activate);
+
+	// Create vehicle constraint
+	VehicleConstraintSettings vehicle;
+	vehicle.mDrawConstraintSize = 0.1f;
+	vehicle.mMaxPitchRollAngle = sMaxRollAngle;
+
+	// Suspension direction
+	Vec3 front_suspension_dir = Vec3(Tan(sFrontSuspensionSidewaysAngle), -1, Tan(sFrontSuspensionForwardAngle)).Normalized();
+	Vec3 front_steering_axis = Vec3(-Tan(sFrontKingPinAngle), 1, -Tan(sFrontCasterAngle)).Normalized();
+	Vec3 front_wheel_up = Vec3(Sin(sFrontCamber), Cos(sFrontCamber), 0);
+	Vec3 front_wheel_forward = Vec3(-Sin(sFrontToe), 0, Cos(sFrontToe));
+	Vec3 rear_suspension_dir = Vec3(Tan(sRearSuspensionSidewaysAngle), -1, Tan(sRearSuspensionForwardAngle)).Normalized();
+	Vec3 rear_steering_axis = Vec3(-Tan(sRearKingPinAngle), 1, -Tan(sRearCasterAngle)).Normalized();
+	Vec3 rear_wheel_up = Vec3(Sin(sRearCamber), Cos(sRearCamber), 0);
+	Vec3 rear_wheel_forward = Vec3(-Sin(sRearToe), 0, Cos(sRearToe));
+	Vec3 flip_x(-1, 1, 1);
+
+	// Wheels, left front
+	WheelSettingsWV *w1 = new WheelSettingsWV;
+	w1->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	w1->mSuspensionDirection = front_suspension_dir;
+	w1->mSteeringAxis = front_steering_axis;
+	w1->mWheelUp = front_wheel_up;
+	w1->mWheelForward = front_wheel_forward;
+	w1->mSuspensionMinLength = sFrontSuspensionMinLength;
+	w1->mSuspensionMaxLength = sFrontSuspensionMaxLength;
+	w1->mSuspensionFrequency = sFrontSuspensionFrequency;
+	w1->mSuspensionDamping = sFrontSuspensionDamping;
+	w1->mMaxSteerAngle = sMaxSteeringAngle;
+	w1->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
+
+	// Right front
+	WheelSettingsWV *w2 = new WheelSettingsWV;
+	w2->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	w2->mSuspensionDirection = flip_x * front_suspension_dir;
+	w2->mSteeringAxis = flip_x * front_steering_axis;
+	w2->mWheelUp = flip_x * front_wheel_up;
+	w2->mWheelForward = flip_x * front_wheel_forward;
+	w2->mSuspensionMinLength = sFrontSuspensionMinLength;
+	w2->mSuspensionMaxLength = sFrontSuspensionMaxLength;
+	w2->mSuspensionFrequency = sFrontSuspensionFrequency;
+	w2->mSuspensionDamping = sFrontSuspensionDamping;
+	w2->mMaxSteerAngle = sMaxSteeringAngle;
+	w2->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
+
+	// Left rear
+	WheelSettingsWV *w3 = new WheelSettingsWV;
+	w3->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w3->mSuspensionDirection = rear_suspension_dir;
+	w3->mSteeringAxis = rear_steering_axis;
+	w3->mWheelUp = rear_wheel_up;
+	w3->mWheelForward = rear_wheel_forward;
+	w3->mSuspensionMinLength = sRearSuspensionMinLength;
+	w3->mSuspensionMaxLength = sRearSuspensionMaxLength;
+	w3->mSuspensionFrequency = sRearSuspensionFrequency;
+	w3->mSuspensionDamping = sRearSuspensionDamping;
+	w3->mMaxSteerAngle = 0.0f;
+
+	// Right rear
+	WheelSettingsWV *w4 = new WheelSettingsWV;
+	w4->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w4->mSuspensionDirection = flip_x * rear_suspension_dir;
+	w4->mSteeringAxis = flip_x * rear_steering_axis;
+	w4->mWheelUp = flip_x * rear_wheel_up;
+	w4->mWheelForward = flip_x * rear_wheel_forward;
+	w4->mSuspensionMinLength = sRearSuspensionMinLength;
+	w4->mSuspensionMaxLength = sRearSuspensionMaxLength;
+	w4->mSuspensionFrequency = sRearSuspensionFrequency;
+	w4->mSuspensionDamping = sRearSuspensionDamping;
+	w4->mMaxSteerAngle = 0.0f;
+
+	vehicle.mWheels = { w1, w2, w3, w4 };
+	
+	for (WheelSettings *w : vehicle.mWheels)
+	{
+		w->mRadius = wheel_radius;
+		w->mWidth = wheel_width;
+	}
+
+	WheeledVehicleControllerSettings *controller = new WheeledVehicleControllerSettings;
+	vehicle.mController = controller;
+
+	// Differential
+	controller->mDifferentials.resize(sFourWheelDrive? 2 : 1);
+	controller->mDifferentials[0].mLeftWheel = 0;
+	controller->mDifferentials[0].mRightWheel = 1;
+	if (sFourWheelDrive)
+	{
+		controller->mDifferentials[1].mLeftWheel = 2;
+		controller->mDifferentials[1].mRightWheel = 3;
+
+		// Split engine torque
+		controller->mDifferentials[0].mEngineTorqueRatio = controller->mDifferentials[1].mEngineTorqueRatio = 0.5f;
+	}
+
+	// Anti rollbars
+	if (sAntiRollbar)
+	{
+		vehicle.mAntiRollBars.resize(2);
+		vehicle.mAntiRollBars[0].mLeftWheel = 0;
+		vehicle.mAntiRollBars[0].mRightWheel = 1;
+		vehicle.mAntiRollBars[1].mLeftWheel = 2;
+		vehicle.mAntiRollBars[1].mRightWheel = 3;
+	}
+
+	mVehicleConstraint = new VehicleConstraint(*mCarBody, vehicle);
+    mVehicleConstraint->SetVehicleCollisionTester(collisionTester);
+	physicsSystem->AddConstraint(mVehicleConstraint);
+	physicsSystem->AddStepListener(mVehicleConstraint);
+    return std::make_pair<PhysicsBody, CarPhysics>(getBody(mCarBody->GetID()), CarPhysics {mVehicleConstraint});
 }
 
-void PhysicsWorld::removeSensor(btGhostObject *ghost)
+void PhysicsWorld::removeCar(JPH::VehicleConstraint * constraint)
 {
-    dynamicsWorld->removeCollisionObject(ghost);
+	physicsSystem->RemoveStepListener(constraint);
+	physicsSystem->RemoveConstraint(constraint);
 }
 
-void PhysicsWorld::closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback)
+void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback)
 {
-    btCollisionWorld::ClosestRayResultCallback rayCallback(rayFromWorld, rayToWorld);
-    dynamicsWorld->rayTest(rayFromWorld, rayToWorld, rayCallback);
-    if (rayCallback.hasHit()) {
-        btVector3 hitPoint = rayCallback.m_hitPointWorld;
-        btVector3 hitNormal = rayCallback.m_hitNormalWorld;
-        callback(rayCallback.m_collisionObject, hitPoint, hitNormal);
-    }
+	auto& narrowPhase = physicsSystem->GetNarrowPhaseQueryNoLock();
+	RRayCast rayCast;
+	rayCast.mOrigin = RVec3(origin.x, origin.y, origin.z);
+	rayCast.mDirection = RVec3(direction.x, direction.y, direction.z) * maxDistance;
+	RayCastResult result;
+	if (narrowPhase.CastRay(rayCast, result)) {
+		auto entity = getUserData(result.mBodyID);
+		callback(entity);
+	}
 }
 
-#define CUBE_HALF_EXTENTS 1
-float wheelWidth = 0.4f;
-float wheelRadius = 0.5f;
-int rightIndex = 0;
-int upIndex = 1;
-int forwardIndex = 2;
-float wheelFriction = 1000;  //BT_LARGE_FLOAT;
-float suspensionStiffness = 20.f;
-float suspensionDamping = 2.3f;
-float suspensionCompression = 4.4f;
-float rollInfluence = 0.1f;  //1.0f;
-btVector3 wheelDirectionCS0(0, -1, 0);
-btVector3 wheelAxleCS(-1, 0, 0);
-btScalar suspensionRestLength(1.f);
-
-btRaycastVehicle* PhysicsWorld::createVehicle()
+PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, MotionType motionType)
 {
-    btCollisionShape* chassisShape = new btBoxShape(btVector3(1.3f, 0.5f, 2.6f));
-    btCompoundShape* compound = new btCompoundShape();
-    btTransform localTrans;
-	localTrans.setIdentity();
-	//localTrans effectively shifts the center of mass with respect to the chassis
-	localTrans.setOrigin(btVector3(0, 1, 0));
-    compound->addChildShape(localTrans, chassisShape);
-    btDefaultMotionState* myMotionState = new btDefaultMotionState(btTransform(btQuaternion(0, 0, 0, 1), btVector3(0, 2, 0)));
-    btScalar mass = 800;
-    btVector3 localInertia(0, 0, 0);
-    compound->calculateLocalInertia(mass, localInertia);
-    btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, myMotionState, compound, localInertia);
-    btRigidBody* chassis = new btRigidBody(rbInfo);
-    chassis->setActivationState(DISABLE_DEACTIVATION);
-    dynamicsWorld->addRigidBody(chassis);
-    btRaycastVehicle::btVehicleTuning tuning;
-    btVehicleRaycaster* raycaster = new btDefaultVehicleRaycaster(dynamicsWorld);
-    btRaycastVehicle* vehicle = new btRaycastVehicle(tuning, chassis, raycaster);
-    dynamicsWorld->addAction(vehicle);
-    float connectionHeight = 1.2f;
+	VertexList inVertices;
+	inVertices.reserve(vertices.size());
+	IndexedTriangleList inTriangles;
+	inTriangles.reserve(indices.size());
 
-    bool isFrontWheel = true;
+	for (int i = 0; i < vertices.size(); i++)
+	{
+		inVertices.emplace_back(vertices[i].x, vertices[i].y, vertices[i].z);
+	}
 
-    //choose coordinate system
-    vehicle->setCoordinateSystem(rightIndex, upIndex, forwardIndex);
+	for (int i = 0; i < indices.size(); i += 3)
+	{
+		inTriangles.emplace_back(indices[i], indices[i + 1], indices[i + 2]);
+	}
 
-    btVector3 connectionPointCS0(CUBE_HALF_EXTENTS - (0.3 * wheelWidth), connectionHeight, 2 * CUBE_HALF_EXTENTS - wheelRadius);
+	BodyCreationSettings mesh_settings;
+	RVec3 pos(position.x, position.y, position.z);
+	auto meshShapeSettings = new MeshShapeSettings(inVertices, inTriangles);
 
-    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS + (0.3 * wheelWidth), connectionHeight, 2 * CUBE_HALF_EXTENTS - wheelRadius);
+	if (motionType == MotionType::Kinematic)
+	{
+		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Kinematic, Layers::MOVING);
+		mesh_settings.mOverrideMassProperties = EOverrideMassProperties::MassAndInertiaProvided;
+		mesh_settings.mMassPropertiesOverride = MassProperties();
+		mesh_settings.mMassPropertiesOverride.mMass = 1.0f;
+	}
+	else // motionType == Dynamic for meshes is not supported by Jolt
+	{
+		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
+		mesh_settings.mFriction = 0.5f;
+	}
 
-    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    connectionPointCS0 = btVector3(-CUBE_HALF_EXTENTS + (0.3 * wheelWidth), connectionHeight, -2 * CUBE_HALF_EXTENTS + wheelRadius);
-    isFrontWheel = false;
-    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
-    connectionPointCS0 = btVector3(CUBE_HALF_EXTENTS - (0.3 * wheelWidth), connectionHeight, -2 * CUBE_HALF_EXTENTS + wheelRadius);
-    vehicle->addWheel(connectionPointCS0, wheelDirectionCS0, wheelAxleCS, suspensionRestLength, wheelRadius, tuning, isFrontWheel);
+	auto mesh_id = bodyInterface->CreateAndAddBody(mesh_settings, EActivation::Activate);
 
+	bodyInterface->SetAngularVelocity(mesh_id, Vec3(0.0f, 0.1f, 0.0f));
 
-    for (int i = 0; i < vehicle->getNumWheels(); i++) {
-        btWheelInfo& wheel = vehicle->getWheelInfo(i);
-        wheel.m_suspensionStiffness = suspensionStiffness;
-        wheel.m_wheelsDampingRelaxation = suspensionDamping;
-        wheel.m_wheelsDampingCompression = suspensionCompression;
-        wheel.m_frictionSlip = wheelFriction;
-        wheel.m_rollInfluence = rollInfluence;
-    }
-    vehicle->setCoordinateSystem(0, 1, 2);
+	if (mesh_id.IsInvalid())
+	{
+		handleInvalidId("Failed to create mesh", mesh_id);
+	}
 
-    return vehicle;
+	setUserData(mesh_id, entity);
+	bodies.push_back(mesh_id);
+	return getBody(mesh_id);
 }
 
-void PhysicsWorld::removeVehicle(btRaycastVehicle *vehicle)
+std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw()
 {
-    dynamicsWorld->removeAction(vehicle);
-    dynamicsWorld->removeRigidBody(vehicle->getRigidBody());
-    delete vehicle;
+	BodyManager::DrawSettings settings;
+	settings.mDrawBoundingBox = true;
+	physicsSystem->DrawBodies(settings, recorder);
+	recorder->EndFrame();
+	return {};
 }
 
-std::vector<Path> PhysicsWorld::getDebugLines() const
+void PhysicsWorld::removeBody(IDType bodyID)
 {
-    debugDrawer->clearLines();
-    dynamicsWorld->debugDrawWorld();
-    return debugDrawer->paths;
+	bodyInterface->RemoveBody(bodyID);
+	bodyInterface->DestroyBody(bodyID);
 }
 
-btRigidBody *PhysicsWorld::createWorldGeometry(const std::vector<btVector3> &vertices)
+PhysicsBody PhysicsWorld::getBody(IDType bodyID)
 {
-    btTriangleMesh* triangleMesh = new btTriangleMesh();
-    for (int i = 0; i < vertices.size(); i += 3) {
-        triangleMesh->addTriangle(vertices[i], vertices[i + 1], vertices[i + 2]);
-    }
-    btBvhTriangleMeshShape* shape = new btBvhTriangleMeshShape(triangleMesh, true);
-    btTransform transform;
-    transform.setIdentity();
-    transform.setOrigin(btVector3(0, 0, 0));
-    btDefaultMotionState* motionState = new btDefaultMotionState(transform);
-    btRigidBody::btRigidBodyConstructionInfo rbInfo(0, motionState, shape);
-    btRigidBody* body = new btRigidBody(rbInfo);
-    // Dont debug draw because its slow
-    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT);
-    // Make kinematic
-    body->setCollisionFlags(body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-    addBody(body);
-    return body;
+	return {
+		bodyID,
+		getMotionType(bodyID),
+		getBodyPosition(bodyID),
+		getBodyRotation(bodyID),
+		getBodyScale(bodyID),
+		getBodyVelocity(bodyID),
+    };
 }
 
-void DebugDrawer::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) {
-    auto path = LinePath(glm::vec3(from.x(), from.y(), from.z()), glm::vec3(to.x(), to.y(), to.z()), glm::vec3(color.x(), color.y(), color.z()));
-    paths.emplace_back(path);
+void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body)
+{
+	body.bodyID = bodyID;
+	body.position = getBodyPosition(bodyID);
+	body.rotation = getBodyRotation(bodyID);
+	body.scale = getBodyScale(bodyID);
+	body.velocity = getBodyVelocity(bodyID);
 }
 
-void DebugDrawer::drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color) {
-    auto path = LinePath(glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()), glm::vec3(PointOnB.x(), PointOnB.y(), PointOnB.z()) + glm::vec3(normalOnB.x(), normalOnB.y(), normalOnB.z()) * distance, glm::vec3(color.x(), color.y(), color.z()));
-    paths.emplace_back(path);
+void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body)
+{
+	setBodyPosition(bodyID, body.position);
+	setBodyRotation(bodyID, body.rotation);
+	setBodyScale(bodyID, body.scale);
+	setBodyVelocity(bodyID, body.velocity);
 }
 
-void DebugDrawer::reportErrorWarning(const char *warningString) {
-    std::cerr << "Warning: " << warningString << std::endl;
+MotionType PhysicsWorld::getMotionType(IDType bodyID)
+{
+	auto motion_type = bodyInterface->GetMotionType(bodyID);
+	switch (motion_type)
+	{
+	case EMotionType::Static:
+		return MotionType::Static;
+	case EMotionType::Dynamic:
+		return MotionType::Dynamic;
+	case EMotionType::Kinematic:
+		return MotionType::Kinematic;
+	default:
+		return MotionType::Static;
+	}
 }
 
-void DebugDrawer::draw3dText(const btVector3 &location, const char *textString) {
-    std::cerr << "Text: " << textString << std::endl;
+glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID)
+{
+	RVec3 position = bodyInterface->GetCenterOfMassPosition(bodyID);
+	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
 }
 
-void DebugDrawer::setDebugMode(int debugMode) {
-    std::cerr << "Debug mode: " << debugMode << std::endl;
+glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
+{
+	Quat rotation = bodyInterface->GetRotation(bodyID);
+	return glm::vec4(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
 }
 
-int DebugDrawer::getDebugMode() const {
-    return DBG_DrawWireframe;
+glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
+{
+	const Shape * shape = bodyInterface->GetShape(bodyID);
+	if (shape->GetSubType() == EShapeSubType::Scaled)
+	{
+		// Might not always be valid, as the more decorations can be on the shape
+		// In this case we would have to descent down the shapes and add the scale up.
+		auto scaledShape = static_cast<const ScaledShape *>(shape); 
+		auto scale = scaledShape->GetScale();
+		return glm::vec3(scale.GetX(), scale.GetY(), scale.GetZ());
+	}
+	return glm::vec3(1, 1, 1);
 }
 
-// clear lines
-void DebugDrawer::clearLines() {
-    paths.clear();
+glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID)
+{
+	Vec3 velocity = bodyInterface->GetLinearVelocity(bodyID);
+	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
+}
+
+void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
+{
+	// TODO: Maybe bool for if it should activate?
+	bodyInterface->SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
+}
+
+void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
+{
+	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z).Normalized(), EActivation::Activate);
+}
+
+void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
+{
+	auto &body_interface = physicsSystem->GetBodyLockInterfaceNoLock();
+	BodyLockWrite lock(body_interface, bodyID);
+	auto result = lock.GetBody().GetShape()->ScaleShape(Vec3Arg(scale.x, scale.y, scale.z));
+	if (result.HasError())
+	{
+		handleInvalidId("Failed to scale body", bodyID);
+	}
+	bodyInterface->SetShape(bodyID, result.Get(), false, EActivation::Activate);
+}
+
+void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)
+{
+	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+glm::mat4 PhysicsWorld::getTransform(IDType bodyID)
+{
+	glm::mat4 transform;
+	auto body = getBody(bodyID);
+	glm::quat rotation(body.rotation.x, body.rotation.y, body.rotation.z, body.rotation.w);
+    transform = glm::translate(glm::mat4(1.0f), body.position);
+    transform = glm::rotate(transform, glm::angle(rotation), glm::axis(rotation));
+    transform = glm::scale(transform, body.scale);
+	return transform;
+}
+
+void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)
+{
+	auto &body_interface = physicsSystem->GetBodyLockInterface();
+	JPH::BodyLockWrite lock(body_interface, bodyID);
+	lock.GetBody().SetUserData(static_cast<uint64_t>(entity));
+}
+
+entt::entity PhysicsWorld::getUserData(IDType bodyID)
+{
+	return static_cast<entt::entity>(bodyInterface->GetUserData(bodyID));
+}
+
+void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
+{
+	std::cout << error << std::endl;
+}
+
+void PhysicsWorld::update(float dt, entt::registry& registry)
+{
+	accumulator += dt;
+	while (accumulator >= cDeltaTime)
+	{
+		accumulator -= cDeltaTime;
+
+		// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
+		const int cCollisionSteps = 1;
+
+		// If you want more accurate step results you can do multiple sub steps within a collision step. Usually you would set this to 1.
+		const int cIntegrationSubSteps = 1;
+
+		registry.view<CarPhysics, CarControl>().each([this](entt::entity entity, CarPhysics& carPhysics, CarControl& carControl) {
+			if (carControl.desiredAcceleration != 0.0f || carControl.desiredBrake != 0.0f || carControl.desiredSteering != 0.0f) {
+				auto id = carPhysics.constraint->GetVehicleBody()->GetID();
+				bodyInterface->ActivateBody(id);
+			}
+		});
+
+		// Step the world
+		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
+	}
 }

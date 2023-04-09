@@ -127,6 +127,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Should be tied together with the spline
 - [ ] Make a component for if a entity is allowed to be manipulated with the gizmo and which ones.
 - [ ] There is probably a lot of memory leaks from using new in relation to physics.
+  - This might have been fixed when i moved to Jolt. Need to check first
 - [ ] Rework the spline class, it should only compute once it is dirty which should only happen on changes in the transform.
 - [ ] Sensors should not scale. But there should still be a way to scale the control point.
 - [ ] Maybe all buffers should be typed.
@@ -168,9 +169,25 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] Figure out why ray cast vehicle glitches through the ground.
   - Was due to the wheel ray cast origin not being inside the collision shape.
 - [ ] Make a collision editor and a serialization system for collision shapes.
-- [ ] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
+- [x] Maybe make a change to btRayCastVehicle so it uses btMultiBody and add that moving platforms should add speed to the wheels.
   - This change could be upstreamed <https://pybullet.org/Bullet/phpBB3/viewtopic.php?t=6365>
   - Also it has a todo in the code to add driving on moving platforms.
+  - Lol never mind, changed to a different physics library.
+- [ ] Make a precompiled header file, which includes all the files i want to precompile include. Then just include that file everywhere?
+  - Need to look up how this is best done.
+- [ ] Add lateral and longitudinalFriction to the car physics.
+- [ ] Create debugging UI for the Car which allows for changing its settings while running.
+  - `VehicleConstraint::GetConstraintSettings()` is not implemented and it is marked const.
+  - So I probably need to recreate the constraint if it is changed.
+- [ ] Physics should be rendered for next frame and interpolated towards which should reduce stuttering.
+- [ ] Probably set the target position and target look in the camera and call update later.
+- [ ] Make different kind of camera controllers which takes input and controls the camera.
+  - [ ] Free fly, Just takes keyboard.
+  - [ ] Car follow, takes a Car state as input. Probably Needs to be a entity pointer as it might be on another entity.
+    - Can probably just be a physics object it follows in this case. It also has a velocity.
+    - Keyboard should also allow for rotating the camera around the object in any case.
+- [ ] Possibly move adding/onRemove to Physics file to make sure that the correct components are added and removed.
+- [ ] C# scripting could probably be done with .NET hosting. <https://github.com/dotnet/samples/tree/main/core/hosting>
 
 ### Descriptor Layout Idea
 

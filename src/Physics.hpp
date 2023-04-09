@@ -4,66 +4,113 @@
 #define PHYSICS_H
 
 #include <functional>
-#include <BulletCollision/CollisionDispatch/btGhostObject.h>
-#include <btBulletDynamicsCommon.h>
-#include "curves/Curves.hpp"
+#include <memory>
+#include <string>
+#include <glm/glm.hpp>
+#include <entt/entt.hpp>
+#include <Jolt/Jolt.h>
+#include <Jolt/Physics/Body/BodyID.h>
 
-class DebugDrawer;
+namespace JPH
+{
+    class PhysicsSystem;
+    class Body;
+    class JobSystem;
+    class TempAllocator;
+    class ContactListener;
+    class BodyActivationListener;
+    class BodyInterface;
+    class VehicleConstraint;
+}
 
-typedef std::function<void(const btCollisionObject*, const btVector3 hitPoint, const btVector3 hitNormal)> RayCallback;
+// TODO: These might be able to swapped with name space interfaces instead which would be a bit cleaner as we can hide implementation details
+class BPLayerInterfaceImpl;
+class ObjectVsBroadPhaseLayerFilterImpl;
+class ObjectLayerPairFilterImpl;
 
-class PhysicsWorld {
+typedef JPH::BodyID IDType;
+
+enum class MotionType : uint8_t
+{
+    Static,
+    Kinematic,
+    Dynamic,
+};
+
+struct PhysicsBody
+{
+    IDType bodyID;
+    MotionType physicsType;
+    glm::vec3 position;
+    glm::vec4 rotation;
+    glm::vec3 scale;
+    glm::vec3 velocity;
+};
+
+struct CarPhysics {
+    JPH::VehicleConstraint * constraint;
+};
+
+class PhysicsWorld
+{
 public:
     PhysicsWorld();
     ~PhysicsWorld();
 
-    void update(float dt);
+    void update(float dt, entt::registry& registry);
+
+    PhysicsBody addFloor(entt::entity entity, glm::vec3 position);
+    PhysicsBody addSphere(entt::entity entity, glm::vec3 position, float radius, bool isSensor = false);
+    PhysicsBody addBox(entt::entity entity, glm::vec3 position, glm::vec3 size);
+    PhysicsBody addMesh(entt::entity entity, std::vector<glm::vec3>& vertices, std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), MotionType motionType = MotionType::Static);
+    std::pair<PhysicsBody, CarPhysics> addCar(entt::entity entity, glm::vec3 position);
+    void removeCar(JPH::VehicleConstraint * constraint);
+
+    void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback);
+
+    std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
+
+    void removeBody(IDType bodyID);
+    PhysicsBody getBody(IDType bodyID);
+    void getBody(IDType bodyID, PhysicsBody &body);
+    void updateBody(IDType bodyID, PhysicsBody body);
     
-    void addBody(btRigidBody* body);
+    // This should probably take in the entity ID instead of the body ID
+    MotionType getMotionType(IDType bodyID);
+    glm::vec3 getBodyPosition(IDType bodyID);
+    glm::vec4 getBodyRotation(IDType bodyID);
+    glm::vec3 getBodyScale(IDType bodyID);
+    glm::vec3 getBodyVelocity(IDType bodyID);
+    void setBodyPosition(IDType bodyID, glm::vec3 position);
+    void setBodyRotation(IDType bodyID, glm::vec4 rotation);
+    void setBodyScale(IDType bodyID, glm::vec3 scale);
+    void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
 
-    void removeBody(btRigidBody* body);
-
-    void addSensor(btGhostObject* ghost);
-
-    void removeSensor(btGhostObject* ghost);
-
-    void closestRay(const btVector3 rayFromWorld, const btVector3 rayToWorld, RayCallback callback);
-
-    btRaycastVehicle* createVehicle();
-
-    void removeVehicle(btRaycastVehicle* vehicle);
-
-    std::vector<Path> getDebugLines() const;
-
-    btRigidBody* createWorldGeometry(const std::vector<btVector3>& vertices);
-
+    // We don't have a setTransform because it can not be seperated again.
+    glm::mat4 getTransform(IDType bodyID);
 private:
-    btDiscreteDynamicsWorld* dynamicsWorld;
-    btCollisionConfiguration* collisionConfiguration;
-    btCollisionDispatcher* dispatcher;
-    btBroadphaseInterface* overlappingPairCache;
-    btSequentialImpulseConstraintSolver* solver;
-    DebugDrawer* debugDrawer;
-};
+    std::unique_ptr<JPH::PhysicsSystem> physicsSystem;
+    std::unique_ptr<BPLayerInterfaceImpl> bpLayerInterfaceImpl;
+    std::unique_ptr<ObjectVsBroadPhaseLayerFilterImpl> objectVsBroadPhaseLayerFilterImpl;
+    std::unique_ptr<ObjectLayerPairFilterImpl> objectLayerPairFilterImpl;
+    std::unique_ptr<JPH::JobSystem> jobSystem;
+    std::unique_ptr<JPH::TempAllocator> tempAllocator;
+    std::unique_ptr<JPH::ContactListener> contactListener;
+    std::unique_ptr<JPH::BodyActivationListener> bodyActivationListener;
 
-class DebugDrawer : public btIDebugDraw {
-public:
-    void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color) override;
+    // Lifetime of bodies is managed by the physics system
+    std::vector<IDType> bodies;
 
-    void drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color) override;
+    // We simulate the physics world in discrete time steps. 60 Hz is a good rate to update the physics system.
+    const float cDeltaTime = 1.0f / 200.f;
+    float accumulator = 0.0f;
+    
+    JPH::BodyInterface * bodyInterface = nullptr;
 
-    void reportErrorWarning(const char *warningString) override;
+    void setUserData(IDType bodyID, entt::entity entity);
+    entt::entity getUserData(IDType bodyID);
 
-    void draw3dText(const btVector3 &location, const char *textString) override;
-
-    void setDebugMode(int debugMode) override;
-
-    int getDebugMode() const override;
-
-    void clearLines() override;
-
-    std::vector<Path> paths;
-
+    void handleInvalidId(std::string error, IDType bodyID);
 };
 
 #endif

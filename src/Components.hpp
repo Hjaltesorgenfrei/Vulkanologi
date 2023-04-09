@@ -6,21 +6,11 @@
 #include <memory>
 #include <glm/glm.hpp>
 #include <GLFW/glfw3.h>
-#include <btBulletDynamicsCommon.h>
-#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #include "curves/Curves.hpp"
 #include "Util.hpp"
 
 struct Transform {
     glm::mat4 modelMatrix = glm::mat4(1.0f);
-};
-
-struct RigidBody {
-    btRigidBody* body;
-};
-
-struct Sensor {
-    btGhostObject* ghost;
 };
 
 struct ControlPointPtr {
@@ -70,7 +60,6 @@ struct GamepadInput {
 };
 
 struct Car {
-    btRaycastVehicle* vehicle;
     float steering = 0.0f;
     float acceleration = 0.0f;
     float brake = 0.0f;
@@ -118,5 +107,7 @@ struct ShowNormalsTag {
 struct MarkForDeletionTag { };
 
 struct SelectedTag { };
+
+struct SensorTag { };
 
 #endif

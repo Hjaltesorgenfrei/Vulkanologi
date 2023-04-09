@@ -119,7 +119,18 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
         }
     }
 
-    for (const auto &material: materials) {
+    
+    for (int materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
+        auto &material = materials[materialIndex];
+        for (int i = 0; i < mesh->_vertices.size(); i++) {
+            if (mesh->_vertices[i].materialIndex == materialIndex) {
+                mesh->_vertices[i].color = {
+                        material.diffuse[0],
+                        material.diffuse[1],
+                        material.diffuse[2]
+                };
+            }
+        }
         if (material.diffuse_texname.empty()) {
             continue;
         }

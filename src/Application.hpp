@@ -37,7 +37,6 @@ private:
 
     std::unique_ptr<PhysicsWorld> physicsWorld;
 
-    BehCamera camera{};
     bool showDebugInfo = false;
     bool updateWindowSize = false;
     bool cursorHidden = false;
@@ -46,12 +45,13 @@ private:
 	void mainLoop();
     void processPressedKeys(float delta);
     void setupCallBacks();
-    bool drawImGuizmo(glm::mat4* matrix);
+    bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
     void setupWorld();
     void bezierTesting();
-    void createSpawnPoints();
+    void createSpawnPoints(int numberOfSpawns);
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
+    BehCamera& getCamera();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);
@@ -62,20 +62,17 @@ private:
 
     template <typename T>
     entt::entity addPlayer(T input);
-    void resetRound();
 
     entt::entity addSwiper(Axis direction, float speed, int swiper);
     void loadSwipers();
-    void placeSwipers();
 
-    void onRigidBodyDestroyed(entt::registry &registry, entt::entity entity);
-    void onSensorDestroyed(entt::registry &registry, entt::entity entity);
-    void onCarDestroyed(entt::registry &registry, entt::entity entity);
+    void onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity);
+    void onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity);
 
     bool shiftPressed = false;
 
     int drawFrame(float delta);
     void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
-    void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
+    // void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
     void drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo);
 };

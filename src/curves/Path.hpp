@@ -4,47 +4,22 @@
 #define PATH_H
 
 #include <glm/glm.hpp>
-#include <vulkan/vulkan.hpp>
 #include <vector>
 #include <memory>
+
+namespace vk {
+    struct VertexInputBindingDescription;
+    struct VertexInputAttributeDescription;
+}
 
 struct Point {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec3 color;
 
-    static std::vector<vk::VertexInputBindingDescription> getBindingDescriptions() {
-        return {
-            vk::VertexInputBindingDescription{
-                .binding = 0,
-                .stride = sizeof(Point),
-                .inputRate = vk::VertexInputRate::eVertex
-            }
-        };
-    }
+    static std::vector<vk::VertexInputBindingDescription> getBindingDescriptions();
 
-    static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions() {
-        return {
-            vk::VertexInputAttributeDescription{
-                .location = 0,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(Point, position)
-            },
-            vk::VertexInputAttributeDescription{
-                .location = 1,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(Point, normal)
-            },
-            vk::VertexInputAttributeDescription{
-                .location = 2,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = offsetof(Point, color)
-            }
-        };
-    }
+    static std::vector<vk::VertexInputAttributeDescription> getAttributeDescriptions();
 };
 
 struct FrenetFrame

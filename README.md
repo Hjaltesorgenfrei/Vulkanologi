@@ -198,6 +198,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Mono is another choice, <http://nilssondev.com/mono-guide/book/>
     - <https://github.com/lambdageek/monovm-embed-sample>
       - Check the forks if someone has something better first.
+- [ ] Use name "Krake" for everything.
+  - Repo should be called "Krake Engine" and namespace "krake"
 
 ### Descriptor Layout Idea
 

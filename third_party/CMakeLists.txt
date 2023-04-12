@@ -1,4 +1,5 @@
-
+# Add Vulkan
+find_package(Vulkan REQUIRED)
 
 # Build GLFW
 set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only")
@@ -7,6 +8,7 @@ add_subdirectory(glfw)
 
 # GLM
 add_subdirectory(glm)
+set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm PARENT_SCOPE)
 
 # STB
 add_library(stb INTERFACE)

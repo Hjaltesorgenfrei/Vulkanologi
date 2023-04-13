@@ -200,6 +200,11 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
       - Check the forks if someone has something better first.
 - [ ] Use name "Krake" for everything.
   - Repo should be called "Krake Engine" and namespace "krake"
+- [ ] Seperate parts out in seperate projects
+  - [ ] Rendering
+  - [ ] Client
+  - [ ] Asset Loading
+  - [ ] Shapes and Curves Library
 
 ### Descriptor Layout Idea
 

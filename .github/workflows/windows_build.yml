@@ -44,7 +44,7 @@ jobs:
       with:
         type: 'zip'
         filename: 'windows-x64-release.zip'
-        path: ${{github.workspace}}/build/Release
+        path: ${{github.workspace}}/build/src/Release
 
     - name: Upload Release
       uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303

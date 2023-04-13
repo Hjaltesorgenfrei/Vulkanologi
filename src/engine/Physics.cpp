@@ -766,6 +766,11 @@ void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 	std::cout << error << std::endl;
 }
 
+struct InterpolatingBody {
+	PhysicsBody current;
+	PhysicsBody next;
+};
+
 void PhysicsWorld::update(float dt, entt::registry& registry)
 {
 	accumulator += dt;
@@ -786,7 +791,24 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 			}
 		});
 
+		registry.view<PhysicsBody>().each([this, &registry](entt::entity entity, PhysicsBody& body) {
+			registry.emplace_or_replace<InterpolatingBody>(entity, getBody(body.bodyID));
+		});
+
 		// Step the world
 		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
+
+		registry.view<InterpolatingBody>().each([this](entt::entity entity, InterpolatingBody& body) {
+			body.next = getBody(body.current.bodyID);
+		});
 	}
+
+	float ratio = accumulator / cDeltaTime;
+
+	registry.view<PhysicsBody, InterpolatingBody>().each([this, ratio](entt::entity entity, PhysicsBody& body, InterpolatingBody& interpolation) {
+		body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
+		body.rotation = glm::mix(interpolation.current.rotation, interpolation.next.rotation, ratio);
+		body.velocity = glm::mix(interpolation.current.velocity, interpolation.next.velocity, ratio);
+		body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
+	});
 }

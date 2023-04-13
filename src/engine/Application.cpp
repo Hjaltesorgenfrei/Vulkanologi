@@ -745,11 +745,6 @@ void App::mainLoop() {
         // TODO: Make this a fixed timestep
         physicsWorld->update(delta.count() / 1000.f, registry);
 
-        // Update the bodies based on the physics world
-		registry.view<PhysicsBody>().each([this](entt::entity entity, PhysicsBody& body) {
-			physicsWorld->getBody(body.bodyID, body);
-		});
-
         systemGraph.update(registry, delta.count());
 
         if (updateWindowSize) {

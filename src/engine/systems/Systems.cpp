@@ -11,5 +11,5 @@ void setupSystems(SystemGraph& systemGraph)
     systemGraph.addSystem<CarSystem>();
     systemGraph.addSystem<RigidBodySystem>();
     systemGraph.addSystem<TransformControlPointsSystem>();
-    systemGraph.addSystem<CarCameraSystem>();
+    systemGraph.addSystem<PhysicsCamera>();
 }

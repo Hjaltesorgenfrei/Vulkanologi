@@ -47,7 +47,7 @@ public:
 
     // TODO: Add that these modify the PhysicsBody.
     void setBodyPosition(IDType bodyID, glm::vec3 position);
-    void setBodyRotation(IDType bodyID, glm::vec4 rotation);
+    void setBodyRotation(IDType bodyID, glm::quat rotation);
     void setBodyScale(IDType bodyID, glm::vec3 scale);
     void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
 
@@ -82,7 +82,7 @@ private:
     
     MotionType getMotionType(IDType bodyID);
     glm::vec3 getBodyPosition(IDType bodyID);
-    glm::vec4 getBodyRotation(IDType bodyID);
+    glm::quat getBodyRotation(IDType bodyID);
     glm::vec3 getBodyScale(IDType bodyID);
     glm::vec3 getBodyVelocity(IDType bodyID);
 

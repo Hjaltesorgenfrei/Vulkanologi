@@ -714,10 +714,10 @@ glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID)
 	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
 }
 
-glm::vec4 PhysicsWorld::getBodyRotation(IDType bodyID)
+glm::quat PhysicsWorld::getBodyRotation(IDType bodyID)
 {
-	Quat rotation = bodyInterface->GetRotation(bodyID);
-	return glm::vec4(rotation.GetW(), rotation.GetX(), rotation.GetY(), rotation.GetZ());
+	Quat quat = bodyInterface->GetRotation(bodyID);
+	return glm::quat(quat.GetW(), quat.GetX(), quat.GetY(), quat.GetZ());
 }
 
 glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID)
@@ -746,7 +746,7 @@ void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
 	bodyInterface->SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
 }
 
-void PhysicsWorld::setBodyRotation(IDType bodyID, glm::vec4 rotation)
+void PhysicsWorld::setBodyRotation(IDType bodyID, glm::quat rotation)
 {
 	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z).Normalized(), EActivation::Activate);
 }

@@ -130,25 +130,3 @@ void CarJoystickSystem::update(entt::registry &registry, float delta, entt::enti
 
     // TODO: Right now you have to stop completely before you can reverse. fix this
 }
-
-void CarCameraSystem::update(entt::registry &registry, float delta, entt::entity ent, CarPhysics const &car, BehCamera &camera) const
-{
-    // TODO: This does not currently interpolate together with the rest of the physics.
-    // This makes it a bit stuttery.
-    // It should be able to just PhysicsBody as the necessary information is there.
-    auto body = car.constraint->GetVehicleBody();
-    auto carPosition = toGlm(body->GetCenterOfMassPosition());
-    auto carRotation = toGlm(body->GetRotation());
-    auto carVelocity = toGlm(body->GetLinearVelocity());
-    
-    auto carDirection = glm::normalize(carVelocity);
-
-    auto forward = glm::vec3(0.0f, 0.0f, 1.0f) * carRotation; 
-
-    auto speed = glm::length(glm::vec2(carVelocity.x, carVelocity.z));
-    auto cameraPosition = carPosition + (forward * -15.0f) + glm::vec3(0.0f, 6.0f, 0.0f) + (speed * -0.2f * forward);
-    auto cameraTarget = carPosition + (forward * 10.0f) + glm::vec3(0.0f, 2.0f, 0.0f);
-
-    camera.setCameraPosition(cameraPosition, delta);
-    camera.setTarget(cameraTarget, speed, delta);
-}

@@ -3,6 +3,7 @@
 #define PHYSICS_BODY_H
 
 #include <glm/glm.hpp>
+#include <glm/gtx/quaternion.hpp>
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/BodyID.h>
 
@@ -26,7 +27,7 @@ struct PhysicsBody
     IDType bodyID;
     MotionType physicsType;
     glm::vec3 position;
-    glm::vec4 rotation;
+    glm::quat rotation;
     glm::vec3 scale;
     glm::vec3 velocity;
 

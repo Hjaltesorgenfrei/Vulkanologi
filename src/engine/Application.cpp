@@ -522,7 +522,9 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
             physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
         } 
         else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
-            physicsWorld->setBodyRotation(body->bodyID, delta * body->rotation);
+            glm::quat temp = glm::quat_cast(delta);
+            glm::quat result = temp * body->rotation;
+            physicsWorld->setBodyRotation(body->bodyID, result);
         }
         else if (currentGizmoOperation == ImGuizmo::SCALE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
             physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));

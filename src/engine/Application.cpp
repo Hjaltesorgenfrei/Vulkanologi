@@ -26,7 +26,7 @@ void App::run() {
     device = std::make_unique<BehDevice>(window);
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
-    physicsWorld = std::make_unique<PhysicsWorld>();
+    physicsWorld = std::make_unique<PhysicsWorld>(registry);
     setupWorld();
     mainLoop();
 }
@@ -188,10 +188,8 @@ entt::entity App::addPlayer(T input)
     }
     auto entity = registry.create();
     auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-    auto [body, car] = physicsWorld->addCar(entity, spawnPoint.position);
+    physicsWorld->addCar(registry, entity, spawnPoint.position);
     // TODO: rotate the car to face the spawn point
-    registry.emplace<PhysicsBody>(entity, body);
-    registry.emplace<CarPhysics>(entity, car);
     registry.emplace<T>(entity, input);
     auto color = Color::playerColor(playerId);
     registry.emplace<Player>(entity, playerId, color);
@@ -217,8 +215,7 @@ entt::entity App::addSwiper(Axis direction, float speed, int swiper)
     for (auto index : mesh->_indices) {
         indices.push_back(index);
     }
-    auto& body = registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, {swiper * 30,-10,0}, MotionType::Kinematic));
-    physicsWorld->setBodyScale(body.bodyID, {2.f, 2.f, 2.f});
+    physicsWorld->addMesh(registry, entity, vertices, indices, {swiper * 30,-10,0}, glm::vec3(2.0f), MotionType::Kinematic);
     registry.emplace<Swiper>(entity, direction, speed);
     return entity;
 }
@@ -263,20 +260,6 @@ void App::loadSwipers()
     }
 
     renderer->uploadMeshes(objects);
-}
-
-void App::onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity)
-{
-    if (auto body = registry.try_get<PhysicsBody>(entity)) {
-        physicsWorld->removeBody(body->bodyID);
-    }
-}
-
-void App::onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity)
-{
-    if (auto body = registry.try_get<CarPhysics>(entity)) {
-        physicsWorld->removeCar(body->constraint);
-    }
 }
 
 float bytesToMegaBytes(uint64_t bytes) {
@@ -557,9 +540,6 @@ void App::setupWorld() {
 
     objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 
-    registry.on_destroy<PhysicsBody>().connect<&App::onPhysicsBodyDestroyed>(this);
-    registry.on_destroy<CarPhysics>().connect<&App::onCarPhysicsDestroyed>(this);
-
     renderer->uploadMeshes(objects);
     meshes["road"] = objects[0]->mesh;
     meshes["cube"] = objects[1]->mesh;
@@ -579,7 +559,7 @@ void App::setupWorld() {
     for (int i = 0; i < 4; i++) {
         auto entity = registry.create();
         entities.insert(entity);
-        registry.emplace<PhysicsBody>(entity, physicsWorld->addBox(entity, glm::vec3(0, 5, 0), glm::vec3(1, 1, 1)));
+        physicsWorld->addBox(registry, entity, glm::vec3(0, 5, 0), glm::vec3(1, 1, 1));
         registry.emplace<Transform>(entity);
         registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
     }
@@ -604,8 +584,7 @@ void App::setupWorld() {
     for (auto index : arena->mesh->_indices) {
         indices.push_back(index);
     }
-    auto physicsBody = registry.emplace<PhysicsBody>(entity, physicsWorld->addMesh(entity, vertices, indices, glm::vec3(0, -10, 0)));
-    physicsWorld->setBodyScale(physicsBody.bodyID, glm::vec3(2, 2, 2));
+    physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -10, 0), glm::vec3(2, 2, 2));
 
     setupSystems(systemGraph);
     systemGraph.init(registry);
@@ -726,7 +705,7 @@ void App::createSpawnPoints(int numberOfSpawns)
         registry.emplace<SpawnPoint>(entity, spawnPoints[i]);
         auto position = spawnPoints[i].position;
         auto forward = spawnPoints[i].forward;
-        registry.emplace<PhysicsBody>(entity, physicsWorld->addSphere(entity, position, 1, true));
+        physicsWorld->addSphere(registry, entity, position, 1, true);
         registry.emplace<SensorTag>(entity);
     }
 }

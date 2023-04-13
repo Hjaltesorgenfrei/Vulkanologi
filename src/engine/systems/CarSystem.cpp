@@ -133,6 +133,9 @@ void CarJoystickSystem::update(entt::registry &registry, float delta, entt::enti
 
 void CarCameraSystem::update(entt::registry &registry, float delta, entt::entity ent, CarPhysics const &car, BehCamera &camera) const
 {
+    // TODO: This does not currently interpolate together with the rest of the physics.
+    // This makes it a bit stuttery.
+    // It should be able to just PhysicsBody as the necessary information is there.
     auto body = car.constraint->GetVehicleBody();
     auto carPosition = toGlm(body->GetCenterOfMassPosition());
     auto carRotation = toGlm(body->GetRotation());

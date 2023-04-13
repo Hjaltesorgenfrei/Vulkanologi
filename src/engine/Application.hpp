@@ -66,9 +66,6 @@ private:
     entt::entity addSwiper(Axis direction, float speed, int swiper);
     void loadSwipers();
 
-    void onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity);
-    void onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity);
-
     bool shiftPressed = false;
 
     int drawFrame(float delta);

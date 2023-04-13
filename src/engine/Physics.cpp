@@ -235,7 +235,7 @@ DebugRendererRecorder* recorder;
 ofstream renderer_file("performance_test.jor", ofstream::out | ofstream::binary | ofstream::trunc);
 StreamOutWrapper renderer_stream(renderer_file);
 
-PhysicsWorld::PhysicsWorld()
+PhysicsWorld::PhysicsWorld(entt::registry& registry)
 {
 	// Register allocation hook
 	RegisterDefaultAllocator();
@@ -314,6 +314,24 @@ PhysicsWorld::PhysicsWorld()
 	physicsSystem->OptimizeBroadPhase();
 	recorder = new DebugRendererRecorder(renderer_stream);
     bodyInterface = &physicsSystem->GetBodyInterface();
+
+	// Setup up destructors for components
+    registry.on_destroy<PhysicsBody>().connect<&PhysicsWorld::onPhysicsBodyDestroyed>(this);
+    registry.on_destroy<CarPhysics>().connect<&PhysicsWorld::onCarPhysicsDestroyed>(this);
+}
+
+void PhysicsWorld::onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity)
+{
+    if (auto body = registry.try_get<PhysicsBody>(entity)) {
+        removeBody(body->bodyID);
+    }
+}
+
+void PhysicsWorld::onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity)
+{
+    if (auto body = registry.try_get<CarPhysics>(entity)) {
+        removeCar(body->constraint);
+    }
 }
 
 PhysicsWorld::~PhysicsWorld()
@@ -332,7 +350,18 @@ PhysicsWorld::~PhysicsWorld()
 	Factory::sInstance = nullptr;
 }
 
-PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
+// Hidden struct which is only used by the physics system to interpolate the state of bodies.
+struct InterpolatingBody {
+	PhysicsBody current;
+	PhysicsBody next;
+};
+
+void PhysicsWorld::addBody(entt::registry& registry, entt::entity entity, IDType id) {
+	registry.emplace<PhysicsBody>(entity, getBody(id));
+	registry.emplace<InterpolatingBody>(entity, getBody(id));
+}
+
+void PhysicsWorld::addFloor(entt::registry& registry, entt::entity entity, glm::vec3 position)
 {
 	// Next we can create a rigid body to serve as the floor, we make a large box
 	// Create the settings for the collision volume (the shape).
@@ -355,10 +384,9 @@ PhysicsBody PhysicsWorld::addFloor(entt::entity entity, glm::vec3 position)
 
 	setUserData(floor_id, entity);
 	bodies.push_back(floor_id);
-	return getBody(floor_id);
 }
 
-PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, float radius, bool isSensor)
+void PhysicsWorld::addSphere(entt::registry& registry, entt::entity entity, glm::vec3 position, float radius, bool isSensor)
 {
 	// Now create a dynamic body to bounce on the floor
 	// Note that this uses the shorthand version of creating and adding a body to the world
@@ -372,10 +400,10 @@ PhysicsBody PhysicsWorld::addSphere(entt::entity entity, glm::vec3 position, flo
 
 	setUserData(sphere_id, entity);
 	bodies.push_back(sphere_id);
-	return getBody(sphere_id);
+	addBody(registry, entity, sphere_id);
 }
 
-PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::vec3 size)
+void PhysicsWorld::addBox(entt::registry& registry, entt::entity entity, glm::vec3 position, glm::vec3 size)
 {
 	BodyCreationSettings box_settings(new BoxShape(Vec3(size.x, size.y, size.z)), RVec3(position.x, position.y, position.z), Quat::sIdentity(), EMotionType::Dynamic, Layers::MOVING);
 	auto box_id = bodyInterface->CreateAndAddBody(box_settings, EActivation::Activate);
@@ -387,10 +415,10 @@ PhysicsBody PhysicsWorld::addBox(entt::entity entity, glm::vec3 position, glm::v
 
 	setUserData(box_id, entity);
 	bodies.push_back(box_id);
-	return getBody(box_id);
+	addBody(registry, entity, box_id);
 }
 
-std::pair<PhysicsBody, CarPhysics> PhysicsWorld::addCar(entt::entity entity, glm::vec3 positionIn)
+void PhysicsWorld::addCar(entt::registry& registry, entt::entity entity, glm::vec3 positionIn)
 {
     const float wheel_radius = 0.3f;
 	const float wheel_width = 0.1f;
@@ -548,29 +576,11 @@ std::pair<PhysicsBody, CarPhysics> PhysicsWorld::addCar(entt::entity entity, glm
     mVehicleConstraint->SetVehicleCollisionTester(collisionTester);
 	physicsSystem->AddConstraint(mVehicleConstraint);
 	physicsSystem->AddStepListener(mVehicleConstraint);
-    return std::make_pair<PhysicsBody, CarPhysics>(getBody(mCarBody->GetID()), CarPhysics {mVehicleConstraint});
+	addBody(registry, entity, mCarBody->GetID());
+	registry.emplace<CarPhysics>(entity, CarPhysics {mVehicleConstraint});
 }
 
-void PhysicsWorld::removeCar(JPH::VehicleConstraint * constraint)
-{
-	physicsSystem->RemoveStepListener(constraint);
-	physicsSystem->RemoveConstraint(constraint);
-}
-
-void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback)
-{
-	auto& narrowPhase = physicsSystem->GetNarrowPhaseQueryNoLock();
-	RRayCast rayCast;
-	rayCast.mOrigin = RVec3(origin.x, origin.y, origin.z);
-	rayCast.mDirection = RVec3(direction.x, direction.y, direction.z) * maxDistance;
-	RayCastResult result;
-	if (narrowPhase.CastRay(rayCast, result)) {
-		auto entity = getUserData(result.mBodyID);
-		callback(entity);
-	}
-}
-
-PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, MotionType motionType)
+void PhysicsWorld::addMesh(entt::registry& registry, entt::entity entity, std::vector<glm::vec3> &vertices, std::vector<uint32_t> &indices, glm::vec3 position, glm::vec3 scale, MotionType motionType)
 {
 	VertexList inVertices;
 	inVertices.reserve(vertices.size());
@@ -615,7 +625,27 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 
 	setUserData(mesh_id, entity);
 	bodies.push_back(mesh_id);
-	return getBody(mesh_id);
+	setBodyScale(mesh_id, scale);
+	addBody(registry, entity, mesh_id);
+}
+
+void PhysicsWorld::removeCar(JPH::VehicleConstraint * constraint)
+{
+	physicsSystem->RemoveStepListener(constraint);
+	physicsSystem->RemoveConstraint(constraint);
+}
+
+void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance, std::function<void(entt::entity entity)> callback)
+{
+	auto& narrowPhase = physicsSystem->GetNarrowPhaseQueryNoLock();
+	RRayCast rayCast;
+	rayCast.mOrigin = RVec3(origin.x, origin.y, origin.z);
+	rayCast.mDirection = RVec3(direction.x, direction.y, direction.z) * maxDistance;
+	RayCastResult result;
+	if (narrowPhase.CastRay(rayCast, result)) {
+		auto entity = getUserData(result.mBodyID);
+		callback(entity);
+	}
 }
 
 std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw()
@@ -755,11 +785,6 @@ void PhysicsWorld::handleInvalidId(std::string error, IDType bodyID)
 	std::cout << error << std::endl;
 }
 
-struct InterpolatingBody {
-	PhysicsBody current;
-	PhysicsBody next;
-};
-
 void PhysicsWorld::update(float dt, entt::registry& registry)
 {
 	accumulator += dt;
@@ -780,15 +805,15 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 			}
 		});
 
-		registry.view<PhysicsBody>().each([this, &registry](entt::entity entity, PhysicsBody& body) {
-			registry.emplace_or_replace<InterpolatingBody>(entity, getBody(body.bodyID));
+		registry.view<InterpolatingBody>().each([this](entt::entity entity, InterpolatingBody& body) {
+			this->getBody(body.current.bodyID, body.current);
 		});
 
 		// Step the world
 		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
 
 		registry.view<InterpolatingBody>().each([this](entt::entity entity, InterpolatingBody& body) {
-			body.next = getBody(body.current.bodyID);
+			this->getBody(body.current.bodyID, body.next);
 		});
 	}
 

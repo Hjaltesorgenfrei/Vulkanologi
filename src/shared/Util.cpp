@@ -1,6 +1,5 @@
 #include <stdexcept>
 #include <fstream>
-#include <glm/gtc/type_ptr.hpp>
 #include "Util.hpp"
 
 std::vector<char> readFile(const std::string& filename) {

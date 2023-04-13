@@ -45,17 +45,10 @@ add_executable(vulkanologi
     ${SOURCES}
 )
 
-if (NOT WIN32)
-    find_package(X11 REQUIRED)
-    target_link_libraries(vulkanologi ${X11_LIBRARIES})
-    target_compile_definitions(vulkanologi PRIVATE -DVK_USE_PLATFORM_XLIB_KHR)
-endif()
+add_subdirectory(shared)
+add_subdirectory(renderer)
 
-add_compile_definitions(VULKAN_HPP_NO_STRUCT_CONSTRUCTORS) # Version 145 at least
-target_precompile_headers(vulkanologi PRIVATE ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp "${GLM_INCLUDE_DIR}/glm/glm.hpp")
-target_precompile_headers(vulkanologi PRIVATE ${SOURCE_DIR}/BehDevice.hpp ${SOURCE_DIR}/WindowWrapper.hpp)
-
-target_link_libraries(vulkanologi glfw glm tinyobjloader VulkanMemoryAllocator Vulkan::Vulkan ktx imgui stb EnTT Jolt)
+target_link_libraries(vulkanologi renderer EnTT Jolt)
 
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)

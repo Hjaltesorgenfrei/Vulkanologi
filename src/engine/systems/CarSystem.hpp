@@ -2,7 +2,7 @@
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
 #include "../Physics.hpp"
-#include "../BehCamera.hpp"
+#include <BehCamera.hpp>
 
 struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<CarPhysics>, Others<CarStateLastUpdate>> {
     void update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl, CarPhysics &car, CarStateLastUpdate &lastState) const;

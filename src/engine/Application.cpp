@@ -532,7 +532,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
     // }
 
     if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
-        auto transform = physicsWorld->getTransform(body->bodyID);
+        auto transform = body->getTransform();
         glm::mat4 delta(1.0f);
 
         if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&transform, &delta)) {

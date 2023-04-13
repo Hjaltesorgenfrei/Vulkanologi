@@ -1,7 +1,7 @@
 #pragma once
 #include "../DependentSystem.hpp"
 #include "../Components.hpp"
-#include "../Physics.hpp"
+#include "../PhysicsBody.hpp"
 #include <BehCamera.hpp>
 
 struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<CarPhysics>, Others<CarStateLastUpdate>> {

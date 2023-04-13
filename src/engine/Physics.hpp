@@ -10,46 +10,22 @@
 #include <entt/entt.hpp>
 #include <Jolt/Jolt.h>
 #include <Jolt/Physics/Body/BodyID.h>
+#include "PhysicsBody.hpp"
 
 namespace JPH
 {
     class PhysicsSystem;
-    class Body;
     class JobSystem;
     class TempAllocator;
     class ContactListener;
     class BodyActivationListener;
     class BodyInterface;
-    class VehicleConstraint;
 }
 
 // TODO: These might be able to swapped with name space interfaces instead which would be a bit cleaner as we can hide implementation details
 class BPLayerInterfaceImpl;
 class ObjectVsBroadPhaseLayerFilterImpl;
 class ObjectLayerPairFilterImpl;
-
-typedef JPH::BodyID IDType;
-
-enum class MotionType : uint8_t
-{
-    Static,
-    Kinematic,
-    Dynamic,
-};
-
-struct PhysicsBody
-{
-    IDType bodyID;
-    MotionType physicsType;
-    glm::vec3 position;
-    glm::vec4 rotation;
-    glm::vec3 scale;
-    glm::vec3 velocity;
-};
-
-struct CarPhysics {
-    JPH::VehicleConstraint * constraint;
-};
 
 class PhysicsWorld
 {
@@ -71,23 +47,12 @@ public:
     std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
 
     void removeBody(IDType bodyID);
-    PhysicsBody getBody(IDType bodyID);
-    void getBody(IDType bodyID, PhysicsBody &body);
-    void updateBody(IDType bodyID, PhysicsBody body);
-    
-    // This should probably take in the entity ID instead of the body ID
-    MotionType getMotionType(IDType bodyID);
-    glm::vec3 getBodyPosition(IDType bodyID);
-    glm::vec4 getBodyRotation(IDType bodyID);
-    glm::vec3 getBodyScale(IDType bodyID);
-    glm::vec3 getBodyVelocity(IDType bodyID);
+
+    // TODO: Add that these modify the PhysicsBody.
     void setBodyPosition(IDType bodyID, glm::vec3 position);
     void setBodyRotation(IDType bodyID, glm::vec4 rotation);
     void setBodyScale(IDType bodyID, glm::vec3 scale);
     void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
-
-    // We don't have a setTransform because it can not be seperated again.
-    glm::mat4 getTransform(IDType bodyID);
 private:
     std::unique_ptr<JPH::PhysicsSystem> physicsSystem;
     std::unique_ptr<BPLayerInterfaceImpl> bpLayerInterfaceImpl;
@@ -105,6 +70,16 @@ private:
     float accumulator = 0.0f;
     
     JPH::BodyInterface * bodyInterface = nullptr;
+
+    PhysicsBody getBody(IDType bodyID);
+    void getBody(IDType bodyID, PhysicsBody &body);
+    void updateBody(IDType bodyID, PhysicsBody body);
+    
+    MotionType getMotionType(IDType bodyID);
+    glm::vec3 getBodyPosition(IDType bodyID);
+    glm::vec4 getBodyRotation(IDType bodyID);
+    glm::vec3 getBodyScale(IDType bodyID);
+    glm::vec3 getBodyVelocity(IDType bodyID);
 
     void setUserData(IDType bodyID, entt::entity entity);
     entt::entity getUserData(IDType bodyID);

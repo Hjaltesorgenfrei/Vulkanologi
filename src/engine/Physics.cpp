@@ -601,7 +601,7 @@ PhysicsBody PhysicsWorld::addMesh(entt::entity entity, std::vector<glm::vec3> &v
 	else // motionType == Dynamic for meshes is not supported by Jolt
 	{
 		mesh_settings = BodyCreationSettings(meshShapeSettings, pos, Quat::sIdentity(), EMotionType::Static, Layers::NON_MOVING);
-		mesh_settings.mFriction = 0.5f;
+		mesh_settings.mFriction = 0.7f;
 	}
 
 	auto mesh_id = bodyInterface->CreateAndAddBody(mesh_settings, EActivation::Activate);
@@ -736,17 +736,6 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity)
 {
 	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
-}
-
-glm::mat4 PhysicsWorld::getTransform(IDType bodyID)
-{
-	glm::mat4 transform;
-	auto body = getBody(bodyID);
-	glm::quat rotation(body.rotation.x, body.rotation.y, body.rotation.z, body.rotation.w);
-    transform = glm::translate(glm::mat4(1.0f), body.position);
-    transform = glm::rotate(transform, glm::angle(rotation), glm::axis(rotation));
-    transform = glm::scale(transform, body.scale);
-	return transform;
 }
 
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity)

@@ -206,6 +206,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] Asset Loading
   - [x] Shapes and Curves Library
   - [ ] Make a CMakeLists.txt for resources and shaders.
+- [ ] Make some way to debug entities, so that every (or just some) components can be shown in the ui.
+  - [ ] Could be by registering Typed commands for each component
+  - [ ] And base functions which handles each other type.
 
 ### Descriptor Layout Idea
 

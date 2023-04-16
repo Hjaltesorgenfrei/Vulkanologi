@@ -48,7 +48,7 @@ add_executable(vulkanologi
 add_subdirectory(shared)
 add_subdirectory(renderer)
 
-target_link_libraries(vulkanologi renderer EnTT Jolt)
+target_link_libraries(vulkanologi renderer EnTT Jolt yojimbo)
 
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)

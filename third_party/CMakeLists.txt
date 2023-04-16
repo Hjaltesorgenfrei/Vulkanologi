@@ -1,3 +1,6 @@
+# Add CPM Cmake Package Manager
+include(cpm/CPM.cmake)
+
 # Add Vulkan
 find_package(Vulkan REQUIRED)
 
@@ -129,5 +132,7 @@ target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
 add_subdirectory(entt)
 
 # JoltPhysics
-
 add_subdirectory(JoltPhysics/Build)
+
+# Yojimbo
+add_subdirectory(yojimboCmake)

@@ -6,8 +6,6 @@
 
 using namespace yojimbo;
 
-const uint64_t ProtocolId = 0xDEADBEEFDEADBEEFLL;
-
 const int ClientPort = 40000;
 const int ServerPort = 50000;
 

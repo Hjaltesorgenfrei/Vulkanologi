@@ -17,10 +17,11 @@ NetworkServerSystem::NetworkServerSystem()
         return;
     }
 #ifdef _DEBUG
-    yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+    yojimbo_log_level(YOJIMBO_LOG_LEVEL_DEBUG);
 #else
     yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
 #endif
+
     srand((unsigned int)time(NULL));
     ClientServerConfig config;
     server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config, adapter, serverTime);

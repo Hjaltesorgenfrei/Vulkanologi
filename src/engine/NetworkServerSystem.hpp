@@ -11,7 +11,7 @@ public:
 
     void update(entt::registry& registry, float delta);
 private:
-    double serverTime = 0.0;
-    uint8_t privateKey[yojimbo::KeyBytes];
+    double serverTime = 100.0;
+    uint8_t privateKey[yojimbo::KeyBytes] = { 0 };
     std::unique_ptr<yojimbo::Server> server;
 };

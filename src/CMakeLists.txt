@@ -47,6 +47,7 @@ add_executable(vulkanologi
 
 add_subdirectory(shared)
 add_subdirectory(renderer)
+add_subdirectory(listenerclient)
 
 target_link_libraries(vulkanologi renderer EnTT Jolt yojimbo)
 

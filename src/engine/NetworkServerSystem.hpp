@@ -13,5 +13,7 @@ public:
 private:
     double serverTime = 100.0;
     uint8_t privateKey[yojimbo::KeyBytes] = { 0 };
+    yojimbo::ClientServerConfig config;
     std::unique_ptr<yojimbo::Server> server;
+    std::unique_ptr<yojimbo::Adapter> adapter;
 };

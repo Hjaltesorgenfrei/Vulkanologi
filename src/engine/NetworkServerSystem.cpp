@@ -23,8 +23,8 @@ NetworkServerSystem::NetworkServerSystem()
 #endif
 
     srand((unsigned int)time(NULL));
-    ClientServerConfig config;
-    server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config, adapter, serverTime);
+    adapter = std::make_unique<PhysicsNetworkAdapter>();
+    server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config, *adapter, serverTime);
     server->Start(MaxClients);
     char addressString[256];
     server->GetAddress().ToString( addressString, sizeof( addressString ) );

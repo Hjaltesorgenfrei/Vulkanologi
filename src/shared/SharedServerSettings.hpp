@@ -49,5 +49,3 @@ public:
         return YOJIMBO_NEW( allocator, PhysicsMessageFactory, allocator );
     }
 };
-
-static PhysicsNetworkAdapter adapter;

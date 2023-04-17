@@ -51,3 +51,5 @@
 [submodule "third_party/yojimboCmake/yojimbo"]
 	path = third_party/yojimboCmake/yojimbo
 	url = https://github.com/networkprotocol/yojimbo
+	ignore = dirty
+	shallow = true

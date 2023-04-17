@@ -27,6 +27,7 @@ void App::run() {
     AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
     physicsWorld = std::make_unique<PhysicsWorld>(registry);
+    networkServerSystem = std::make_unique<NetworkServerSystem>();
     setupWorld();
     mainLoop();
 }
@@ -727,6 +728,7 @@ void App::mainLoop() {
         physicsWorld->update(delta.count() / 1000.f, registry);
 
         systemGraph.update(registry, delta.count());
+        networkServerSystem->update(registry, delta.count());
 
         if (updateWindowSize) {
             renderer->recreateSwapchain();

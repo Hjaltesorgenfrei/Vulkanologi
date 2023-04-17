@@ -11,6 +11,7 @@
 #include "DependentSystem.hpp"
 #include "SystemGraph.hpp"
 #include "Components.hpp"
+#include "NetworkServerSystem.hpp"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -27,6 +28,7 @@ private:
     std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
 	std::unique_ptr<Renderer> renderer;
     std::shared_ptr<BehDevice> device;
+    std::unique_ptr<NetworkServerSystem> networkServerSystem;
     entt::registry registry;
     std::unordered_set<entt::entity> entities;
     SystemGraph systemGraph;

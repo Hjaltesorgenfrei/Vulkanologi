@@ -52,6 +52,7 @@ int ClientMain( int argc, char * argv[] )
     printf( "client id is %.16" PRIx64 "\n", clientId );
     PhysicsNetworkAdapter adapter;
     ClientServerConfig config;
+    config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
     
     Client client( GetDefaultAllocator(), Address("0.0.0.0"), config, adapter, time );
 

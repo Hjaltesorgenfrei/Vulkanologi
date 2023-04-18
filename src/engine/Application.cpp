@@ -728,7 +728,7 @@ void App::mainLoop() {
         physicsWorld->update(delta.count() / 1000.f, registry);
 
         systemGraph.update(registry, delta.count());
-        networkServerSystem->update(registry, delta.count());
+        networkServerSystem->update(registry, delta.count() / 1000.f);
 
         if (updateWindowSize) {
             renderer->recreateSwapchain();
@@ -743,6 +743,9 @@ void App::mainLoop() {
             registry.destroy(entity);
             entities.erase(entity);
         }
+
+        // Sleep so framerate is 60
+        std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta);
 	}
 }
 

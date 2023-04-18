@@ -26,8 +26,9 @@ NetworkServerSystem::NetworkServerSystem()
     adapter = std::make_unique<PhysicsNetworkAdapter>();
     server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config, *adapter, serverTime);
     server->Start(MaxClients);
-    char addressString[256];
-    server->GetAddress().ToString( addressString, sizeof( addressString ) );
+    if (!server->IsRunning()) {
+        std::cout << "Server failed to start\n";
+    }
 }
 
 NetworkServerSystem::~NetworkServerSystem()
@@ -41,7 +42,7 @@ void NetworkServerSystem::update(entt::registry &registry, float delta)
     if (!server->IsRunning())
         return;
 
-    for (int clientId = 0; clientId < MaxClients; clientId++) {
+    for (int clientId = 0; clientId < 0; clientId++) {
         if (!server->IsClientConnected(clientId)) {
             continue;
         }

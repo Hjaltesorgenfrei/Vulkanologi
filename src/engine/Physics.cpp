@@ -320,11 +320,18 @@ PhysicsWorld::PhysicsWorld(entt::registry& registry)
     registry.on_destroy<CarPhysics>().connect<&PhysicsWorld::onCarPhysicsDestroyed>(this);
 }
 
+// Hidden struct which is only used by the physics system to interpolate the state of bodies.
+struct InterpolatingBody {
+	PhysicsBody current;
+	PhysicsBody next;
+};
+
 void PhysicsWorld::onPhysicsBodyDestroyed(entt::registry &registry, entt::entity entity)
 {
     if (auto body = registry.try_get<PhysicsBody>(entity)) {
         removeBody(body->bodyID);
     }
+	registry.remove<InterpolatingBody>(entity);
 }
 
 void PhysicsWorld::onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity)
@@ -349,12 +356,6 @@ PhysicsWorld::~PhysicsWorld()
 	delete Factory::sInstance;
 	Factory::sInstance = nullptr;
 }
-
-// Hidden struct which is only used by the physics system to interpolate the state of bodies.
-struct InterpolatingBody {
-	PhysicsBody current;
-	PhysicsBody next;
-};
 
 void PhysicsWorld::addBody(entt::registry& registry, entt::entity entity, IDType id) {
 	registry.emplace<PhysicsBody>(entity, getBody(id));

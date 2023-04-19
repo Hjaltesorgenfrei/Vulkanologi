@@ -209,6 +209,12 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Make some way to debug entities, so that every (or just some) components can be shown in the ui.
   - [ ] Could be by registering Typed commands for each component
   - [ ] And base functions which handles each other type.
+- [ ] Make a editor UI for scenes.
+  - <https://github.com/jmorton06/Lumos> has something similiar to what I want to build.
+  - Figure out how this should work with the swapchain and renderpass. 
+    - Either just render to an image that gets shown in ImGui or else it might be possible to simple only render part of the screen.
+      - Only rendering to part of it, would avoid recreating the swapchain which can be very slow.
+- [ ] Figure out where in the Yojimbo loops that messages should be recieved. Current method can crash.
 
 ### Descriptor Layout Idea
 

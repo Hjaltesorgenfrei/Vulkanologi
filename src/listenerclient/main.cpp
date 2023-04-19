@@ -82,11 +82,14 @@ int ClientMain( int argc, char * argv[] )
 
     signal( SIGINT, interrupt_handler );
 
-    while ( !quit )
+    while ( !quit)
     {
         client.SendPackets();
 
         client.ReceivePackets();
+
+        if ( client.IsDisconnected() )
+            break;
 
         while (auto message = client.ReceiveMessage(0)) {
             if (message->GetType() == PHYSICS_STATE_MESSAGE) {
@@ -103,9 +106,6 @@ int ClientMain( int argc, char * argv[] )
             }
             client.ReleaseMessage(message);
         }
-
-        if ( client.IsDisconnected() )
-            break;
      
         time += deltaTime;
 
@@ -113,6 +113,8 @@ int ClientMain( int argc, char * argv[] )
 
         if ( client.ConnectionFailed() )
             break;
+
+        
 
         yojimbo_sleep( deltaTime );
     }

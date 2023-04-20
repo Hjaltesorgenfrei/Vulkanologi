@@ -743,9 +743,6 @@ void App::mainLoop() {
             registry.destroy(entity);
             entities.erase(entity);
         }
-
-        // Sleep so framerate is 60
-        std::this_thread::sleep_for(std::chrono::milliseconds(16) - delta);
 	}
 }
 

@@ -41,6 +41,13 @@ void interrupt_handler( int /*dummy*/ )
     quit = 1;
 }
 
+void printNetworkInfo(Client& client) 
+{
+    NetworkInfo info;
+    client.GetNetworkInfo(info);
+    printf("client: sent: %lld, received: %lld, acked: %lld, lost: %f, rtt: %f ms\n", info.numPacketsSent, info.numPacketsReceived, info.numPacketsAcked, info.packetLoss, info.RTT);
+}
+
 int ClientMain( int argc, char * argv[] )
 {   
     printf( "\nconnecting client (insecure)\n" );
@@ -114,7 +121,7 @@ int ClientMain( int argc, char * argv[] )
         if ( client.ConnectionFailed() )
             break;
 
-        
+        printNetworkInfo(client);
 
         yojimbo_sleep( deltaTime );
     }

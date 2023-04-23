@@ -26,10 +26,12 @@ void main() {
 	vec3 directionToLight = ubo.lightPosition.xyz - fragPosWorld;
 	float attenuation = 1.0 / dot(directionToLight, directionToLight); // distance squared
 
-	vec3 lightColor = ubo.lightColor.xyz * ubo.lightColor.w * attenuation;
 	vec3 ambientLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
+
+	vec3 lightColor = ubo.lightColor.xyz * ubo.lightColor.w * attenuation;
 	vec3 diffuseLight = lightColor * max(dot(normalize(fragNormalWorld), normalize(directionToLight)), 0);
-	// Darken the color if it is not facing up, dirty hack to make the ground look better while i dont have shadows
-	vec4 color = texture(texSampler[int(materialIndex)], fragTexCoord.xy) * vec4((diffuseLight + ambientLight) * fragColor * pushConstants.color.xyz, 1.0);
-	outColor = color;
+
+	vec4 finalColor = vec4((diffuseLight + ambientLight) * fragColor * pushConstants.color.xyz, 1.0);
+
+	outColor = texture(texSampler[int(materialIndex)], fragTexCoord.xy) * finalColor;
 }

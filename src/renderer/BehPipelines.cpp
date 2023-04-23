@@ -16,8 +16,8 @@ BehPipeline::BehPipeline(std::shared_ptr<BehDevice>& device, PipelineConfigurati
     std::vector<vk::ShaderModule> shaderModules;
     bool isComputePipeline = false;
     for (const auto& [filepath, stage] : config.shaders) {
-        auto vertShaderCode = readFile(filepath);
-        shaderModules.push_back(createShaderModule(vertShaderCode));
+        auto shaderCode = readFile(filepath);
+        shaderModules.push_back(createShaderModule(shaderCode));
         vk::PipelineShaderStageCreateInfo shaderStageCreateInfo {
                 .stage = stage,
                 .module = shaderModules.back(),

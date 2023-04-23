@@ -4,6 +4,7 @@
 
 struct Light {
     glm::vec3 position;
+    bool isDirectional;
     glm::vec3 color;
     float intensity;
 };

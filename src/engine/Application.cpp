@@ -340,7 +340,7 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
 Light light = {
     .position = glm::vec3(0, -5, 0),
     .color = glm::vec3(1, 1, 1),
-    .intensity = 10.0f
+    .intensity = 1.0f
 };
 
 int App::drawFrame(float delta) {
@@ -434,6 +434,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
 
     ImGui::Begin("Light");
     ImGui::DragFloat3("Position", glm::value_ptr(light.position), 0.01f);
+    ImGui::Checkbox("Is Directional", &light.isDirectional);
     ImGui::ColorEdit3("Color", glm::value_ptr(light.color));
     ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 30.0f);
     ImGui::End();
@@ -481,8 +482,6 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
         frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
     }
 
-
-
     if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
         auto transform = body->getTransform();
         glm::mat4 delta(1.0f);
@@ -520,7 +519,8 @@ void App::setupWorld() {
     createSpawnPoints(10);
 
     auto keyboardPlayer = addPlayer(KeyboardInput {});
-    registry.emplace<BehCamera>(keyboardPlayer);
+    auto& camera = registry.emplace<BehCamera>(keyboardPlayer);
+
 
     setupControllerPlayers();
 

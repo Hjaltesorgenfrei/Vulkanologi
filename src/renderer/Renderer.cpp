@@ -1159,7 +1159,7 @@ void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
     ubo.projView = ubo.proj * ubo.view;
     ubo.deltaTime = frameInfo.deltaTime;
     auto light = frameInfo.lights.front();
-    ubo.lightPosition = glm::vec4(light.position, .0f);
+    ubo.lightPosition = glm::vec4(light.position, light.isDirectional ? 0.0f : 1.0f);
     ubo.lightColor = glm::vec4(light.color, light.intensity);
 
     uniformBuffers[currentImage]->at(0) = ubo;

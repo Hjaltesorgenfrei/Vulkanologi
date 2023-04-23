@@ -471,38 +471,6 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     }
 }
 
-// void App::drawRigidBodyDebugInfo(btRigidBody* body)
-// {
-//     auto transform = body->getWorldTransform();
-//     auto scale = body->getCollisionShape()->getLocalScaling();
-
-//     // Show with ImGui
-//     ImGui::Begin("Rigid Body Info");
-//     ImGui::Text("Position: %f, %f, %f", transform.getOrigin().x(), transform.getOrigin().y(), transform.getOrigin().z());
-//     ImGui::Text("Scale: %f, %f, %f", scale.x(), scale.y(), scale.z());
-//     ImGui::Text("Rotation: %f, %f, %f", transform.getRotation().x(), transform.getRotation().y(), transform.getRotation().z());
-//     ImGui::Text("Mass: %f", body->getInvMass());
-//     ImGui::Text("Friction: %f", body->getFriction());
-//     ImGui::Text("Restitution: %f", body->getRestitution());
-//     ImGui::Text("Linear Velocity: %f, %f, %f", body->getLinearVelocity().x(), body->getLinearVelocity().y(), body->getLinearVelocity().z());
-//     ImGui::Text("Angular Velocity: %f, %f, %f", body->getAngularVelocity().x(), body->getAngularVelocity().y(), body->getAngularVelocity().z());
-//     ImGui::Text("Linear Factor: %f, %f, %f", body->getLinearFactor().x(), body->getLinearFactor().y(), body->getLinearFactor().z());
-//     ImGui::Text("Angular Factor: %f, %f, %f", body->getAngularFactor().x(), body->getAngularFactor().y(), body->getAngularFactor().z());
-//     ImGui::Text("Gravity: %f, %f, %f", body->getGravity().x(), body->getGravity().y(), body->getGravity().z());
-//     ImGui::Text("Damping: %f, %f", body->getLinearDamping(), body->getAngularDamping());
-//     ImGui::Text("Sleeping: %s", body->isInWorld() ? "Yes" : "No");
-//     ImGui::Text("Kinematic: %s", body->isKinematicObject() ? "Yes" : "No");
-//     ImGui::Text("Static: %s", body->isStaticObject() ? "Yes" : "No");
-//     ImGui::Text("Active: %s", body->isActive() ? "Yes" : "No");
-//     ImGui::Text("Has Contact Response: %s", body->hasContactResponse() ? "Yes" : "No");
-
-//     if (ImGui::Button("Set Active")) {
-//         body->activate(true);
-//     }
-
-//     ImGui::End();
-// }
-
 void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo)
 {
     auto renderObject = registry.try_get<std::shared_ptr<RenderObject>>(selectedEntity);
@@ -514,19 +482,6 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
     }
 
 
-    // btRigidBody *rigidBody = nullptr;
-    // if (auto rigidBodyComponent = registry.try_get<RigidBody>(selectedEntity)) {
-    //     rigidBody = rigidBodyComponent->body;
-    // }
-    // else if (auto car = registry.try_get<Car>(selectedEntity)) {
-    //     rigidBody = car->vehicle->getRigidBody();
-    // }
-
-    // auto sensor = registry.try_get<Sensor>(selectedEntity);
-
-    // if (rigidBody) {
-    //     drawRigidBodyDebugInfo(rigidBody);
-    // }
 
     if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
         auto transform = body->getTransform();
@@ -535,10 +490,8 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
         if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&transform, &delta)) {
             physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
         } 
-        else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
-            glm::quat temp = glm::quat_cast(delta);
-            glm::quat result = temp * body->rotation;
-            physicsWorld->setBodyRotation(body->bodyID, result);
+        else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) {
+            physicsWorld->setBodyRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
         }
         else if (currentGizmoOperation == ImGuizmo::SCALE && drawImGuizmo(&transform, &delta)) { // TODO: Broken and crashes.
             physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));

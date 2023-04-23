@@ -749,7 +749,7 @@ void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position)
 
 void PhysicsWorld::setBodyRotation(IDType bodyID, glm::quat rotation)
 {
-	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z).Normalized(), EActivation::Activate);
+	bodyInterface->SetRotation(bodyID, Quat(rotation.x, rotation.y, rotation.z, rotation.w), EActivation::Activate);
 }
 
 void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale)
@@ -822,7 +822,7 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 
 	registry.view<PhysicsBody, InterpolatingBody>().each([this, ratio](entt::entity entity, PhysicsBody& body, InterpolatingBody& interpolation) {
 		body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
-		body.rotation = glm::mix(interpolation.current.rotation, interpolation.next.rotation, ratio);
+		body.rotation = glm::slerp(interpolation.current.rotation, interpolation.next.rotation, ratio);
 		body.velocity = glm::mix(interpolation.current.velocity, interpolation.next.velocity, ratio);
 		body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
 	});

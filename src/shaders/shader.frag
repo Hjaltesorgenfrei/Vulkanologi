@@ -26,7 +26,7 @@ void main() {
 	vec3 ambientLight = ubo.ambientLightColor.xyz * ubo.ambientLightColor.w;
 
 	if (ubo.lightPosition.w == 0.0) { // directional light
-		vec3 lightDir = normalize(ubo.lightPosition.xyz);
+		vec3 lightDir = normalize(-ubo.lightPosition.xyz);
 		float diffuse = max(dot(fragNormalWorld, -lightDir), 0.0);
 		vec3 diffuseLight = ubo.lightColor.xyz * ubo.lightColor.w * diffuse;
 		vec4 finalColor = vec4((diffuseLight + ambientLight) * fragColor * pushConstants.color.xyz, 1.0);

@@ -28,6 +28,8 @@ enum RendererMode {
 	WIREFRAME
 };
 
+struct GlobalUbo; 
+
 class Renderer {
    public:
     Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager);

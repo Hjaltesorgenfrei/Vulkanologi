@@ -25,6 +25,7 @@ int PARTICLE_COUNT = 256 * 4;
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include "Particle.hpp"
+#include "GlobalUbo.hpp"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {
@@ -1157,6 +1158,10 @@ void Renderer::updateUniformBuffer(size_t currentImage, FrameInfo &frameInfo) {
     };
     ubo.projView = ubo.proj * ubo.view;
     ubo.deltaTime = frameInfo.deltaTime;
+    auto light = frameInfo.lights.front();
+    ubo.lightPosition = glm::vec4(light.position, .0f);
+    ubo.lightColor = glm::vec4(light.color, light.intensity);
+
     uniformBuffers[currentImage]->at(0) = ubo;
 }
 

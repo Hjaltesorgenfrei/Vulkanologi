@@ -337,6 +337,12 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
     return result;
 }
 
+Light light = {
+    .position = glm::vec3(0, -5, 0),
+    .color = glm::vec3(1, 1, 1),
+    .intensity = 10.0f
+};
+
 int App::drawFrame(float delta) {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -346,6 +352,7 @@ int App::drawFrame(float delta) {
     FrameInfo frameInfo{};
     frameInfo.camera = camera;
     frameInfo.deltaTime = delta;
+    frameInfo.lights.push_back(light);
 
     for (auto entity : registry.view<std::shared_ptr<RenderObject>, Transform>()) {
         auto renderObject = registry.get<std::shared_ptr<RenderObject>>(entity);
@@ -423,6 +430,12 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     auto& camera = getCamera();
     ImGui::Begin("Camera");
     ImGui::SliderFloat("Speed", &camera.speed, 0.0001f, 0.01f);
+    ImGui::End();
+
+    ImGui::Begin("Light");
+    ImGui::DragFloat3("Position", glm::value_ptr(light.position), 0.01f);
+    ImGui::ColorEdit3("Color", glm::value_ptr(light.color));
+    ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 30.0f);
     ImGui::End();
 
     registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {

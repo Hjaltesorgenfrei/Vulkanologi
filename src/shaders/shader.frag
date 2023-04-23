@@ -31,7 +31,5 @@ void main() {
 	vec3 diffuseLight = lightColor * max(dot(normalize(fragNormalWorld), normalize(directionToLight)), 0);
 	// Darken the color if it is not facing up, dirty hack to make the ground look better while i dont have shadows
 	vec4 color = texture(texSampler[int(materialIndex)], fragTexCoord.xy) * vec4((diffuseLight + ambientLight) * fragColor * pushConstants.color.xyz, 1.0);
-	color *= clamp(dot(normalize(fragNormalWorld), vec3(0.0, 1.0, 0.0)), 0.7, 1.0);
-	color *= clamp(dot(normalize(fragNormalWorld), vec3(0.0, 0.0, -1.0)), 0.85, 1.0);
 	outColor = color;
 }

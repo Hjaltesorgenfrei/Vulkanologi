@@ -221,6 +221,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] There seems to be a bug when a box interacts with mesh shape at a sharp angle which causes a crash.
 - [ ] Change the camera to have distance and such as saved fields. So Only the position, rotation and position is sent.
   - [ ] The camera should then be called update on to allow it to ease.
+- [ ] Fix the camera so it does not point in a nonsense direction at the start.
 
 ### Descriptor Layout Idea
 

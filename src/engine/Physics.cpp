@@ -494,8 +494,8 @@ void PhysicsWorld::addCar(entt::registry& registry, entt::entity entity, glm::ve
 	w1->mWheelForward = front_wheel_forward;
 	w1->mSuspensionMinLength = sFrontSuspensionMinLength;
 	w1->mSuspensionMaxLength = sFrontSuspensionMaxLength;
-	w1->mSuspensionFrequency = sFrontSuspensionFrequency;
-	w1->mSuspensionDamping = sFrontSuspensionDamping;
+	w1->mSuspensionSpring.mFrequency = sFrontSuspensionFrequency;
+	w1->mSuspensionSpring.mDamping = sFrontSuspensionDamping;
 	w1->mMaxSteerAngle = sMaxSteeringAngle;
 	w1->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
 
@@ -508,8 +508,8 @@ void PhysicsWorld::addCar(entt::registry& registry, entt::entity entity, glm::ve
 	w2->mWheelForward = flip_x * front_wheel_forward;
 	w2->mSuspensionMinLength = sFrontSuspensionMinLength;
 	w2->mSuspensionMaxLength = sFrontSuspensionMaxLength;
-	w2->mSuspensionFrequency = sFrontSuspensionFrequency;
-	w2->mSuspensionDamping = sFrontSuspensionDamping;
+	w2->mSuspensionSpring.mFrequency = sFrontSuspensionFrequency;
+	w2->mSuspensionSpring.mDamping = sFrontSuspensionDamping;
 	w2->mMaxSteerAngle = sMaxSteeringAngle;
 	w2->mMaxHandBrakeTorque = 0.0f; // Front wheel doesn't have hand brake
 
@@ -522,8 +522,8 @@ void PhysicsWorld::addCar(entt::registry& registry, entt::entity entity, glm::ve
 	w3->mWheelForward = rear_wheel_forward;
 	w3->mSuspensionMinLength = sRearSuspensionMinLength;
 	w3->mSuspensionMaxLength = sRearSuspensionMaxLength;
-	w3->mSuspensionFrequency = sRearSuspensionFrequency;
-	w3->mSuspensionDamping = sRearSuspensionDamping;
+	w3->mSuspensionSpring.mFrequency = sRearSuspensionFrequency;
+	w3->mSuspensionSpring.mDamping = sRearSuspensionDamping;
 	w3->mMaxSteerAngle = 0.0f;
 
 	// Right rear
@@ -535,8 +535,8 @@ void PhysicsWorld::addCar(entt::registry& registry, entt::entity entity, glm::ve
 	w4->mWheelForward = flip_x * rear_wheel_forward;
 	w4->mSuspensionMinLength = sRearSuspensionMinLength;
 	w4->mSuspensionMaxLength = sRearSuspensionMaxLength;
-	w4->mSuspensionFrequency = sRearSuspensionFrequency;
-	w4->mSuspensionDamping = sRearSuspensionDamping;
+	w4->mSuspensionSpring.mFrequency = sRearSuspensionFrequency;
+	w4->mSuspensionSpring.mDamping = sRearSuspensionDamping;
 	w4->mMaxSteerAngle = 0.0f;
 
 	vehicle.mWheels = { w1, w2, w3, w4 };
@@ -796,9 +796,6 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 		// If you take larger steps than 1 / 60th of a second you need to do multiple collision steps in order to keep the simulation stable. Do 1 collision step per 1 / 60th of a second (round up).
 		const int cCollisionSteps = 1;
 
-		// If you want more accurate step results you can do multiple sub steps within a collision step. Usually you would set this to 1.
-		const int cIntegrationSubSteps = 1;
-
 		registry.view<CarPhysics, CarControl>().each([this](entt::entity entity, CarPhysics& carPhysics, CarControl& carControl) {
 			if (carControl.desiredAcceleration != 0.0f || carControl.desiredBrake != 0.0f || carControl.desiredSteering != 0.0f) {
 				auto id = carPhysics.constraint->GetVehicleBody()->GetID();
@@ -811,7 +808,7 @@ void PhysicsWorld::update(float dt, entt::registry& registry)
 		});
 
 		// Step the world
-		physicsSystem->Update(cDeltaTime, cCollisionSteps, cIntegrationSubSteps, tempAllocator.get(), jobSystem.get());
+		physicsSystem->Update(cDeltaTime, cCollisionSteps, tempAllocator.get(), jobSystem.get());
 
 		registry.view<InterpolatingBody>().each([this](entt::entity entity, InterpolatingBody& body) {
 			this->getBody(body.current.bodyID, body.next);

@@ -222,6 +222,11 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Change the camera to have distance and such as saved fields. So Only the position, rotation and position is sent.
   - [ ] The camera should then be called update on to allow it to ease.
 - [ ] Fix the camera so it does not point in a nonsense direction at the start.
+- [ ] Steal the dependency updating from <https://github.com/liblava/liblava>.
+  - [ ] Use CPM instead
+  - [ ] A "lock" file
+  - [ ] Script to update all versions
+  - [ ] json file to add repos and tags.
 
 ### Descriptor Layout Idea
 

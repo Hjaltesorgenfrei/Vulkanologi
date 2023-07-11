@@ -217,6 +217,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - [ ] Could be by registering Typed commands for each component
     - [ ] And base functions which handles each other type.
     - Lumos also does this
+    - <https://github.com/Green-Sky/imgui_entt_entity_editor>
 - [ ] Figure out where in the Yojimbo loops that messages should be recieved. Current method can crash.
 - [ ] There seems to be a bug when a box interacts with mesh shape at a sharp angle which causes a crash.
 - [ ] Change the camera to have distance and such as saved fields. So Only the position, rotation and position is sent.

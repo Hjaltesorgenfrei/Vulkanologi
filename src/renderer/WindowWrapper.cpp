@@ -7,7 +7,9 @@ void glfwErrorCallback(int code, const char* description)
 }
 
 WindowWrapper::WindowWrapper(const int width, const int height, const char* title) {
-	glfwInit();
+    if(!glfwInit()) {
+        throw std::runtime_error("Failed to initialize GLFW");
+    }
 	glfwSetErrorCallback(glfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

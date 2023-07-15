@@ -229,6 +229,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] Script to update all versions
   - [ ] json file to add repos and tags.
 - [ ] Implement t3ssel8r's shader: <https://imgur.com/gallery/qwhbHQq>
+  - [ ] <https://www.reddit.com/r/godot/comments/14sxi4h/i_have_refined_my_water_shader/>
 
 ### Descriptor Layout Idea
 

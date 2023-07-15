@@ -228,6 +228,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] A "lock" file
   - [ ] Script to update all versions
   - [ ] json file to add repos and tags.
+- [ ] Implement t3ssel8r's shader: <https://imgur.com/gallery/qwhbHQq>
 
 ### Descriptor Layout Idea
 

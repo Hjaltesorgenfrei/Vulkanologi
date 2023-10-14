@@ -1,121 +1,163 @@
 # Add CPM Cmake Package Manager
-include(cpm/CPM.cmake)
+include(CPM.cmake)
+
+include("${CMAKE_CURRENT_LIST_DIR}/version.cmake")
 
 # Add Vulkan
 find_package(Vulkan REQUIRED)
 
-# Build GLFW
-set(GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only")
-set(GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only")
-add_subdirectory(glfw)
+# GLFW
+cpmaddpackage(
+    NAME glfw
+    GITHUB_REPOSITORY ${glfw_GITHUB}
+    GIT_TAG ${glfw_TAG}
+    OPTIONS
+    "GLFW_INSTALL OFF"
+    "GLFW_BUILD_DOCS OFF"
+    "GLFW_BUILD_TESTS OFF"
+    "GLFW_BUILD_EXAMPLES OFF"
+)
 
 # GLM
-add_subdirectory(glm)
-set(GLM_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glm PARENT_SCOPE)
+cpmaddpackage(
+    NAME glm
+    GITHUB_REPOSITORY ${glm_GITHUB}
+    GIT_TAG ${glm_TAG}
+)
+set(GLM_INCLUDE_DIR ${glm_SOURCE_DIR} PARENT_SCOPE)
 
 # STB
+cpmaddpackage(
+    NAME stb
+    GITHUB_REPOSITORY ${stb_GITHUB}
+    GIT_TAG ${stb_TAG}
+    DOWNLOAD_ONLY YES
+)
 add_library(stb INTERFACE)
-target_include_directories(stb INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/stb)
+target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
 # tinyobjloader
-add_subdirectory(tinyobjloader)
+cpmaddpackage(
+    NAME tinyobjloader
+    GITHUB_REPOSITORY ${tinyobjloader_GITHUB}
+    GIT_TAG ${tinyobjloader_TAG}
+)
 
 # VMA
-add_subdirectory(VulkanMemoryAllocator)
+cpmaddpackage(
+    NAME vma
+    GITHUB_REPOSITORY ${vma_GITHUB}
+    GIT_TAG ${vma_TAG}
+)
 
 # Imgui
-include_directories(imgui)
+cpmaddpackage(
+    NAME imgui
+    GITHUB_REPOSITORY ${imgui_GITHUB}
+    GIT_TAG ${imgui_TAG}
+    DOWNLOAD_ONLY YES
+)
 
-include_directories(ImGuizmo)
-
-set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/imgui)
-set(IMGUIZMO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ImGuizmo)
+cpmaddpackage(
+    NAME imguizmo
+    GITHUB_REPOSITORY ${imguizmo_GITHUB}
+    GIT_TAG ${imguizmo_TAG}
+    DOWNLOAD_ONLY YES
+)
 
 set(IMGUI_FILES
-    ${IMGUI_DIR}/imgui.h
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-    ${IMGUIZMO_DIR}/ImGuizmo.h
-    ${IMGUIZMO_DIR}/ImGuizmo.cpp
+    ${imgui_SOURCE_DIR}/imgui.h
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imguizmo_SOURCE_DIR}/ImGuizmo.h
+    ${imguizmo_SOURCE_DIR}/ImGuizmo.cpp
 )
 
 add_library(imgui STATIC ${IMGUI_FILES})
 
-target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUIZMO_DIR})
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imguizmo_SOURCE_DIR})
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # Ktx
-set(KTX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ktx)
+cpmaddpackage(
+    NAME ktx
+    GITHUB_REPOSITORY ${ktx_GITHUB}
+    GIT_TAG ${ktx_TAG}
+    DOWNLOAD_ONLY YES
+)
 
 set(KTX_SOURCES  
-    ${KTX_DIR}/lib/checkheader.c
-    ${KTX_DIR}/lib/dfdutils/createdfd.c
-    ${KTX_DIR}/lib/dfdutils/colourspaces.c
-    ${KTX_DIR}/lib/dfdutils/dfd.h
-    ${KTX_DIR}/lib/dfdutils/dfd2vk.inl
-    ${KTX_DIR}/lib/dfdutils/interpretdfd.c
-    ${KTX_DIR}/lib/dfdutils/printdfd.c
-    ${KTX_DIR}/lib/dfdutils/queries.c
-    ${KTX_DIR}/lib/dfdutils/vk2dfd.c
-    ${KTX_DIR}/lib/etcdec.cxx
-    ${KTX_DIR}/lib/etcunpack.cxx
-    ${KTX_DIR}/lib/filestream.c
-    ${KTX_DIR}/lib/filestream.h
-    ${KTX_DIR}/lib/formatsize.h
-    ${KTX_DIR}/lib/hashlist.c
-    ${KTX_DIR}/lib/info.c
-    ${KTX_DIR}/lib/ktxint.h
-    ${KTX_DIR}/lib/memstream.c
-    ${KTX_DIR}/lib/memstream.h
-    ${KTX_DIR}/lib/strings.c
-    ${KTX_DIR}/lib/swap.c
-    ${KTX_DIR}/lib/uthash.h
-    ${KTX_DIR}/lib/texture.c
-    ${KTX_DIR}/lib/texture.h
+    ${ktx_SOURCE_DIR}/lib/checkheader.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/createdfd.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/colourspaces.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/dfd.h
+    ${ktx_SOURCE_DIR}/lib/dfdutils/dfd2vk.inl
+    ${ktx_SOURCE_DIR}/lib/dfdutils/interpretdfd.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/printdfd.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/queries.c
+    ${ktx_SOURCE_DIR}/lib/dfdutils/vk2dfd.c
+    ${ktx_SOURCE_DIR}/lib/etcdec.cxx
+    ${ktx_SOURCE_DIR}/lib/etcunpack.cxx
+    ${ktx_SOURCE_DIR}/lib/filestream.c
+    ${ktx_SOURCE_DIR}/lib/filestream.h
+    ${ktx_SOURCE_DIR}/lib/formatsize.h
+    ${ktx_SOURCE_DIR}/lib/hashlist.c
+    ${ktx_SOURCE_DIR}/lib/info.c
+    ${ktx_SOURCE_DIR}/lib/ktxint.h
+    ${ktx_SOURCE_DIR}/lib/memstream.c
+    ${ktx_SOURCE_DIR}/lib/memstream.h
+    ${ktx_SOURCE_DIR}/lib/strings.c
+    ${ktx_SOURCE_DIR}/lib/swap.c
+    ${ktx_SOURCE_DIR}/lib/uthash.h
+    ${ktx_SOURCE_DIR}/lib/texture.c
+    ${ktx_SOURCE_DIR}/lib/texture.h
 
     # Basis Universal
-    ${KTX_DIR}/lib/basis_sgd.h
-    ${KTX_DIR}/lib/basis_transcode.cpp
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_containers.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_containers_impl.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_file_headers.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder_internal.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder_uastc.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder.cpp
-    ${KTX_DIR}/lib/basisu/transcoder/basisu_transcoder.h
-    ${KTX_DIR}/lib/basisu/transcoder/basisu.h
-    ${KTX_DIR}/lib/basisu/zstd/zstd.c
+    ${ktx_SOURCE_DIR}/lib/basis_sgd.h
+    ${ktx_SOURCE_DIR}/lib/basis_transcode.cpp
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_containers.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_containers_impl.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_file_headers.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder_internal.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder_uastc.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder.cpp
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder.h
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu.h
+    ${ktx_SOURCE_DIR}/lib/basisu/zstd/zstd.c
    
     # KT1
-    ${KTX_DIR}/lib/texture1.c
-    ${KTX_DIR}/lib/texture1.h
+    ${ktx_SOURCE_DIR}/lib/texture1.c
+    ${ktx_SOURCE_DIR}/lib/texture1.h
 
     # KTX2
-    ${KTX_DIR}/lib/texture2.c
-    ${KTX_DIR}/lib/texture2.h
+    ${ktx_SOURCE_DIR}/lib/texture2.c
+    ${ktx_SOURCE_DIR}/lib/texture2.h
 
     # Vulkan support
-    ${KTX_DIR}/lib/vk_format.h
-    ${KTX_DIR}/lib/vkformat_check.c
-    ${KTX_DIR}/lib/vkformat_enum.h
-    ${KTX_DIR}/lib/vkformat_str.c
-    ${KTX_DIR}/lib/vk_funcs.c
-    ${KTX_DIR}/lib/vk_funcs.h
-    ${KTX_DIR}/lib/vkloader.c    
+    ${ktx_SOURCE_DIR}/lib/vk_format.h
+    ${ktx_SOURCE_DIR}/lib/vkformat_check.c
+    ${ktx_SOURCE_DIR}/lib/vkformat_enum.h
+    ${ktx_SOURCE_DIR}/lib/vkformat_str.c
+    ${ktx_SOURCE_DIR}/lib/vk_funcs.c
+    ${ktx_SOURCE_DIR}/lib/vk_funcs.h
+    ${ktx_SOURCE_DIR}/lib/vkloader.c    
+
+    # Zlib Support
+    ${ktx_SOURCE_DIR}/lib/miniz_wrapper.cpp
 )
 
 set(KTX_INCLUDE_DIRS
-    ${KTX_DIR}/include
-    ${KTX_DIR}/lib
-    ${KTX_DIR}/utils
-    ${KTX_DIR}/lib/basisu/zstd
-    ${KTX_DIR}/lib/basisu/transcoder
-    ${KTX_DIR}/other_include
+    ${ktx_SOURCE_DIR}/include
+    ${ktx_SOURCE_DIR}/lib
+    ${ktx_SOURCE_DIR}/utils
+    ${ktx_SOURCE_DIR}/lib/basisu/zstd
+    ${ktx_SOURCE_DIR}/lib/basisu/transcoder
+    ${ktx_SOURCE_DIR}/other_include
 )
 
 add_library(ktx ${KTX_SOURCES})
@@ -129,10 +171,55 @@ target_compile_definitions(ktx PUBLIC BASISU_NO_ITERATOR_DEBUG_LEVEL)
 target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
 
 # EnTT
-add_subdirectory(entt)
+cpmaddpackage(
+    NAME entt
+    GITHUB_REPOSITORY ${entt_GITHUB}
+    GIT_TAG ${entt_TAG}
+)
 
 # JoltPhysics
-add_subdirectory(JoltPhysics/Build)
+cpmaddpackage(
+    NAME jolt
+    GITHUB_REPOSITORY ${jolt_GITHUB}
+    GIT_TAG ${jolt_TAG}
+    DOWNLOAD_ONLY YES
+)
+add_subdirectory(${jolt_SOURCE_DIR}/Build ${jolt_BINARY_DIR})
 
 # Yojimbo
-add_subdirectory(yojimboCmake)
+cpmaddpackage(
+    NAME yojimbo
+    GITHUB_REPOSITORY ${yojimbo_GITHUB}
+    GIT_TAG ${yojimbo_TAG}
+    DOWNLOAD_ONLY YES
+)
+
+CPMAddPackage("gh:robinlinden/libsodium-cmake#f568ff02f1bed155ea598c0e803ef3c9db2703d2")
+CPMAddPackage("gh:Mbed-TLS/mbedtls@3.2.1")
+
+add_library(yojimbo
+        ${yojimbo_SOURCE_DIR}/yojimbo.cpp 
+        ${yojimbo_SOURCE_DIR}/yojimbo.h
+        ${yojimbo_SOURCE_DIR}/netcode.io/netcode.c 
+        ${yojimbo_SOURCE_DIR}/netcode.io/netcode.h
+        ${yojimbo_SOURCE_DIR}/reliable.io/reliable.c 
+        ${yojimbo_SOURCE_DIR}/reliable.io/reliable.h
+        ${yojimbo_SOURCE_DIR}/certs.c 
+        ${yojimbo_SOURCE_DIR}/certs.h
+        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c 
+        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c)
+target_link_libraries(yojimbo
+    PRIVATE MbedTLS::mbedtls
+           MbedTLS::mbedcrypto
+           MbedTLS::mbedx509 
+           sodium)
+target_compile_definitions(yojimbo PUBLIC 
+        NETCODE_ENABLE_TESTS=0 
+        RELIABLE_ENABLE_TESTS=0)    
+target_include_directories(yojimbo PUBLIC 
+    ${yojimbo_SOURCE_DIR}/netcode.io 
+    ${yojimbo_SOURCE_DIR}/reliable.io 
+    ${yojimbo_SOURCE_DIR})
+
+set(YOJIMBO_LIBRARY yojimbo CACHE STRING "" FORCE)
+mark_as_advanced(YOJIMBO_LIBRARY)

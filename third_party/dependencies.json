@@ -1,0 +1,57 @@
+[
+    {
+        "name": "entt",
+        "github": "skypjack/entt",
+        "branch": "master"
+    },
+    {
+        "name": "imgui",
+        "github": "ocornut/imgui",
+        "branch": "docking"
+    },
+    {
+        "name": "imguizmo",
+        "github": "CedricGuillemet/ImGuizmo",
+        "branch": "master"
+    },
+    {
+        "name": "glfw",
+        "github": "glfw/glfw",
+        "branch": "master"
+    },
+    {
+        "name": "tinyobjloader",
+        "github": "tinyobjloader/tinyobjloader",
+        "branch": "release"
+    },
+    {
+        "name": "ktx",
+        "github": "KhronosGroup/KTX-Software",
+        "branch": "main"
+    },
+	{
+        "name": "glm",
+	    "github": "g-truc/glm",
+        "branch": "master"
+    },
+	{
+        "name": "stb",
+	    "github": "nothings/stb",
+        "branch": "master"
+    },
+	{
+        "name": "vma",
+	    "github": "GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator",
+        "branch": "master"
+    },
+	{
+        "name": "jolt",
+	    "github": "jrouwe/JoltPhysics",
+        "branch": "master"
+    },
+	{
+        "name": "yojimbo",
+	    "github": "networkprotocol/yojimbo",
+        "branch": "master"
+    }
+]

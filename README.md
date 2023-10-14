@@ -223,10 +223,10 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Change the camera to have distance and such as saved fields. So Only the position, rotation and position is sent.
   - [ ] The camera should then be called update on to allow it to ease.
 - [ ] Fix the camera so it does not point in a nonsense direction at the start.
-- [ ] Steal the dependency updating from <https://github.com/liblava/liblava>.
-  - [ ] Use CPM instead
-  - [ ] A "lock" file
-  - [ ] Script to update all versions
+- [x] Steal the dependency updating from <https://github.com/liblava/liblava>.
+  - [x] Use CPM instead
+  - [x] A "lock" file
+  - [x] Script to update all versions
   - [ ] json file to add repos and tags.
 - [ ] Implement t3ssel8r's shader: <https://imgur.com/gallery/qwhbHQq>
   - <https://www.reddit.com/r/godot/comments/14sxi4h/i_have_refined_my_water_shader/>

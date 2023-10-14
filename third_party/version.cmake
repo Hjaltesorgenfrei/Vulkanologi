@@ -31,3 +31,9 @@ set(jolt_TAG f8da353840a9a29b994439c81f2ddd0635062844)
 
 set(yojimbo_GITHUB networkprotocol/yojimbo)
 set(yojimbo_TAG b2eda0a794bddc89bff681d61407a9c19c050b49)
+
+set(libsodium_GITHUB robinlinden/libsodium-cmake)
+set(libsodium_TAG f568ff02f1bed155ea598c0e803ef3c9db2703d2)
+
+set(mbedtls_GITHUB Mbed-TLS/mbedtls)
+set(mbedtls_TAG v3.2.1)

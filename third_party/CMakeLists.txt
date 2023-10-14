@@ -7,7 +7,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/version.cmake")
 find_package(Vulkan REQUIRED)
 
 # GLFW
-cpmaddpackage(
+CPMAddPackage(
     NAME glfw
     GITHUB_REPOSITORY ${glfw_GITHUB}
     GIT_TAG ${glfw_TAG}
@@ -19,7 +19,7 @@ cpmaddpackage(
 )
 
 # GLM
-cpmaddpackage(
+CPMAddPackage(
     NAME glm
     GITHUB_REPOSITORY ${glm_GITHUB}
     GIT_TAG ${glm_TAG}
@@ -27,7 +27,7 @@ cpmaddpackage(
 set(GLM_INCLUDE_DIR ${glm_SOURCE_DIR} PARENT_SCOPE)
 
 # STB
-cpmaddpackage(
+CPMAddPackage(
     NAME stb
     GITHUB_REPOSITORY ${stb_GITHUB}
     GIT_TAG ${stb_TAG}
@@ -37,28 +37,28 @@ add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
 
 # tinyobjloader
-cpmaddpackage(
+CPMAddPackage(
     NAME tinyobjloader
     GITHUB_REPOSITORY ${tinyobjloader_GITHUB}
     GIT_TAG ${tinyobjloader_TAG}
 )
 
 # VMA
-cpmaddpackage(
+CPMAddPackage(
     NAME vma
     GITHUB_REPOSITORY ${vma_GITHUB}
     GIT_TAG ${vma_TAG}
 )
 
 # Imgui
-cpmaddpackage(
+CPMAddPackage(
     NAME imgui
     GITHUB_REPOSITORY ${imgui_GITHUB}
     GIT_TAG ${imgui_TAG}
     DOWNLOAD_ONLY YES
 )
 
-cpmaddpackage(
+CPMAddPackage(
     NAME imguizmo
     GITHUB_REPOSITORY ${imguizmo_GITHUB}
     GIT_TAG ${imguizmo_TAG}
@@ -84,7 +84,7 @@ target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR} ${imguizmo_SOURCE_DI
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan glfw)
 
 # Ktx
-cpmaddpackage(
+CPMAddPackage(
     NAME ktx
     GITHUB_REPOSITORY ${ktx_GITHUB}
     GIT_TAG ${ktx_TAG}
@@ -171,14 +171,14 @@ target_compile_definitions(ktx PUBLIC BASISU_NO_ITERATOR_DEBUG_LEVEL)
 target_link_libraries(ktx PUBLIC Vulkan::Vulkan)
 
 # EnTT
-cpmaddpackage(
+CPMAddPackage(
     NAME entt
     GITHUB_REPOSITORY ${entt_GITHUB}
     GIT_TAG ${entt_TAG}
 )
 
 # JoltPhysics
-cpmaddpackage(
+CPMAddPackage(
     NAME jolt
     GITHUB_REPOSITORY ${jolt_GITHUB}
     GIT_TAG ${jolt_TAG}
@@ -187,15 +187,22 @@ cpmaddpackage(
 add_subdirectory(${jolt_SOURCE_DIR}/Build ${jolt_BINARY_DIR})
 
 # Yojimbo
-cpmaddpackage(
+CPMAddPackage(
     NAME yojimbo
     GITHUB_REPOSITORY ${yojimbo_GITHUB}
     GIT_TAG ${yojimbo_TAG}
     DOWNLOAD_ONLY YES
 )
-
-CPMAddPackage("gh:robinlinden/libsodium-cmake#f568ff02f1bed155ea598c0e803ef3c9db2703d2")
-CPMAddPackage("gh:Mbed-TLS/mbedtls@3.2.1")
+CPMAddPackage(
+    NAME libsodium
+    GITHUB_REPOSITORY ${libsodium_GITHUB}
+    GIT_TAG ${libsodium_TAG}
+)
+CPMAddPackage(
+    NAME mbedtls
+    GITHUB_REPOSITORY ${mbedtls_GITHUB}
+    GIT_TAG ${mbedtls_TAG}
+)
 
 add_library(yojimbo
         ${yojimbo_SOURCE_DIR}/yojimbo.cpp 

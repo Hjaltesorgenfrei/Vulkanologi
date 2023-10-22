@@ -6,7 +6,7 @@ on:
       - master
     paths:
       - 'src/**'
-      - 'third_part/**'
+      - 'third_party/**'
       - 'include/**'
       - '.github/workflows/windows_build.yml'
       - 'CMakeLists.txt'

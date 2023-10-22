@@ -197,11 +197,13 @@ CPMAddPackage(
     NAME libsodium
     GITHUB_REPOSITORY ${libsodium_GITHUB}
     GIT_TAG ${libsodium_TAG}
+    EXCLUDE_FROM_ALL YES
 )
 CPMAddPackage(
     NAME mbedtls
     GITHUB_REPOSITORY ${mbedtls_GITHUB}
     GIT_TAG ${mbedtls_TAG}
+    EXCLUDE_FROM_ALL YES
 )
 
 add_library(yojimbo

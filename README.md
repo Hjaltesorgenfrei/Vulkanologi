@@ -193,7 +193,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] Car follow, takes a Car state as input. Probably Needs to be a entity pointer as it might be on another entity.
     - Can probably just be a physics object it follows in this case. It also has a velocity.
     - Keyboard should also allow for rotating the camera around the object in any case.
-  - Might be an idea to allow mutiple cameras to exists on many objects or more on just one. And then just switch between them.
+  - Might be an idea to allow multiple cameras to exists on many objects or more on just one. And then just switch between them.
 - [ ] Possibly move adding/onRemove to Physics file to make sure that the correct components are added and removed.
 - [ ] C# scripting could probably be done with .NET hosting. <https://github.com/dotnet/samples/tree/main/core/hosting>
   - Mono is another choice, <http://nilssondev.com/mono-guide/book/>
@@ -202,15 +202,15 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - DotNetEvolution recommended just using mono. An integration can be found in <https://github.com/crazytuzi/UnrealCSharp>
 - [ ] Use name "Krake" for everything.
   - Repo should be called "Krake Engine" and namespace "krake"
-- [ ] Seperate parts out in seperate projects
+- [ ] Seperate parts out in separate projects
   - [x] Rendering
   - [ ] Client
   - [ ] Asset Loading
   - [x] Shapes and Curves Library
   - [ ] Make a CMakeLists.txt for resources and shaders.
 - [ ] Make a editor UI for scenes.
-  - <https://github.com/jmorton06/Lumos> has something similiar to what I want to build.
-  - Figure out how this should work with the swapchain and renderpass. 
+  - <https://github.com/jmorton06/Lumos> has something similar to what I want to build.
+  - Figure out how this should work with the swapchain and renderpass.
     - Either just render to an image that gets shown in ImGui or else it might be possible to simple only render part of the screen.
       - Only rendering to part of it, would avoid recreating the swapchain which can be very slow.
   - [ ] Make some way to debug entities, so that every (or just some) components can be shown in the ui.
@@ -218,7 +218,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - [ ] And base functions which handles each other type.
     - Lumos also does this
     - <https://github.com/Green-Sky/imgui_entt_entity_editor>
-- [ ] Figure out where in the Yojimbo loops that messages should be recieved. Current method can crash.
+- [ ] Figure out where in the Yojimbo loops that messages should be received. Current method can crash.
 - [ ] There seems to be a bug when a box interacts with mesh shape at a sharp angle which causes a crash.
 - [ ] Change the camera to have distance and such as saved fields. So Only the position, rotation and position is sent.
   - [ ] The camera should then be called update on to allow it to ease.
@@ -231,6 +231,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Implement t3ssel8r's shader: <https://imgur.com/gallery/qwhbHQq>
   - <https://www.reddit.com/r/godot/comments/14sxi4h/i_have_refined_my_water_shader/>
   - <https://www.reddit.com/r/godot/comments/14as2b9/i_added_a_stable_subtexel_smooth_camera_to_my_3d/>
+- [ ] CPM has some caching would should be configured to remove redundant downloads.
 
 ### Descriptor Layout Idea
 

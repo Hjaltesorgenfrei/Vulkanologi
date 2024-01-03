@@ -117,6 +117,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] deform meshes along spline. <https://stackoverflow.com/questions/69208203/bend-a-mesh-along-spline>
 - [ ] Rename files and introduce a namespace.
   - Physics, Spline and Path are terrible naming right now. Also BEH is bad prefix
+  - [ ] Use name "Rotte" for everything.
+    - Repo should be called "Rotte Engine" and namespace "rotte"
 - [ ] Pre-dock debug info in ImGui, probably with a `DockBuilder`.
 - [ ] Size the debug windows to the size of their content.
 - [ ] Use shared_ptr reference counting in AssetManager to clean up unused assets when space is low.
@@ -200,8 +202,6 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - <https://github.com/lambdageek/monovm-embed-sample>
       - Check the forks if someone has something better first.
   - DotNetEvolution recommended just using mono. An integration can be found in <https://github.com/crazytuzi/UnrealCSharp>
-- [ ] Use name "Krake" for everything.
-  - Repo should be called "Krake Engine" and namespace "krake"
 - [ ] Seperate parts out in separate projects
   - [x] Rendering
   - [ ] Client
@@ -233,6 +233,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - <https://www.reddit.com/r/godot/comments/14as2b9/i_added_a_stable_subtexel_smooth_camera_to_my_3d/>
 - [ ] CPM has some caching would should be configured to remove redundant downloads.
 - [ ] Create a pipeline that benchmarks compile speed for windows and linux with the results as artifact.
+- [ ] lol
 
 ### Descriptor Layout Idea
 

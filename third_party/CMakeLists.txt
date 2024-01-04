@@ -206,17 +206,17 @@ CPMAddPackage(
     EXCLUDE_FROM_ALL YES
 )
 
+file(GLOB_RECURSE yojimbo_SOURCES CONFIGURE_DEPENDS ${yojimbo_SOURCE_DIR}/source/*.cpp)
+
 add_library(yojimbo
-        ${yojimbo_SOURCE_DIR}/yojimbo.cpp 
-        ${yojimbo_SOURCE_DIR}/yojimbo.h
-        ${yojimbo_SOURCE_DIR}/netcode.io/netcode.c 
-        ${yojimbo_SOURCE_DIR}/netcode.io/netcode.h
-        ${yojimbo_SOURCE_DIR}/reliable.io/reliable.c 
-        ${yojimbo_SOURCE_DIR}/reliable.io/reliable.h
-        ${yojimbo_SOURCE_DIR}/certs.c 
-        ${yojimbo_SOURCE_DIR}/certs.h
+        ${yojimbo_SOURCES}
+        ${yojimbo_SOURCE_DIR}/include/yojimbo.h
+        ${yojimbo_SOURCE_DIR}/netcode/netcode.c 
+        ${yojimbo_SOURCE_DIR}/netcode/netcode.h
+        ${yojimbo_SOURCE_DIR}/reliable/reliable.c 
+        ${yojimbo_SOURCE_DIR}/reliable/reliable.h
         ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c 
-        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c)
+        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.h)
 target_link_libraries(yojimbo
     PRIVATE MbedTLS::mbedtls
            MbedTLS::mbedcrypto
@@ -226,8 +226,10 @@ target_compile_definitions(yojimbo PUBLIC
         NETCODE_ENABLE_TESTS=0 
         RELIABLE_ENABLE_TESTS=0)    
 target_include_directories(yojimbo PUBLIC 
-    ${yojimbo_SOURCE_DIR}/netcode.io 
-    ${yojimbo_SOURCE_DIR}/reliable.io 
+    ${yojimbo_SOURCE_DIR}/netcode
+    ${yojimbo_SOURCE_DIR}/reliable
+    ${yojimbo_SOURCE_DIR}/serialize
+    ${yojimbo_SOURCE_DIR}/include
     ${yojimbo_SOURCE_DIR})
 
 set(YOJIMBO_LIBRARY yojimbo CACHE STRING "" FORCE)

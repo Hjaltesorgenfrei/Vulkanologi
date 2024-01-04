@@ -289,12 +289,12 @@ void Renderer::initImgui() {
 
     //execute a gpu command to upload imgui font textures
     device->immediateSubmit([&](auto cmd) {
-        ImGui_ImplVulkan_CreateFontsTexture(cmd);
+        ImGui_ImplVulkan_CreateFontsTexture();
     });
 
     //clear font textures from cpu data
-    ImGui_ImplVulkan_DestroyFontUploadObjects();
     mainDeletionQueue.push_function([&]() {
+        ImGui_ImplVulkan_DestroyFontsTexture();
         device->device().destroyDescriptorPool(imguiPool);
         ImGui_ImplVulkan_Shutdown();
     });

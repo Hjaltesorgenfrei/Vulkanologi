@@ -51,7 +51,7 @@
     },
 	{
         "name": "yojimbo",
-	    "github": "networkprotocol/yojimbo",
+	    "github": "mas-bandwidth/yojimbo",
         "branch": "master"
     },
     {
@@ -62,6 +62,6 @@
     {
         "name": "mbedtls",
 	    "github": "Mbed-TLS/mbedtls",
-        "tag": "3.2.1"
+        "tag": "v3.2.1"
     }
 ]

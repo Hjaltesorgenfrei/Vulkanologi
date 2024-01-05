@@ -193,23 +193,13 @@ CPMAddPackage(
     GIT_TAG ${yojimbo_TAG}
     DOWNLOAD_ONLY YES
 )
-CPMAddPackage(
-    NAME libsodium
-    GITHUB_REPOSITORY ${libsodium_GITHUB}
-    GIT_TAG ${libsodium_TAG}
-    EXCLUDE_FROM_ALL YES
-)
-CPMAddPackage(
-    NAME mbedtls
-    GITHUB_REPOSITORY ${mbedtls_GITHUB}
-    GIT_TAG ${mbedtls_TAG}
-    EXCLUDE_FROM_ALL YES
-)
 
 file(GLOB_RECURSE yojimbo_SOURCES CONFIGURE_DEPENDS ${yojimbo_SOURCE_DIR}/source/*.cpp)
+file(GLOB_RECURSE sodium_SOURCES CONFIGURE_DEPENDS ${yojimbo_SOURCE_DIR}/sodium/*.cpp)
 
 add_library(yojimbo
         ${yojimbo_SOURCES}
+        ${sodium_SOURCES}
         ${yojimbo_SOURCE_DIR}/include/yojimbo.h
         ${yojimbo_SOURCE_DIR}/netcode/netcode.c 
         ${yojimbo_SOURCE_DIR}/netcode/netcode.h
@@ -217,11 +207,7 @@ add_library(yojimbo
         ${yojimbo_SOURCE_DIR}/reliable/reliable.h
         ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c 
         ${yojimbo_SOURCE_DIR}/tlsf/tlsf.h)
-target_link_libraries(yojimbo
-    PRIVATE MbedTLS::mbedtls
-           MbedTLS::mbedcrypto
-           MbedTLS::mbedx509 
-           sodium)
+target_link_libraries(yojimbo)
 target_compile_definitions(yojimbo PUBLIC 
         NETCODE_ENABLE_TESTS=0 
         RELIABLE_ENABLE_TESTS=0)    
@@ -230,6 +216,7 @@ target_include_directories(yojimbo PUBLIC
     ${yojimbo_SOURCE_DIR}/reliable
     ${yojimbo_SOURCE_DIR}/serialize
     ${yojimbo_SOURCE_DIR}/include
+    ${yojimbo_SOURCE_DIR}/sodium
     ${yojimbo_SOURCE_DIR})
 
 set(YOJIMBO_LIBRARY yojimbo CACHE STRING "" FORCE)

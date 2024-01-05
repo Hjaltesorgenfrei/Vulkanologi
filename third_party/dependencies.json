@@ -53,5 +53,15 @@
         "name": "yojimbo",
 	    "github": "mas-bandwidth/yojimbo",
         "branch": "master"
+    },
+    {
+        "name": "libsodium",
+	    "github": "robinlinden/libsodium-cmake",
+        "tag": "f568ff02f1bed155ea598c0e803ef3c9db2703d2"
+    },
+    {
+        "name": "mbedtls",
+	    "github": "Mbed-TLS/mbedtls",
+        "tag": "v3.2.1"
     }
 ]

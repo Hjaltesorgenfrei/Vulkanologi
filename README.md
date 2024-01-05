@@ -236,7 +236,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 - [ ] Look into libaries
   - [ ] <https://github.com/bombela/backward-cpp>
-  - [ ] 
+  - [ ] <https://github.com/tgfrerer/island> has hot reloading of stuff which i want :)
 
 ### Descriptor Layout Idea
 

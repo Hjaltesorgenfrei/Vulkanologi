@@ -237,6 +237,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Look into libaries
   - [ ] <https://github.com/bombela/backward-cpp>
   - [ ] <https://github.com/tgfrerer/island> has hot reloading of stuff which i want :)
+  - [ ] <https://github.com/cg-tuwien/Auto-Vk-Toolkit>
+- [ ] Implement Meshlet support
 
 ### Descriptor Layout Idea
 

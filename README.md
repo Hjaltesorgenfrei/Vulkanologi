@@ -234,6 +234,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] CPM has some caching would should be configured to remove redundant downloads.
 - [ ] Create a pipeline that benchmarks compile speed for windows and linux with the results as artifact.
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
+- [ ] Look into libaries
+  - [ ] <https://github.com/bombela/backward-cpp>
+  - [ ] 
 
 ### Descriptor Layout Idea
 

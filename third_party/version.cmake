@@ -27,7 +27,7 @@ set(vma_GITHUB GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 set(vma_TAG 5e43c795daf43dd09398d8307212e85025215052)
 
 set(jolt_GITHUB jrouwe/JoltPhysics)
-set(jolt_TAG 91dbf3d5f1f40fd54e85d3f010b8f473fb854d95)
+set(jolt_TAG d934bf84d832e5af5cb051d7aaed176a5fd148e6)
 
 set(yojimbo_GITHUB mas-bandwidth/yojimbo)
 set(yojimbo_TAG 56433a960b4e22213a3c89352fb7c392272d5c40)

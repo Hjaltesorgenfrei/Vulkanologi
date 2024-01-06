@@ -233,7 +233,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - <https://www.reddit.com/r/godot/comments/14as2b9/i_added_a_stable_subtexel_smooth_camera_to_my_3d/>
 - [ ] CPM has some caching would should be configured to remove redundant downloads.
 - [ ] Create a pipeline that benchmarks compile speed for windows and linux with the results as artifact.
-- [ ] lol
+- [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 
 ### Descriptor Layout Idea
 

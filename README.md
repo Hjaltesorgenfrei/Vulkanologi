@@ -239,6 +239,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] <https://github.com/tgfrerer/island> has hot reloading of stuff which i want :)
   - [ ] <https://github.com/cg-tuwien/Auto-Vk-Toolkit>
 - [ ] Implement Meshlet support
+- [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 
 ### Descriptor Layout Idea
 

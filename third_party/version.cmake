@@ -34,6 +34,3 @@ set(yojimbo_TAG 9ada0fe78cc328897aeb75f7f3969e5a5937b334)
 
 set(libsodium_GITHUB robinlinden/libsodium-cmake)
 set(libsodium_TAG f568ff02f1bed155ea598c0e803ef3c9db2703d2)
-
-set(mbedtls_GITHUB Mbed-TLS/mbedtls)
-set(mbedtls_TAG v3.2.1)

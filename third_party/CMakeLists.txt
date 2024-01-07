@@ -199,12 +199,6 @@ CPMAddPackage(
     GIT_TAG ${libsodium_TAG}
     EXCLUDE_FROM_ALL YES
 )
-CPMAddPackage(
-    NAME mbedtls
-    GITHUB_REPOSITORY ${mbedtls_GITHUB}
-    GIT_TAG ${mbedtls_TAG}
-    EXCLUDE_FROM_ALL YES
-)
 
 file(GLOB_RECURSE yojimbo_SOURCES CONFIGURE_DEPENDS ${yojimbo_SOURCE_DIR}/source/*.cpp)
 
@@ -218,10 +212,7 @@ add_library(yojimbo
         ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c 
         ${yojimbo_SOURCE_DIR}/tlsf/tlsf.h)
 target_link_libraries(yojimbo
-    PRIVATE MbedTLS::mbedtls
-           MbedTLS::mbedcrypto
-           MbedTLS::mbedx509 
-           sodium)
+    PRIVATE sodium)
 target_compile_definitions(yojimbo PUBLIC 
         NETCODE_ENABLE_TESTS=0 
         RELIABLE_ENABLE_TESTS=0)    

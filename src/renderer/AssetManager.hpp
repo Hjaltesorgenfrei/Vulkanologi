@@ -64,11 +64,11 @@ class AssetManager {
 
     void cleanUpBuffer(AllocatedBuffer buffer);
 
-    void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount = 1);
+    void transitionImageLayout(const std::shared_ptr<UploadedTexture> texture, vk::ImageLayout newLayout);
 
     void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 
-    void generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
+    void generateMipmaps(const std::shared_ptr<UploadedTexture> texture);
 
     static bool hasStencilComponent(vk::Format format);
 };

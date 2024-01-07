@@ -28,6 +28,7 @@ struct PersistentBuffer : AllocatedBuffer {
 
 struct AllocatedImage {
     vk::Image _image;
+    vk::ImageLayout _layout;
     VmaAllocation _allocation;
 };
 

@@ -32,22 +32,13 @@ std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& fil
 				texture->textureImageFormat,
 				vk::ImageTiling::eOptimal,
 				vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+			texture->textureImage._layout = vk::ImageLayout::eUndefined;
 
-			transitionImageLayout(
-				texture->textureImage._image,
-				texture->textureImageFormat,
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::eTransferDstOptimal,
-				texture->mipLevels);
+			transitionImageLayout(texture, vk::ImageLayout::eTransferDstOptimal);
 
 			copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, ktx_texture->baseWidth, ktx_texture->baseHeight);
 
-			transitionImageLayout(
-				texture->textureImage._image,
-				texture->textureImageFormat,
-				vk::ImageLayout::eTransferDstOptimal,
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				texture->mipLevels);
+			transitionImageLayout(texture, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     		cleanUpBuffer(stagingBuffer);
 			deletionQueue.push_function([&, texture]() {
@@ -55,6 +46,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& fil
 			});
 		}
 		else {
+			//TODO: THIS is pretty soup the functions duplicate behavior.
 			createTextureImage(filename.c_str(), texture);
 		}
 		createTextureImageView(texture);
@@ -93,14 +85,9 @@ std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& fil
 				texture->textureImageFormat,
 				vk::ImageTiling::eOptimal,
 				vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+			texture->textureImage._layout = vk::ImageLayout::eUndefined;
 
-			transitionImageLayout(
-				texture->textureImage._image,
-				texture->textureImageFormat,
-				vk::ImageLayout::eUndefined,
-				vk::ImageLayout::eTransferDstOptimal,
-				texture->mipLevels,
-				6);
+			transitionImageLayout(texture, vk::ImageLayout::eTransferDstOptimal);
 
 			std::vector<vk::BufferImageCopy> bufferCopyRegions;
 
@@ -137,13 +124,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& fil
 				cmd.copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, vk::ImageLayout::eTransferDstOptimal, static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
 			});
 			
-			transitionImageLayout(
-				texture->textureImage._image,
-				texture->textureImageFormat,
-				vk::ImageLayout::eTransferDstOptimal,
-				vk::ImageLayout::eShaderReadOnlyOptimal,
-				texture->mipLevels,
-				6);
+			transitionImageLayout(texture, vk::ImageLayout::eShaderReadOnlyOptimal);
 
     		cleanUpBuffer(stagingBuffer);
 			deletionQueue.push_function([&, texture]() {
@@ -151,7 +132,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& fil
 			});
 		}
 		else {
-			createTextureImage(filename.c_str(), texture);
+			throw std::runtime_error("Loading cubemap from .png or jpeg is not supported");
 		}
 		createTextureImageView(texture);
 		createTextureSampler(texture, texture->height + texture->width < 65 ? vk::Filter::eNearest : vk::Filter::eLinear); 
@@ -188,17 +169,12 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 			texture->textureImageFormat,
 			vk::ImageTiling::eOptimal,
 			vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
-	transitionImageLayout(
-			texture->textureImage._image,
-			texture->textureImageFormat,
-			vk::ImageLayout::eUndefined,
-			vk::ImageLayout::eTransferDstOptimal,
-			texture->mipLevels);
+
+	transitionImageLayout(texture, vk::ImageLayout::eTransferDstOptimal);
 	copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-
     cleanUpBuffer(stagingBuffer);
-
-	generateMipmaps(texture->textureImage._image, texture->textureImageFormat, texWidth, texHeight, texture->mipLevels);
+	generateMipmaps(texture);
+	
 	deletionQueue.push_function([&, texture]() {
 		vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
 	});
@@ -310,20 +286,21 @@ AllocatedImage AssetManager::createCubeImage(int width, int height, uint32_t mip
 	return allocatedImage;
 }
 
-void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
-										 vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount) {
+void AssetManager::transitionImageLayout(const std::shared_ptr<UploadedTexture> texture, vk::ImageLayout newLayout) {
+	auto oldLayout = texture->textureImage._layout;
+
 	vk::ImageMemoryBarrier barrier{
 			.oldLayout = oldLayout,
 			.newLayout = newLayout,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image = image,
+			.image = texture->textureImage._image,
 			.subresourceRange = vk::ImageSubresourceRange{
 					.aspectMask = vk::ImageAspectFlagBits::eColor,
 					.baseMipLevel = 0,
-					.levelCount = mipLevels,
+					.levelCount = texture->mipLevels,
 					.baseArrayLayer = 0,
-					.layerCount = layerCount}};
+					.layerCount = texture->layerCount}};
 
 	vk::PipelineStageFlags sourceStage;
 	vk::PipelineStageFlags destinationStage;
@@ -331,7 +308,7 @@ void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk:
 	if (newLayout == vk::ImageLayout::eDepthStencilAttachmentOptimal) {
 		barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
 
-		if (hasStencilComponent(format)) {
+		if (hasStencilComponent(texture->textureImageFormat)) {
 			barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
 		}
 	} else {
@@ -366,6 +343,7 @@ void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk:
 				0, nullptr,
 				1, &barrier);
 	});
+	texture->textureImage._layout = newLayout;
 }
 
 void AssetManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {
@@ -386,9 +364,8 @@ void AssetManager::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_
 	});
 }
 
-void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int32_t texWidth, int32_t texHeight,
-								   uint32_t mipLevels) {
-	auto properties = device->physicalDevice().getFormatProperties(imageFormat);
+void AssetManager::generateMipmaps(const std::shared_ptr<UploadedTexture> texture) {
+	auto properties = device->physicalDevice().getFormatProperties(texture->textureImageFormat);
 
 	if (!(properties.optimalTilingFeatures & vk::FormatFeatureFlagBits::eSampledImageFilterLinear)) {
 		throw std::runtime_error("Texture image format does not support linear blitting!");
@@ -398,7 +375,7 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 		vk::ImageMemoryBarrier barrier{
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-				.image = image,
+				.image = texture->textureImage._image,
 				.subresourceRange = {
 						.aspectMask = vk::ImageAspectFlagBits::eColor,
 						.levelCount = 1,
@@ -406,10 +383,10 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 						.layerCount = 1,
 				}};
 
-		int32_t mipWidth = texWidth;
-		int32_t mipHeight = texHeight;
+		int32_t mipWidth = texture->width;
+		int32_t mipHeight = texture->height;
 
-		for (uint32_t i = 1; i < mipLevels; i++) {
+		for (uint32_t i = 1; i < texture->mipLevels; i++) {
 			barrier.subresourceRange.baseMipLevel = i - 1;
 			barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
 			barrier.newLayout = vk::ImageLayout::eTransferSrcOptimal;
@@ -436,8 +413,8 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 			blit.dstOffsets[1] = vk::Offset3D{mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
 
 			commandBuffer.blitImage(
-					image, vk::ImageLayout::eTransferSrcOptimal,
-					image, vk::ImageLayout::eTransferDstOptimal,
+					texture->textureImage._image, vk::ImageLayout::eTransferSrcOptimal,
+					texture->textureImage._image, vk::ImageLayout::eTransferDstOptimal,
 					1, &blit,
 					vk::Filter::eLinear);
 
@@ -457,7 +434,7 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 			if (mipHeight > 1) mipHeight /= 2;
 		}
 
-		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
+		barrier.subresourceRange.baseMipLevel = texture->mipLevels - 1;
 		barrier.oldLayout = vk::ImageLayout::eTransferDstOptimal;
 		barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
@@ -470,6 +447,7 @@ void AssetManager::generateMipmaps(vk::Image image, vk::Format imageFormat, int3
 				0, nullptr,
 				1, &barrier);
 	});
+	texture->textureImage._layout = vk::ImageLayout::eShaderReadOnlyOptimal;
 }
 
 bool AssetManager::hasStencilComponent(vk::Format format) {

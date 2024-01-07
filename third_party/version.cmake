@@ -27,10 +27,10 @@ set(vma_GITHUB GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator)
 set(vma_TAG 5e43c795daf43dd09398d8307212e85025215052)
 
 set(jolt_GITHUB jrouwe/JoltPhysics)
-set(jolt_TAG d934bf84d832e5af5cb051d7aaed176a5fd148e6)
+set(jolt_TAG b622c593da4aa7b2f12fbd667342911767f30c7e)
 
 set(yojimbo_GITHUB mas-bandwidth/yojimbo)
-set(yojimbo_TAG 56433a960b4e22213a3c89352fb7c392272d5c40)
+set(yojimbo_TAG 9ada0fe78cc328897aeb75f7f3969e5a5937b334)
 
 set(libsodium_GITHUB robinlinden/libsodium-cmake)
 set(libsodium_TAG f568ff02f1bed155ea598c0e803ef3c9db2703d2)

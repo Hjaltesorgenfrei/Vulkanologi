@@ -51,4 +51,5 @@ struct UploadedTexture {
 	vk::Sampler textureSampler;
     int width;
     int height;
+    uint32_t layerCount = 1;
 };

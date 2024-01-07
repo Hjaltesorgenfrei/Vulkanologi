@@ -28,6 +28,9 @@ class AssetManager {
 
     std::shared_ptr<UploadedTexture> getTexture(const std::string& filename);
 
+    std::shared_ptr<UploadedTexture> getCubeMap(const std::string& filename);
+
+    //TODO: This should probably be private.
     [[nodiscard]] AllocatedImage createImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
 
     template <typename T>
@@ -48,6 +51,8 @@ class AssetManager {
     DeletionQueue deletionQueue{};
     std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
 
+    [[nodiscard]] AllocatedImage createCubeImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags);
+
     void createTextureImage(const char* filename, const std::shared_ptr<UploadedTexture>& texture);
 
     void createTextureImageView(const std::shared_ptr<UploadedTexture>& texture);
@@ -59,7 +64,7 @@ class AssetManager {
 
     void cleanUpBuffer(AllocatedBuffer buffer);
 
-    void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
+    void transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount = 1);
 
     void copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height);
 

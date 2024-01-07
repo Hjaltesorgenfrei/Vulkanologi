@@ -42,6 +42,109 @@ std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& fil
 
 			copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, ktx_texture->baseWidth, ktx_texture->baseHeight);
 
+			transitionImageLayout(
+				texture->textureImage._image,
+				texture->textureImageFormat,
+				vk::ImageLayout::eTransferDstOptimal,
+				vk::ImageLayout::eShaderReadOnlyOptimal,
+				texture->mipLevels);
+
+    		cleanUpBuffer(stagingBuffer);
+			deletionQueue.push_function([&, texture]() {
+				vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
+			});
+		}
+		else {
+			createTextureImage(filename.c_str(), texture);
+		}
+		createTextureImageView(texture);
+		createTextureSampler(texture, texture->height + texture->width < 65 ? vk::Filter::eNearest : vk::Filter::eLinear); 
+		uploadedTextures[filename] = texture;
+	}
+	return uploadedTextures[filename];
+}
+
+std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& filename) {
+	if (uploadedTextures.find(filename) == uploadedTextures.end()) {
+		auto texture = std::make_shared<UploadedTexture>();
+		texture->layerCount = 6;
+		if (filename.ends_with(".ktx")) {
+			ktxTexture2 *ktx_texture;
+			auto result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, (ktxTexture**)&ktx_texture);
+			if (result != KTX_SUCCESS) {
+				throw std::runtime_error("Failed to load ktx texture image!");
+			}
+
+			ktx_transcode_fmt_e target_format = KTX_TTF_BC7_RGBA;
+			if (ktxTexture2_NeedsTranscoding(ktx_texture)) {
+				ktxTexture2_TranscodeBasis(ktx_texture, target_format, 0);
+			}
+			texture->textureImageFormat = (vk::Format) ktx_texture->vkFormat;
+			std::span<ktx_uint8_t> dataSpan{ktx_texture->pData, static_cast<size_t>(ktx_texture->dataSize)};
+			
+			auto stagingBuffer = stageData(dataSpan);
+			texture->mipLevels = ktx_texture->numLevels;
+
+			texture->textureImage = createCubeImage(
+				ktx_texture->baseWidth,
+				ktx_texture->baseHeight,
+				texture->mipLevels,
+				vk::SampleCountFlagBits::e1,
+				texture->textureImageFormat,
+				vk::ImageTiling::eOptimal,
+				vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled);
+
+			transitionImageLayout(
+				texture->textureImage._image,
+				texture->textureImageFormat,
+				vk::ImageLayout::eUndefined,
+				vk::ImageLayout::eTransferDstOptimal,
+				texture->mipLevels,
+				6);
+
+			std::vector<vk::BufferImageCopy> bufferCopyRegions;
+
+			for (uint32_t face = 0; face < 6; face++)
+			{
+				for (uint32_t level = 0; level < texture->mipLevels; level++)
+				{
+					// Calculate offset into staging buffer for the current mip level and face
+					ktx_size_t offset;
+					KTX_error_code ret = ktxTexture_GetImageOffset(ktxTexture(ktx_texture), level, 0, face, &offset);
+					assert(ret == KTX_SUCCESS);
+					VkBufferImageCopy bufferCopyRegion = {};
+
+					vk::BufferImageCopy region{
+						.bufferOffset = offset,
+						.bufferRowLength = 0,
+						.bufferImageHeight = 0,
+						.imageSubresource = vk::ImageSubresourceLayers{
+								.aspectMask = vk::ImageAspectFlagBits::eColor,
+								.mipLevel = level,
+								.baseArrayLayer = face,
+								.layerCount = 1},
+						.imageOffset = {0, 0, 0},
+						.imageExtent = {
+							.width = ktx_texture->baseWidth >> level, 
+							.height = ktx_texture->baseHeight >> level, 
+							.depth = 1}};
+					
+					bufferCopyRegions.push_back(region);
+				}
+			}
+			
+			device->immediateSubmit([&](auto cmd) {
+				cmd.copyBufferToImage(stagingBuffer._buffer, texture->textureImage._image, vk::ImageLayout::eTransferDstOptimal, static_cast<uint32_t>(bufferCopyRegions.size()), bufferCopyRegions.data());
+			});
+			
+			transitionImageLayout(
+				texture->textureImage._image,
+				texture->textureImageFormat,
+				vk::ImageLayout::eTransferDstOptimal,
+				vk::ImageLayout::eShaderReadOnlyOptimal,
+				texture->mipLevels,
+				6);
+
     		cleanUpBuffer(stagingBuffer);
 			deletionQueue.push_function([&, texture]() {
 				vmaDestroyImage(device->allocator(), texture->textureImage._image, texture->textureImage._allocation);
@@ -102,7 +205,7 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 }
 
 void AssetManager::createTextureImageView(const std::shared_ptr<UploadedTexture>& texture) {
-	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, texture->textureImageFormat, vk::ImageAspectFlagBits::eColor, texture->mipLevels);
+	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, texture->textureImageFormat, vk::ImageAspectFlagBits::eColor, texture->mipLevels, texture->layerCount);
 	deletionQueue.push_function([&, texture]() {
 		device->device().destroyImageView(texture->textureImageView);
 	});
@@ -157,7 +260,40 @@ AllocatedImage AssetManager::createImage(int width, int height, uint32_t mipLeve
 			.tiling = tiling,
 			.usage = flags,
 			.sharingMode = vk::SharingMode::eExclusive,
-			.initialLayout = vk::ImageLayout::eUndefined,
+			.initialLayout = vk::ImageLayout::eUndefined
+	};
+
+	AllocatedImage allocatedImage{};
+
+	VmaAllocationCreateInfo vmaAllocCreateInfo{
+			.usage = VMA_MEMORY_USAGE_GPU_ONLY};
+
+	VkImage image;
+	auto imageInfoCreate = static_cast<VkImageCreateInfo>(imageInfo);  // TODO: Add VMA HPP and fix this soup.
+	if (vmaCreateImage(device->allocator(), &imageInfoCreate, &vmaAllocCreateInfo, &image, &allocatedImage._allocation, nullptr) != VK_SUCCESS) {
+		throw std::runtime_error("Failed to allocate image");
+	}
+	allocatedImage._image = image;
+	return allocatedImage;
+}
+
+AllocatedImage AssetManager::createCubeImage(int width, int height, uint32_t mipLevels, vk::SampleCountFlagBits numSamples,
+										 vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags flags) {
+	vk::ImageCreateInfo imageInfo{
+			.flags = vk::ImageCreateFlagBits::eCubeCompatible,
+			.imageType = vk::ImageType::e2D,
+			.format = format,
+			.extent = vk::Extent3D{
+					.width = static_cast<uint32_t>(width),
+					.height = static_cast<uint32_t>(height),
+					.depth = 1},
+			.mipLevels = mipLevels,
+			.arrayLayers = 6,
+			.samples = numSamples,
+			.tiling = tiling,
+			.usage = flags,
+			.sharingMode = vk::SharingMode::eExclusive,
+			.initialLayout = vk::ImageLayout::eUndefined
 	};
 
 	AllocatedImage allocatedImage{};
@@ -175,7 +311,7 @@ AllocatedImage AssetManager::createImage(int width, int height, uint32_t mipLeve
 }
 
 void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout,
-										 vk::ImageLayout newLayout, uint32_t mipLevels) {
+										 vk::ImageLayout newLayout, uint32_t mipLevels, uint32_t layerCount) {
 	vk::ImageMemoryBarrier barrier{
 			.oldLayout = oldLayout,
 			.newLayout = newLayout,
@@ -187,7 +323,7 @@ void AssetManager::transitionImageLayout(vk::Image image, vk::Format format, vk:
 					.baseMipLevel = 0,
 					.levelCount = mipLevels,
 					.baseArrayLayer = 0,
-					.layerCount = 1}};
+					.layerCount = layerCount}};
 
 	vk::PipelineStageFlags sourceStage;
 	vk::PipelineStageFlags destinationStage;

@@ -46,6 +46,7 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createGraphicsPipelineLayout();
         createBillboardPipelineLayout();
         createComputePipelineLayout();
+        createSkyboxPipelineLayout();
         createPipelines();
         createCommandPool();
         initImgui();
@@ -441,7 +442,7 @@ void Renderer::createComputeDescriptorSetLayout() {
     }
 }
 
-
+// TODO: These pipeline layouts can probably be greatly simplified by just passing an array of descriptorsets. Might even have a short syntax.
 void Renderer::createGraphicsPipelineLayout() {
     vk::PushConstantRange pushConstantRange{
             .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
@@ -507,6 +508,25 @@ void Renderer::createComputePipelineLayout() {
     }
 }
 
+void Renderer::createSkyboxPipelineLayout() {
+    std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, materialDescriptorSetLayout};
+
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
+            .pSetLayouts = descriptorSetLayouts.data()
+    };
+
+    try {
+        skyboxPipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
+        mainDeletionQueue.push_function([&]() {
+            device->device().destroyPipelineLayout(skyboxPipelineLayout);
+        });
+    }
+    catch (vk::SystemError &err) {
+        throw std::runtime_error(std::string("failed to create skybox pipeline layout!") + err.what());
+    }
+}
+
 void Renderer::createPipelines() {
     createGraphicsPipeline();
     createBillboardPipeline();
@@ -514,6 +534,7 @@ void Renderer::createPipelines() {
     createWireframePipeline();
     createLinePipeline();
     createComputePipeline();
+    createSkyboxPipeline();
 }
 
 void Renderer::createGraphicsPipeline() {
@@ -538,6 +559,33 @@ void Renderer::createBillboardPipeline() {
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
     billboardPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
+}
+
+void Renderer::createSkyboxPipeline() {
+    PipelineConfigurationInfo pipelineConfig{};
+    BehPipeline::defaultPipelineConfiguration(pipelineConfig);
+    
+    pipelineConfig.attributeDescriptions = {
+            vk::VertexInputAttributeDescription{
+                .location = 0,
+                .binding = 0,
+                .format = vk::Format::eR32G32B32A32Sfloat,
+                .offset = 0
+            }
+    };
+    pipelineConfig.bindingDescriptions = {
+        vk::VertexInputBindingDescription{
+            .binding = 0,
+            .stride = sizeof(glm::vec3),
+            .inputRate = vk::VertexInputRate::eVertex
+        }
+    };
+    pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
+    pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.pipelineLayout = skyboxPipelineLayout;
+    pipelineConfig.renderPass = renderPass;
+    pipelineConfig.extent = swapChainExtent;
+    skyboxPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
 }
 
 void Renderer::createParticlePipeline() {

@@ -84,9 +84,11 @@ private:
     vk::PipelineLayout pipelineLayout;
     vk::PipelineLayout billboardPipelineLayout;
     vk::PipelineLayout computePipelineLayout;
+    vk::PipelineLayout skyboxPipelineLayout;
 
     std::unique_ptr<BehPipeline> graphicsPipeline;
     std::unique_ptr<BehPipeline> billboardPipeline;
+    std::unique_ptr<BehPipeline> skyboxPipeline;
     std::unique_ptr<BehPipeline> wireframePipeline;
     std::unique_ptr<BehPipeline> particlePipeline;
     std::unique_ptr<BehPipeline> linePipeline;
@@ -144,8 +146,11 @@ private:
     void createGraphicsPipelineLayout();
     void createBillboardPipelineLayout();
     void createComputePipelineLayout();
+    void createSkyboxPipelineLayout();
+
 
     void createPipelines();
+    void createSkyboxPipeline();
     void createGraphicsPipeline();
     void createBillboardPipeline();
     void createParticlePipeline();

@@ -120,6 +120,8 @@ private:
     std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
     std::vector<vk::DescriptorSet> computeDescriptorSets;
 
+    std::shared_ptr<UploadedTexture> skyBox;
+
     size_t currentFrame = 0;
 
     void initImgui();

@@ -26,6 +26,7 @@ int PARTICLE_COUNT = 256 * 4;
 #include <backends/imgui_impl_vulkan.h>
 #include "Particle.hpp"
 #include "GlobalUbo.hpp"
+#include "BehVkInit.hpp"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {
@@ -812,6 +813,7 @@ void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &ob
         model->mesh->_indexBuffer = assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
         model->material = createMaterial(model->mesh->_texturePaths);
     }
+    skyBox = assetManager.getCubeMap("resources/cubemap_yokohama_rgba.ktx");
 }
 
 void Renderer::createUniformBuffers() {

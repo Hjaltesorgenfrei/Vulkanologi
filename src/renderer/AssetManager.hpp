@@ -5,7 +5,6 @@
 #include <vulkan/vulkan.hpp>
 
 #include "Deletionqueue.hpp"
-#include "BehVkInit.hpp"
 #include "BehVkTypes.hpp"
 #include "BehDevice.hpp"
 

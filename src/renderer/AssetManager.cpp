@@ -61,18 +61,18 @@ std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& fil
 		auto texture = std::make_shared<UploadedTexture>();
 		texture->layerCount = 6;
 		if (filename.ends_with(".ktx")) {
-			ktxTexture2 *ktx_texture;
+			ktxTexture *ktx_texture;
 			auto result = ktxTexture_CreateFromNamedFile(filename.c_str(), KTX_TEXTURE_CREATE_LOAD_IMAGE_DATA_BIT, (ktxTexture**)&ktx_texture);
 			if (result != KTX_SUCCESS) {
 				throw std::runtime_error("Failed to load ktx texture image!");
 			}
 
-			ktx_transcode_fmt_e target_format = KTX_TTF_BC7_RGBA;
-			if (ktxTexture2_NeedsTranscoding(ktx_texture)) {
-				ktxTexture2_TranscodeBasis(ktx_texture, target_format, 0);
+			if (ktx_texture->classId == class_id::ktxTexture2_c) {
+				throw std::runtime_error("Tried to load ktxTexture2 which im missing support for.");
 			}
-			texture->textureImageFormat = (vk::Format) ktx_texture->vkFormat;
+
 			std::span<ktx_uint8_t> dataSpan{ktx_texture->pData, static_cast<size_t>(ktx_texture->dataSize)};
+			texture->textureImageFormat = vk::Format::eR8G8B8A8Unorm; //TODO: Hardcoded right now
 			
 			auto stagingBuffer = stageData(dataSpan);
 			texture->mipLevels = ktx_texture->numLevels;
@@ -97,7 +97,7 @@ std::shared_ptr<UploadedTexture> AssetManager::getCubeMap(const std::string& fil
 				{
 					// Calculate offset into staging buffer for the current mip level and face
 					ktx_size_t offset;
-					KTX_error_code ret = ktxTexture_GetImageOffset(ktxTexture(ktx_texture), level, 0, face, &offset);
+					KTX_error_code ret = ktxTexture_GetImageOffset(ktx_texture, level, 0, face, &offset);
 					assert(ret == KTX_SUCCESS);
 					VkBufferImageCopy bufferCopyRegion = {};
 
@@ -181,7 +181,24 @@ void AssetManager::createTextureImage(const char *filename, const std::shared_pt
 }
 
 void AssetManager::createTextureImageView(const std::shared_ptr<UploadedTexture>& texture) {
-	texture->textureImageView = createImageView(device->device(), texture->textureImage._image, texture->textureImageFormat, vk::ImageAspectFlagBits::eColor, texture->mipLevels, texture->layerCount);
+	vk::ImageViewCreateInfo viewInfo{
+		.image = texture->textureImage._image,
+		.viewType = vk::ImageViewType::e2D,
+		.format = texture->textureImageFormat,
+		.subresourceRange = vk::ImageSubresourceRange{
+				.aspectMask = vk::ImageAspectFlagBits::eColor,
+				.baseMipLevel = 0,
+				.levelCount = texture->mipLevels,
+				.baseArrayLayer = 0,
+				.layerCount = texture->layerCount}};
+	if(texture->layerCount == 6) {
+		viewInfo.viewType = vk::ImageViewType::eCube;
+	}
+
+	if (device->device().createImageView(&viewInfo, nullptr, &texture->textureImageView) != vk::Result::eSuccess) {
+		throw std::runtime_error("failed to create image view!");
+	}
+	
 	deletionQueue.push_function([&, texture]() {
 		device->device().destroyImageView(texture->textureImageView);
 	});

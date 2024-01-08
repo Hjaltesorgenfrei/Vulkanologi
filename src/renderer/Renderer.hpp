@@ -81,7 +81,7 @@ private:
     DescriptorAllocator descriptorAllocator;
     DescriptorLayoutCache descriptorLayoutCache;
 
-    vk::PipelineLayout pipelineLayout;
+    vk::PipelineLayout graphicsPipelineLayout;
     vk::PipelineLayout billboardPipelineLayout;
     vk::PipelineLayout computePipelineLayout;
     vk::PipelineLayout skyboxPipelineLayout;
@@ -143,11 +143,7 @@ private:
     void createMaterialDescriptorSetLayout();
     void createComputeDescriptorSetLayout();
 
-    void createGraphicsPipelineLayout();
-    void createBillboardPipelineLayout();
-    void createComputePipelineLayout();
-    void createSkyboxPipelineLayout();
-
+    void createPipelineLayout(vk::PipelineLayout& pipelineLayout, std::vector<vk::DescriptorSetLayout> descriptorSetLayouts, std::vector<vk::PushConstantRange> pushConstantranges);
 
     void createPipelines();
     void createSkyboxPipeline();

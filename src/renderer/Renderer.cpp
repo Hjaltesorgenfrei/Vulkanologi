@@ -43,10 +43,6 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createGlobalDescriptorSetLayout();
         createMaterialDescriptorSetLayout();
         createComputeDescriptorSetLayout();
-        createGraphicsPipelineLayout();
-        createBillboardPipelineLayout();
-        createComputePipelineLayout();
-        createSkyboxPipelineLayout();
         createPipelines();
         createCommandPool();
         initImgui();
@@ -442,23 +438,15 @@ void Renderer::createComputeDescriptorSetLayout() {
     }
 }
 
-// TODO: These pipeline layouts can probably be greatly simplified by just passing an array of descriptorsets. Might even have a short syntax.
-void Renderer::createGraphicsPipelineLayout() {
-    vk::PushConstantRange pushConstantRange{
-            .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
-            .offset = 0,
-            .size = sizeof(MeshPushConstants)
-    };
 
-    std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, materialDescriptorSetLayout};
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
+void Renderer::createPipelineLayout(vk::PipelineLayout& pipelineLayout, std::vector<vk::DescriptorSetLayout> descriptorSetLayouts, std::vector<vk::PushConstantRange> pushConstantranges) {
+    vk::PipelineLayoutCreateInfo pipelineLayoutInfo {
             .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
             .pSetLayouts = descriptorSetLayouts.data(),
-            .pushConstantRangeCount = 1,
-            .pPushConstantRanges = &pushConstantRange
+            .pushConstantRangeCount = static_cast<uint32_t>(pushConstantranges.size()),
+            .pPushConstantRanges = pushConstantranges.data()
     };
-
+    
     try {
         pipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
         mainDeletionQueue.push_function([&]() {
@@ -470,64 +458,16 @@ void Renderer::createGraphicsPipelineLayout() {
     }
 }
 
-void Renderer::createBillboardPipelineLayout() {
-    std::array<vk::DescriptorSetLayout, 1> descriptorSetLayouts = {uboDescriptorSetLayout};
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
-            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-            .pSetLayouts = descriptorSetLayouts.data()
-    };
-
-    try {
-        billboardPipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
-        mainDeletionQueue.push_function([&]() {
-            device->device().destroyPipelineLayout(billboardPipelineLayout);
-        });
-    }
-    catch (vk::SystemError &err) {
-        throw std::runtime_error(std::string("failed to create billboard pipeline layout!") + err.what());
-    }
-}
-
-void Renderer::createComputePipelineLayout() {
-    std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {computeDescriptorSetLayout, uboDescriptorSetLayout};
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
-        .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-        .pSetLayouts = descriptorSetLayouts.data()
-    };
-
-    try {
-        computePipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
-        mainDeletionQueue.push_function([&]() {
-            device->device().destroyPipelineLayout(computePipelineLayout);
-        });
-    }
-    catch (vk::SystemError &err) {
-        throw std::runtime_error(std::string("failed to create compute pipeline layout!") + err.what());
-    }
-}
-
-void Renderer::createSkyboxPipelineLayout() {
-    std::array<vk::DescriptorSetLayout, 2> descriptorSetLayouts = {uboDescriptorSetLayout, materialDescriptorSetLayout};
-
-    vk::PipelineLayoutCreateInfo pipelineLayoutInfo{
-            .setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size()),
-            .pSetLayouts = descriptorSetLayouts.data()
-    };
-
-    try {
-        skyboxPipelineLayout = device->device().createPipelineLayout(pipelineLayoutInfo);
-        mainDeletionQueue.push_function([&]() {
-            device->device().destroyPipelineLayout(skyboxPipelineLayout);
-        });
-    }
-    catch (vk::SystemError &err) {
-        throw std::runtime_error(std::string("failed to create skybox pipeline layout!") + err.what());
-    }
-}
-
 void Renderer::createPipelines() {
+    createPipelineLayout(graphicsPipelineLayout, {uboDescriptorSetLayout, materialDescriptorSetLayout}, {{
+        .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+        .offset = 0,
+        .size = sizeof(MeshPushConstants)
+    }}); 
+    createPipelineLayout(billboardPipelineLayout, {uboDescriptorSetLayout},{});
+    createPipelineLayout(computePipelineLayout, {computeDescriptorSetLayout, uboDescriptorSetLayout},{});
+    createPipelineLayout(skyboxPipelineLayout, {uboDescriptorSetLayout, materialDescriptorSetLayout},{});
+
     createGraphicsPipeline();
     createBillboardPipeline();
     createParticlePipeline();
@@ -542,7 +482,7 @@ void Renderer::createGraphicsPipeline() {
     BehPipeline::defaultPipelineConfiguration(pipelineConfig);
     pipelineConfig.addShader("shaders/shader.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/shader.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.pipelineLayout = graphicsPipelineLayout;
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
     graphicsPipeline = std::make_unique<BehPipeline>(device, pipelineConfig);
@@ -617,7 +557,7 @@ void Renderer::createWireframePipeline() {
     BehPipeline::defaultPipelineConfiguration(pipelineConfig);
     pipelineConfig.addShader("shaders/shader_unlit.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/shader_unlit.frag.spv", vk::ShaderStageFlagBits::eFragment);
-    pipelineConfig.pipelineLayout = pipelineLayout;
+    pipelineConfig.pipelineLayout = graphicsPipelineLayout;
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
 
@@ -1085,7 +1025,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
         } else if (rendererMode == WIREFRAME) {
             wireframePipeline->bind(commandBuffer);
         }
-        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 0, 1,
+        commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout, 0, 1,
                                                  &descriptorSets[currentFrame], 0, nullptr);
 
         for (const auto &model: frameInfo.objects) {
@@ -1095,11 +1035,11 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 
             commandBuffer.bindIndexBuffer(model->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, 1, 1,
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout, 1, 1,
                                                      &model->material.textureSet, 0, nullptr);
 
             MeshPushConstants constants = model->transformMatrix;
-            commandBuffer.pushConstants(pipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+            commandBuffer.pushConstants(graphicsPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                                 sizeof(MeshPushConstants), &constants);
 
             commandBuffer.drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);

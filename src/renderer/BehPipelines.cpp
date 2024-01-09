@@ -65,7 +65,7 @@ void BehPipeline::createGraphicsPipeline(PipelineConfigurationInfo &config, std:
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode = config.polygonMode,
-        .cullMode = vk::CullModeFlagBits::eBack,
+        .cullMode = config.cullMode,
         .frontFace = vk::FrontFace::eCounterClockwise,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,

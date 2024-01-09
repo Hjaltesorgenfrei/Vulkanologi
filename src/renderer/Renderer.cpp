@@ -520,6 +520,7 @@ void Renderer::createSkyboxPipeline() {
             .inputRate = vk::VertexInputRate::eVertex
         }
     };
+    pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
     pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
     pipelineConfig.pipelineLayout = skyboxPipelineLayout;

@@ -1,6 +1,6 @@
-# Shitty Renderer
+# Rotte Engine
 
-A Vulkan Renderer written in C++ 23. Very much WIP.
+A WIP Game engine written in C++ 23 using Vulkan. Rotte is Danish for rat, and is the spirit animal of the engine.
 
 ![Readme Image](docs/readme.png)
 

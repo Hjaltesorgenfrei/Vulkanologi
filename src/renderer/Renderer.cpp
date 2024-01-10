@@ -508,22 +508,6 @@ void Renderer::createBillboardPipeline() {
 void Renderer::createSkyboxPipeline() {
     PipelineConfigurationInfo pipelineConfig{};
     BehPipeline::defaultPipelineConfiguration(pipelineConfig);
-    
-    pipelineConfig.attributeDescriptions = {
-            vk::VertexInputAttributeDescription{
-                .location = 0,
-                .binding = 0,
-                .format = vk::Format::eR32G32B32Sfloat,
-                .offset = 0
-            }
-    };
-    pipelineConfig.bindingDescriptions = {
-        vk::VertexInputBindingDescription{
-            .binding = 0,
-            .stride = sizeof(glm::vec3),
-            .inputRate = vk::VertexInputRate::eVertex
-        }
-    };
     // pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
     pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);

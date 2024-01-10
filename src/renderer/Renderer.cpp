@@ -515,6 +515,7 @@ void Renderer::createSkyboxPipeline() {
     pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
     pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
+    pipelineConfig.useDepth = false;
     pipelineConfig.pipelineLayout = skyboxPipelineLayout;
     pipelineConfig.renderPass = renderPass;
     pipelineConfig.extent = swapChainExtent;
@@ -529,6 +530,7 @@ void Renderer::createParticlePipeline() {
     pipelineConfig.addShader("shaders/particle.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/particle.frag.spv", vk::ShaderStageFlagBits::eFragment);
     pipelineConfig.topology = vk::PrimitiveTopology::ePointList;
+    pipelineConfig.useDepth = false;
     pipelineConfig.colorBlendAttachment = {
             .blendEnable = VK_TRUE,
             .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,

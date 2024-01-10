@@ -15,6 +15,7 @@ struct PipelineConfigurationInfo {
     vk::RenderPass renderPass = nullptr;
     vk::PrimitiveTopology topology = vk::PrimitiveTopology::eTriangleList;
     vk::CullModeFlags cullMode = vk::CullModeFlagBits::eBack;
+    bool useDepth = true;
     float lineWidth = 1.0f;
 
     vk::PipelineColorBlendAttachmentState colorBlendAttachment {

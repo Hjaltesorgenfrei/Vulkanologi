@@ -241,6 +241,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - [ ] <https://github.com/cg-tuwien/Auto-Vk-Toolkit>
 - [ ] Implement Meshlet support
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
+- [ ] Add support for multiple cameras and tag the active one.
+  - [ ] Draw debug lines showing its frustrum or at least a wireframe camera.
 
 ### Descriptor Layout Idea
 

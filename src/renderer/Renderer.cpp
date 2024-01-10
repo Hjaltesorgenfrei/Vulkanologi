@@ -1035,7 +1035,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 
             commandBuffer.bindIndexBuffer(skyBox->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
-            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout, 1, 1,
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skyboxPipelineLayout, 1, 1,
                                                      &skyBox->material.textureSet, 0, nullptr);
 
 
@@ -1066,7 +1066,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 
             commandBuffer.drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
         }
-
+        
         // Point lights
         billboardPipeline->bind(commandBuffer);
         commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, billboardPipelineLayout, 0, 1,

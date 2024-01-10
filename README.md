@@ -82,7 +82,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [x] ~~Yoink list from <https://github.com/knightcrawler25/GLSL-PathTracer> to choose what objects should be manipulated by ImGuizmo~~
   - I just use a ray to select instead.
 - [ ] Use VMA.hpp instead
-- [ ] Create a style to autoformat with
+- [x] Create a style to autoformat with
+  - [ ] Format all files.
 - [ ] Move swap chain to its own class
 - [x] Fix the hash for checking if vertices are equal.
 - [x] Fix that cast which are needed because of VMA, probably just put it in a class which has a hpp interface.

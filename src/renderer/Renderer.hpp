@@ -122,7 +122,9 @@ private:
     std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
     std::vector<vk::DescriptorSet> computeDescriptorSets;
 
-    std::shared_ptr<UploadedTexture> skyBox;
+    std::shared_ptr<RenderObject> skyBox;
+
+    bool displaySkybox = true;
 
     size_t currentFrame = 0;
 

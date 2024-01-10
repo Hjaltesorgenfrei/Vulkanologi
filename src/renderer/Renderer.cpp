@@ -27,6 +27,7 @@ int PARTICLE_COUNT = 256 * 4;
 #include "Particle.hpp"
 #include "GlobalUbo.hpp"
 #include "BehVkInit.hpp"
+#include "Cube.hpp"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
         : window(window), device{device}, assetManager(assetManager) {
@@ -56,6 +57,11 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
         createComputeDescriptorSets();
         createCommandBuffers();
         createSyncObjects();
+        skyBox = std::make_shared<RenderObject>();
+        skyBox->mesh = createCubeMesh();
+        skyBox->mesh->_texturePaths = {"resources/cubemap_yokohama_rgba.ktx"};
+        std::vector<std::shared_ptr<RenderObject>> reee = {skyBox};
+        uploadMeshes(reee);
     }
     catch (const std::exception &e) {
         cleanup();
@@ -71,11 +77,9 @@ Renderer::~Renderer() {
 
 Material Renderer::createMaterial(std::vector<std::string> &texturePaths) {
     std::vector<std::shared_ptr<UploadedTexture>> textures;
-    std::map<std::string, std::shared_ptr<UploadedTexture>> uploadedTextures;
     for (const auto &filename: texturePaths) {
         textures.push_back(assetManager.getTexture(filename));
     }
-
 
     std::vector<vk::DescriptorImageInfo> imageInfos;
     for (const auto &texture: textures) {
@@ -801,8 +805,7 @@ void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &ob
         model->mesh->_vertexBuffer = assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
         model->mesh->_indexBuffer = assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
         model->material = createMaterial(model->mesh->_texturePaths);
-    }
-    skyBox = assetManager.getCubeMap("resources/cubemap_yokohama_rgba.ktx");
+    }  
 }
 
 void Renderer::createUniformBuffers() {
@@ -1021,6 +1024,24 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
     commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
     {
         //Add commands to buffer
+        if (displaySkybox) {
+            skyboxPipeline->bind(commandBuffer);
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skyboxPipelineLayout, 0, 1,
+                                                &descriptorSets[currentFrame], 0, nullptr);
+            
+            vk::Buffer vertexBuffers[] = {skyBox->mesh->_vertexBuffer->_buffer};
+            vk::DeviceSize offsets[] = {0};
+            commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
+
+            commandBuffer.bindIndexBuffer(skyBox->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
+
+            commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout, 1, 1,
+                                                     &skyBox->material.textureSet, 0, nullptr);
+
+
+            commandBuffer.drawIndexed(static_cast<uint32_t>(skyBox->mesh->_indices.size()), 1, 0, 0, 0);
+        }
+        
         if (rendererMode == NORMAL) {
             graphicsPipeline->bind(commandBuffer);
         } else if (rendererMode == WIREFRAME) {

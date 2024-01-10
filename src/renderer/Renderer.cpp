@@ -513,7 +513,7 @@ void Renderer::createSkyboxPipeline() {
             vk::VertexInputAttributeDescription{
                 .location = 0,
                 .binding = 0,
-                .format = vk::Format::eR32G32B32A32Sfloat,
+                .format = vk::Format::eR32G32B32Sfloat,
                 .offset = 0
             }
     };
@@ -524,7 +524,7 @@ void Renderer::createSkyboxPipeline() {
             .inputRate = vk::VertexInputRate::eVertex
         }
     };
-    pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
+    // pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
     pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
     pipelineConfig.pipelineLayout = skyboxPipelineLayout;

@@ -12,5 +12,8 @@ layout(location = 0) out vec3 outUVW;
 
 void main() 
 {
-	gl_Position = ubo.proj * ubo.view * vec4(inPosition, 1.0);
+	outUVW = inPosition;
+	// Convert cubemap coordinates into Vulkan coordinate space
+	outUVW.xy *= -1.0;
+	gl_Position = ubo.proj * vec4(inPosition.xyz, 1.0);
 }

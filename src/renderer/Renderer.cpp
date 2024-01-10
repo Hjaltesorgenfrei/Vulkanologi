@@ -470,7 +470,11 @@ void Renderer::createPipelines() {
     }}); 
     createPipelineLayout(billboardPipelineLayout, {uboDescriptorSetLayout},{});
     createPipelineLayout(computePipelineLayout, {computeDescriptorSetLayout, uboDescriptorSetLayout},{});
-    createPipelineLayout(skyboxPipelineLayout, {uboDescriptorSetLayout, materialDescriptorSetLayout},{});
+    createPipelineLayout(skyboxPipelineLayout, {uboDescriptorSetLayout, materialDescriptorSetLayout},{{
+        .stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
+        .offset = 0,
+        .size = sizeof(MeshPushConstants)
+    }});
 
     createGraphicsPipeline();
     createBillboardPipeline();
@@ -508,7 +512,7 @@ void Renderer::createBillboardPipeline() {
 void Renderer::createSkyboxPipeline() {
     PipelineConfigurationInfo pipelineConfig{};
     BehPipeline::defaultPipelineConfiguration(pipelineConfig);
-    // pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
+    pipelineConfig.cullMode = vk::CullModeFlagBits::eFront; // Done instead of swapping the cube inside out.
     pipelineConfig.addShader("shaders/skybox.vert.spv", vk::ShaderStageFlagBits::eVertex);
     pipelineConfig.addShader("shaders/skybox.frag.spv", vk::ShaderStageFlagBits::eFragment);
     pipelineConfig.pipelineLayout = skyboxPipelineLayout;
@@ -1022,6 +1026,11 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
             commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skyboxPipelineLayout, 1, 1,
                                                      &skyBox->material.textureSet, 0, nullptr);
 
+            MeshPushConstants constants {frameInfo.camera.viewMatrix(), {}};
+            // Cancel out translation for skybox
+            constants.model[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            commandBuffer.pushConstants(graphicsPipelineLayout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+                                                sizeof(MeshPushConstants), &constants);
 
             commandBuffer.drawIndexed(static_cast<uint32_t>(skyBox->mesh->_indices.size()), 1, 0, 0, 0);
         }

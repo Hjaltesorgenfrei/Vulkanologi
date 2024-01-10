@@ -6,6 +6,10 @@
 
 std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& filename) {
 	if (uploadedTextures.find(filename) == uploadedTextures.end()) {
+		if (filename.find("cubemap") != std::string::npos) { // TODO: Fix this nasty hack, it should just use the check in ktx.
+			getCubeMap(filename);
+			return uploadedTextures[filename];
+		}
 		auto texture = std::make_shared<UploadedTexture>();
 		if (filename.ends_with(".ktx")) {
 			ktxTexture2 *ktx_texture;

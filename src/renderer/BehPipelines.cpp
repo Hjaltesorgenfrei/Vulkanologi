@@ -95,7 +95,7 @@ void BehPipeline::createGraphicsPipeline(PipelineConfigurationInfo &config, std:
 
     vk::PipelineDepthStencilStateCreateInfo depthStencil;
 
-    if (config.topology != vk::PrimitiveTopology::ePointList) {
+    if (config.useDepth) {
         depthStencil = {
             .depthTestEnable = VK_TRUE,
             .depthWriteEnable = VK_TRUE,

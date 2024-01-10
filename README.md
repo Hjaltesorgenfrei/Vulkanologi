@@ -154,7 +154,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - Probably just by making multiple classes that do the same thing.
   - I don't actually know if this is a good idea. It can be used for coordinating systems.
     - So might be useful to keep around a while longer.
-- [ ] Add a background cube map, the black is getting annoying.
+- [x] Add a background cube map, the black is getting annoying.
 - [x] Investigate the jittering issue from the vehicle driving around. A post on the Bullet forums mentioned it possibly being due to large bodies.
 - [ ] Make spline deformation better.
   - [ ] Use the total arc length to create N meshes, where N ~= (arc length)/(mesh length)

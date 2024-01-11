@@ -439,6 +439,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
     ImGui::SliderFloat("Intensity", &light.intensity, 0.0f, 30.0f);
     ImGui::End();
 
+    ImGui::Begin("Features");
+    ImGui::Checkbox("Compute Shader Particles", &renderer->shouldDrawComputeParticles);
+    ImGui::Combo("Rendering Mode", (int*)&renderer->rendererMode, "Shaded\0Wireframe\0");
+    ImGui::End();
+
     registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
         bezier.recomputeIfDirty();
         frameInfo.paths.emplace_back(bezier);

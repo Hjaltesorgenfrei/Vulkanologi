@@ -28,9 +28,10 @@ struct KeyboardInput {
 };
 
 struct MouseInput {
-    bool buttons[GLFW_MOUSE_BUTTON_LAST] = {false};
+	bool buttons[GLFW_MOUSE_BUTTON_LAST] = {false};
 	glm::vec2 mousePosition;
 	glm::vec2 mouseDelta;
+	bool cursorDisabled = false;
 };
 
 struct GamepadInput {

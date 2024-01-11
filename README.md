@@ -243,6 +243,12 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 - [ ] Add support for multiple cameras and tag the active one.
   - [ ] Draw debug lines showing its frustum or at least a wireframe camera.
+- [ ] Move all the GLFW -> Entt input stuff to a system or at least a different file.
+  - Application is too long and its confusing.
+  - Having it in a system would mean a reference to the GLFW window might be duplicated. Which might present a problem later.
+- [ ] Decide if Keyboard/Mouse Input should be a component or just a singleton.
+  - There is only ever gonna be one.
+  - But it does make some stuff simple.
 
 ### Descriptor Layout Idea
 
@@ -431,3 +437,8 @@ Instead it should be possible to save the shape in a component and draw each of 
 As most thing consists of simple geometry it should be possible to use instancing to draw these.
 Mesh colliders and height maps might need to be uploaded and use the mesh handle explained earlier.
 Moving the physics shapes could then be done with the transform.
+
+### New System base class
+
+The old system of heavy templates seems cool, but it is harder to extend.
+Merely having a base class which returns functions which are still type sets would be preferred i think.

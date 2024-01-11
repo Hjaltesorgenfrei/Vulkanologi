@@ -55,12 +55,19 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
         auto& camera = app->getCamera();
         camera.camera.newCursorPos(xPos, yPos);
     }
+    for (auto [entity, input] : app->registry.view<MouseInput>().each()) {
+        // TODO: Track the delta between frames.
+        input.mousePosition = glm::vec2(xPosIn, yPosIn);
+    }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
     auto& camera = app->getCamera();
     camera.camera.resetCursorPos();
+    // for (auto [entity, input] : app->registry.view<MouseInput>().each()) {
+    //     input.mouseDelta = glm::vec2();
+    // }
 }
 
 std::vector<Path> rays;
@@ -74,6 +81,11 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
     auto& camera = app->getCamera();
+
+    for (auto [entity, input] : app->registry.view<MouseInput>().each()) {
+        input.buttons[button] = action == GLFW_PRESS || action == GLFW_REPEAT;
+    }
+
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !app->shiftPressed) {
         if (!app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -529,6 +541,8 @@ void App::setupWorld() {
     auto debugCamera = registry.create();
     registry.emplace<Camera>(debugCamera);
     registry.emplace<ActiveCameraTag>(debugCamera);
+    registry.emplace<KeyboardInput>(debugCamera);
+    registry.emplace<MouseInput>(debugCamera);
 
     setupControllerPlayers();
 
@@ -695,7 +709,6 @@ void App::mainLoop() {
         std::chrono::duration<float, std::milli> delta = now - timeStart;
         timeStart = now;
 		glfwPollEvents();
-        processPressedKeys(delta.count());
 
         // TODO: Move this to a physics thread
         // TODO: Make this a fixed timestep
@@ -777,25 +790,6 @@ Camera &App::getCamera()
     }
 
     return *cameraResult;
-}
-
-void App::processPressedKeys(float delta) {
-    auto glfw_window = window->getGLFWwindow();
-    float cameraSpeed = 0.005f * delta;
-    if (shiftPressed) {
-        cameraSpeed *= 4;
-    }
-    auto& camera = getCamera();
-    // TODO: Add camera as an entity which can take input :)
-    // It is an entity, but it has pretty bad controls right now.
-    if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.camera.moveCameraForward(cameraSpeed);
-    if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.camera.moveCameraBackward(cameraSpeed);
-    if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.camera.moveCameraLeft(cameraSpeed);
-    if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.camera.moveCameraRight(cameraSpeed);
 }
 
 App::App() = default;

@@ -25,7 +25,7 @@ public:
     App inline static* instance = nullptr;
 
 private:
-    std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Vulkan Tutorial");
+    std::shared_ptr<WindowWrapper> window = std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Rotte Simulator: Live your best life as a rat");
 	std::unique_ptr<Renderer> renderer;
     std::shared_ptr<BehDevice> device;
     std::unique_ptr<NetworkServerSystem> networkServerSystem;
@@ -45,7 +45,6 @@ private:
     ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
-    void processPressedKeys(float delta);
     void setupCallBacks();
     bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
     void setupWorld();

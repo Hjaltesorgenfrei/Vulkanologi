@@ -25,12 +25,12 @@ struct ControlPointPtr {
 
 struct KeyboardInput {
 	bool keys[GLFW_KEY_LAST] = {false};
+};
+
+struct MouseInput {
+    bool buttons[GLFW_MOUSE_BUTTON_LAST] = {false};
 	glm::vec2 mousePosition;
 	glm::vec2 mouseDelta;
-	bool mouseLeftPressed;
-	bool mouseLeftReleased;
-	bool mouseRightPressed;
-	bool mouseRightReleased;
 };
 
 struct GamepadInput {

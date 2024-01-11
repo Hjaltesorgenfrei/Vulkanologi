@@ -243,6 +243,12 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 - [ ] Add support for multiple cameras and tag the active one.
   - [ ] Draw debug lines showing its frustum or at least a wireframe camera.
+- [ ] Move all the GLFW -> Entt input stuff to a system or at least a different file.
+  - Application is too long and its confusing.
+  - Having it in a system would mean a reference to the GLFW window might be duplicated. Which might present a problem later.
+- [ ] Decide if Keyboard/Mouse Input should be a component or just a singleton.
+  - There is only ever gonna be one.
+  - But it does make some stuff simple.
 
 ### Descriptor Layout Idea
 

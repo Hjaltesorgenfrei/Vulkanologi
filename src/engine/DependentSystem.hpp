@@ -10,6 +10,8 @@ struct ISystem
     virtual const std::string_view name() = 0;
     virtual constexpr std::unordered_set<std::type_index> reads() = 0;
     virtual constexpr std::unordered_set<std::type_index> writes() = 0;
+    // Tagged Maybe
+    // Writes for next Frame
     virtual void update(entt::registry &registry, float delta) const = 0;
     virtual void init(entt::registry &registry) {}
 };

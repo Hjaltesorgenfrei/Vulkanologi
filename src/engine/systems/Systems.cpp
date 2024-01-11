@@ -2,6 +2,7 @@
 #include "CarSystem.hpp"
 #include "ControllerSystem.hpp"
 #include "TransformSystems.hpp"
+#include "DebugSystems.hpp"
 
 void setupSystems(SystemGraph& systemGraph)
 {
@@ -12,4 +13,6 @@ void setupSystems(SystemGraph& systemGraph)
     systemGraph.addSystem<RigidBodySystem>();
     systemGraph.addSystem<TransformControlPointsSystem>();
     systemGraph.addSystem<PhysicsCamera>();
+    systemGraph.addSystem<DebugCameraKeyboardSystem>();
+    systemGraph.addSystem<DebugCameraJoystickSystem>();
 }

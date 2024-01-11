@@ -431,3 +431,8 @@ Instead it should be possible to save the shape in a component and draw each of 
 As most thing consists of simple geometry it should be possible to use instancing to draw these.
 Mesh colliders and height maps might need to be uploaded and use the mesh handle explained earlier.
 Moving the physics shapes could then be done with the transform.
+
+### New System base class
+
+The old system of heavy templates seems cool, but it is harder to extend.
+Merely having a base class which returns functions which are still type sets would be preferred i think.

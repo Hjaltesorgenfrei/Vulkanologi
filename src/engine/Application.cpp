@@ -53,14 +53,14 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
         auto xPos = static_cast<float>(xPosIn);
         auto yPos = static_cast<float>(yPosIn);
         auto& camera = app->getCamera();
-        camera.newCursorPos(xPos, yPos);
+        camera.camera.newCursorPos(xPos, yPos);
     }
 }
 
 void App::cursorEnterCallback(GLFWwindow* window, int enter) {
     auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
     auto& camera = app->getCamera();
-    camera.resetCursorPos();
+    camera.camera.resetCursorPos();
 }
 
 std::vector<Path> rays;
@@ -77,7 +77,7 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
     if (button == GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS && !app->shiftPressed) {
         if (!app->cursorHidden) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            camera.resetCursorPos();
+            camera.camera.resetCursorPos();
             app->cursorHidden = true;
         }
     }
@@ -86,8 +86,8 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
         double x, y;
         glfwGetCursorPos(window, &x, &y);
         auto camera = app->getCamera();
-        auto pos = camera.getCameraPosition();
-        auto dir = camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
+        auto pos = camera.camera.getCameraPosition();
+        auto dir = camera.camera.getRayDirection(static_cast<float>(x), static_cast<float>(y), static_cast<float>(app->window->getWidth()), static_cast<float>(app->window->getHeight()));
         
         for (auto entity : app->registry.view<SelectedTag>()) { // Deselect all before selecting new
             app->registry.remove<SelectedTag>(entity);
@@ -350,7 +350,7 @@ int App::drawFrame(float delta) {
     
     auto& camera = getCamera();
     FrameInfo frameInfo{};
-    frameInfo.camera = camera;
+    frameInfo.camera = camera.camera;
     frameInfo.deltaTime = delta;
     frameInfo.lights.push_back(light);
 
@@ -429,7 +429,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo)
 
     auto& camera = getCamera();
     ImGui::Begin("Camera");
-    ImGui::SliderFloat("Speed", &camera.speed, 0.0001f, 0.01f);
+    ImGui::SliderFloat("Speed", &camera.camera.speed, 0.0001f, 0.01f);
     ImGui::End();
 
     ImGui::Begin("Light");
@@ -524,8 +524,11 @@ void App::setupWorld() {
     createSpawnPoints(10);
 
     auto keyboardPlayer = addPlayer(KeyboardInput {});
-    auto& camera = registry.emplace<BehCamera>(keyboardPlayer);
+    // registry.emplace<Camera>(keyboardPlayer);
 
+    auto debugCamera = registry.create();
+    registry.emplace<Camera>(debugCamera);
+    registry.emplace<ActiveCameraTag>(debugCamera);
 
     setupControllerPlayers();
 
@@ -740,11 +743,11 @@ bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix) {
     ImGuizmo::BeginFrame();
     ImGuizmo::Enable(true);
     auto [width, height] = window->getFramebufferSize();
-    auto proj = camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
+    auto proj = camera.camera.getCameraProjection(static_cast<float>(width), static_cast<float>(height));
     proj[1][1] *= -1; // ImGuizmo Expects the opposite
     ImGuiIO& io = ImGui::GetIO();
     ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-    return ImGuizmo::Manipulate(value_ptr(camera.viewMatrix()), value_ptr(proj), currentGizmoOperation, ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix));
+    return ImGuizmo::Manipulate(value_ptr(camera.camera.viewMatrix()), value_ptr(proj), currentGizmoOperation, ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix));
 }
 
 // TODO: Enable this by inspection with debug window.
@@ -762,10 +765,10 @@ std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object)
     return paths;
 }
 
-BehCamera &App::getCamera()
+Camera &App::getCamera()
 {
-    BehCamera *cameraResult = nullptr;
-    registry.view<BehCamera>().each([&](auto entity, auto& camera) {
+    Camera *cameraResult = nullptr;
+    registry.view<Camera, ActiveCameraTag>().each([&](auto entity, auto& camera) {
         cameraResult = &camera;
     });
 
@@ -786,13 +789,13 @@ void App::processPressedKeys(float delta) {
     // TODO: Add camera as an entity which can take input :)
     // It is an entity, but it has pretty bad controls right now.
     if (glfwGetKey(glfw_window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.moveCameraForward(cameraSpeed);
+        camera.camera.moveCameraForward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.moveCameraBackward(cameraSpeed);
+        camera.camera.moveCameraBackward(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.moveCameraLeft(cameraSpeed);
+        camera.camera.moveCameraLeft(cameraSpeed);
     if (glfwGetKey(glfw_window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.moveCameraRight(cameraSpeed);
+        camera.camera.moveCameraRight(cameraSpeed);
 }
 
 App::App() = default;

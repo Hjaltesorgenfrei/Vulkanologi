@@ -53,7 +53,7 @@ private:
     void createSpawnPoints(int numberOfSpawns);
     void setupControllerPlayers();
     std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
-    BehCamera& getCamera();
+    Camera& getCamera();
 
     static void framebufferResizeCallback(GLFWwindow *window, int width, int height);
     static void cursorPosCallback(GLFWwindow *window, double xPosIn, double yPosIn);

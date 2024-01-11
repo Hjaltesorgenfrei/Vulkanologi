@@ -1,13 +1,13 @@
 #pragma once
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
 
-#include <vulkan/vulkan.hpp>
 #include <array>
+#include <glm/glm.hpp>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
+#include <vulkan/vulkan.hpp>
 
 #include "BehVkTypes.hpp"
 
@@ -19,7 +19,8 @@ struct Vertex {
 	uint8_t materialIndex;
 
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && normal == other.normal && texCoord == other.texCoord && materialIndex == other.materialIndex;
+		return pos == other.pos && color == other.color && normal == other.normal && texCoord == other.texCoord &&
+			   materialIndex == other.materialIndex;
 	}
 
 	static std::vector<vk::VertexInputBindingDescription> getBindingDescription();
@@ -30,7 +31,7 @@ struct Vertex {
 struct Mesh {
 	std::vector<Vertex> _vertices;
 	std::vector<uint32_t> _indices;
-	std::vector<std::string> _texturePaths; // TODO: Fix this, it's not a good spot to have it saved.
+	std::vector<std::string> _texturePaths;  // TODO: Fix this, it's not a good spot to have it saved.
 	std::shared_ptr<AllocatedBuffer> _vertexBuffer;
 	std::shared_ptr<AllocatedBuffer> _indexBuffer;
 

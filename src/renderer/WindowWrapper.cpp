@@ -1,20 +1,20 @@
 ﻿#include "WindowWrapper.hpp"
+
 #include <iostream>
 
-void glfwErrorCallback(int code, const char* description)
-{
+void glfwErrorCallback(int code, const char* description) {
 	std::cerr << "GLFW Error " << code << ": " << description << std::endl;
 }
 
 WindowWrapper::WindowWrapper(const int width, const int height, const char* title) {
-    if(!glfwInit()) {
-        throw std::runtime_error("Failed to initialize GLFW");
-    }
+	if (!glfwInit()) {
+		throw std::runtime_error("Failed to initialize GLFW");
+	}
 	glfwSetErrorCallback(glfwErrorCallback);
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-	
+
 	window = glfwCreateWindow(width, height, title, nullptr, nullptr);
 }
 
@@ -30,14 +30,12 @@ std::pair<int, int> WindowWrapper::getFramebufferSize() const {
 	return {width, height};
 }
 
-int WindowWrapper::getWidth() const
-{
-    return getFramebufferSize().first;
+int WindowWrapper::getWidth() const {
+	return getFramebufferSize().first;
 }
 
-int WindowWrapper::getHeight() const
-{
-    return getFramebufferSize().second;
+int WindowWrapper::getHeight() const {
+	return getFramebufferSize().second;
 }
 
 GLFWwindow* WindowWrapper::getGLFWwindow() const {
@@ -53,8 +51,7 @@ void WindowWrapper::fullscreenWindow() {
 	const auto mode = glfwGetVideoMode(monitor);
 	if (isFullScreen()) {
 		glfwSetWindowMonitor(window, NULL, 30, 30, 1024, 640, mode->refreshRate);
-	}
-	else {
+	} else {
 		glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 	}
 }
@@ -64,51 +61,46 @@ bool WindowWrapper::isFullScreen() {
 }
 
 void WindowWrapper::setTitle(const char* title) {
-    glfwSetWindowTitle(window, title);
+	glfwSetWindowTitle(window, title);
 }
 
-static int mini(int x, int y)
-{
-    return x < y ? x : y;
+static int mini(int x, int y) {
+	return x < y ? x : y;
 }
 
-static int maxi(int x, int y)
-{
-    return x > y ? x : y;
+static int maxi(int x, int y) {
+	return x > y ? x : y;
 }
 
-GLFWmonitor* WindowWrapper::getCurrentMonitor(GLFWwindow *window)
-{
-    int nMonitors, i;
-    int wx, wy, ww, wh;
-    int mx, my, mw, mh;
-    int overlap, bestoverlap;
-    GLFWmonitor *bestmonitor;
-    GLFWmonitor **monitors;
-    const GLFWvidmode *mode;
+GLFWmonitor* WindowWrapper::getCurrentMonitor(GLFWwindow* window) {
+	int nMonitors, i;
+	int wx, wy, ww, wh;
+	int mx, my, mw, mh;
+	int overlap, bestoverlap;
+	GLFWmonitor* bestmonitor;
+	GLFWmonitor** monitors;
+	const GLFWvidmode* mode;
 
-    bestoverlap = 0;
-    bestmonitor = NULL;
+	bestoverlap = 0;
+	bestmonitor = NULL;
 
-    glfwGetWindowPos(window, &wx, &wy);
-    glfwGetWindowSize(window, &ww, &wh);
-    monitors = glfwGetMonitors(&nMonitors);
+	glfwGetWindowPos(window, &wx, &wy);
+	glfwGetWindowSize(window, &ww, &wh);
+	monitors = glfwGetMonitors(&nMonitors);
 
-    for (i = 0; i < nMonitors; i++) {
-        mode = glfwGetVideoMode(monitors[i]);
-        glfwGetMonitorPos(monitors[i], &mx, &my);
-        mw = mode->width;
-        mh = mode->height;
+	for (i = 0; i < nMonitors; i++) {
+		mode = glfwGetVideoMode(monitors[i]);
+		glfwGetMonitorPos(monitors[i], &mx, &my);
+		mw = mode->width;
+		mh = mode->height;
 
-        overlap =
-            maxi(0, mini(wx + ww, mx + mw) - maxi(wx, mx)) *
-            maxi(0, mini(wy + wh, my + mh) - maxi(wy, my));
+		overlap = maxi(0, mini(wx + ww, mx + mw) - maxi(wx, mx)) * maxi(0, mini(wy + wh, my + mh) - maxi(wy, my));
 
-        if (bestoverlap < overlap) {
-            bestoverlap = overlap;
-            bestmonitor = monitors[i];
-        }
-    }
+		if (bestoverlap < overlap) {
+			bestoverlap = overlap;
+			bestmonitor = monitors[i];
+		}
+	}
 
-    return bestmonitor;
+	return bestmonitor;
 }

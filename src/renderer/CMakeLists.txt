@@ -8,7 +8,7 @@ add_library(renderer
     ${SOURCES}
 )
 
-if (NOT WIN32)
+if(NOT WIN32)
     find_package(X11 REQUIRED)
     target_link_libraries(renderer ${X11_LIBRARIES})
     target_compile_definitions(renderer PRIVATE -DVK_USE_PLATFORM_XLIB_KHR)

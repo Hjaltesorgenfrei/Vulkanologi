@@ -9,11 +9,10 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 
 layout(set = 1, binding = 0) uniform samplerCube samplerCubeMaps[];
 
-layout (location = 0) in vec3 inUVW;
+layout(location = 0) in vec3 inUVW;
 
-layout (location = 0) out vec4 outFragColor;
+layout(location = 0) out vec4 outFragColor;
 
-void main() 
-{
+void main() {
 	outFragColor = texture(samplerCubeMaps[0], inUVW);
 }

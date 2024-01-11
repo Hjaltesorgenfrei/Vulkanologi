@@ -3,9 +3,9 @@
 #ifndef CURVES_H
 #define CURVES_H
 
-#include "Interpolation.hpp"
-#include "Path.hpp"
-#include "LinePath.hpp"
 #include "Bezier.hpp"
+#include "Interpolation.hpp"
+#include "LinePath.hpp"
+#include "Path.hpp"
 
 #endif

@@ -6,11 +6,11 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 	GlobalUbo ubo;
 };
 
-layout (push_constant) uniform constants {
+layout(push_constant) uniform constants {
 	mat4 modelMatrix;
 	vec4 color;
-} pushConstants;
-
+}
+pushConstants;
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
@@ -20,8 +20,7 @@ layout(location = 4) in uint inMaterialIndex;
 
 layout(location = 0) out vec3 outUVW;
 
-void main() 
-{
+void main() {
 	outUVW = inPosition;
 	gl_Position = ubo.proj * pushConstants.modelMatrix * vec4(inPosition.xyz, 1.0);
 }

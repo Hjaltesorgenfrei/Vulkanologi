@@ -91,7 +91,7 @@ CPMAddPackage(
     DOWNLOAD_ONLY YES
 )
 
-set(KTX_SOURCES  
+set(KTX_SOURCES
     ${ktx_SOURCE_DIR}/lib/checkheader.c
     ${ktx_SOURCE_DIR}/lib/dfdutils/createdfd.c
     ${ktx_SOURCE_DIR}/lib/dfdutils/colourspaces.c
@@ -129,7 +129,7 @@ set(KTX_SOURCES
     ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder.h
     ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu.h
     ${ktx_SOURCE_DIR}/lib/basisu/zstd/zstd.c
-   
+
     # KT1
     ${ktx_SOURCE_DIR}/lib/texture1.c
     ${ktx_SOURCE_DIR}/lib/texture1.h
@@ -145,7 +145,7 @@ set(KTX_SOURCES
     ${ktx_SOURCE_DIR}/lib/vkformat_str.c
     ${ktx_SOURCE_DIR}/lib/vk_funcs.c
     ${ktx_SOURCE_DIR}/lib/vk_funcs.h
-    ${ktx_SOURCE_DIR}/lib/vkloader.c    
+    ${ktx_SOURCE_DIR}/lib/vkloader.c
 
     # Zlib Support
     ${ktx_SOURCE_DIR}/lib/miniz_wrapper.cpp
@@ -163,7 +163,7 @@ set(KTX_INCLUDE_DIRS
 add_library(ktx ${KTX_SOURCES})
 target_include_directories(ktx PUBLIC ${KTX_INCLUDE_DIRS})
 
-target_compile_definitions(ktx PUBLIC KHRONOS_STATIC) 
+target_compile_definitions(ktx PUBLIC KHRONOS_STATIC)
 target_compile_definitions(ktx PUBLIC LIBKTX)
 target_compile_definitions(ktx PUBLIC KTX_FEATURE_WRITE=0)
 target_compile_definitions(ktx PUBLIC BASISD_SUPPORT_KTX2_ZSTD=0)
@@ -203,20 +203,20 @@ CPMAddPackage(
 file(GLOB_RECURSE yojimbo_SOURCES CONFIGURE_DEPENDS ${yojimbo_SOURCE_DIR}/source/*.cpp)
 
 add_library(yojimbo
-        ${yojimbo_SOURCES}
-        ${yojimbo_SOURCE_DIR}/include/yojimbo.h
-        ${yojimbo_SOURCE_DIR}/netcode/netcode.c 
-        ${yojimbo_SOURCE_DIR}/netcode/netcode.h
-        ${yojimbo_SOURCE_DIR}/reliable/reliable.c 
-        ${yojimbo_SOURCE_DIR}/reliable/reliable.h
-        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c 
-        ${yojimbo_SOURCE_DIR}/tlsf/tlsf.h)
+    ${yojimbo_SOURCES}
+    ${yojimbo_SOURCE_DIR}/include/yojimbo.h
+    ${yojimbo_SOURCE_DIR}/netcode/netcode.c
+    ${yojimbo_SOURCE_DIR}/netcode/netcode.h
+    ${yojimbo_SOURCE_DIR}/reliable/reliable.c
+    ${yojimbo_SOURCE_DIR}/reliable/reliable.h
+    ${yojimbo_SOURCE_DIR}/tlsf/tlsf.c
+    ${yojimbo_SOURCE_DIR}/tlsf/tlsf.h)
 target_link_libraries(yojimbo
     PRIVATE sodium)
-target_compile_definitions(yojimbo PUBLIC 
-        NETCODE_ENABLE_TESTS=0 
-        RELIABLE_ENABLE_TESTS=0)    
-target_include_directories(yojimbo PUBLIC 
+target_compile_definitions(yojimbo PUBLIC
+    NETCODE_ENABLE_TESTS=0
+    RELIABLE_ENABLE_TESTS=0)
+target_include_directories(yojimbo PUBLIC
     ${yojimbo_SOURCE_DIR}/netcode
     ${yojimbo_SOURCE_DIR}/reliable
     ${yojimbo_SOURCE_DIR}/serialize

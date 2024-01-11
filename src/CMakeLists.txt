@@ -1,7 +1,8 @@
 if(MSVC)
-    if (NOT CMAKE_BUILD_TYPE) # Assume debug if dont have specified. Makes it work for vscode.
+    if(NOT CMAKE_BUILD_TYPE) # Assume debug if dont have specified. Makes it work for vscode.
         set(CMAKE_BUILD_TYPE "Debug")
     endif()
+
     set(BUILD_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 else()
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/build/lib)
@@ -21,11 +22,11 @@ function(add_shader TARGET SHADER)
     file(MAKE_DIRECTORY ${CURRENT_OUTPUT_DIR})
 
     add_custom_command(
-           OUTPUT ${current-output-path}
-           COMMAND ${GLSLC} -o ${current-output-path} ${current-shader-path}
-           DEPENDS ${current-shader-path}
-           IMPLICIT_DEPENDS CXX ${current-shader-path}
-           VERBATIM)
+        OUTPUT ${current-output-path}
+        COMMAND ${GLSLC} -o ${current-output-path} ${current-shader-path}
+        DEPENDS ${current-shader-path}
+        IMPLICIT_DEPENDS CXX ${current-shader-path}
+        VERBATIM)
 
     # Make sure our build depends on this output.
     set_source_files_properties(${current-output-path} PROPERTIES GENERATED TRUE)

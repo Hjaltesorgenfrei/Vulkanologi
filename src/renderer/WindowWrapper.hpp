@@ -10,14 +10,14 @@
 class WindowWrapper {
 private:
 	GLFWwindow* window;
-	GLFWmonitor* getCurrentMonitor(GLFWwindow *window);
+	GLFWmonitor* getCurrentMonitor(GLFWwindow* window);
 
-public:	
+public:
 	WindowWrapper(int width, int height, const char* title);
 	~WindowWrapper();
 	WindowWrapper& operator=(const WindowWrapper&) = delete;
 	WindowWrapper(const WindowWrapper&) = delete;
-	
+
 	[[nodiscard]] std::pair<int, int> getFramebufferSize() const;
 	[[nodiscard]] int getWidth() const;
 	[[nodiscard]] int getHeight() const;

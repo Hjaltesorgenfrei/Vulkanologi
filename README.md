@@ -203,7 +203,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
     - <https://github.com/lambdageek/monovm-embed-sample>
       - Check the forks if someone has something better first.
   - DotNetEvolution recommended just using mono. An integration can be found in <https://github.com/crazytuzi/UnrealCSharp>
-- [ ] Seperate parts out in separate projects
+- [ ] Separate parts out in separate projects
   - [x] Rendering
   - [ ] Client
   - [ ] Asset Loading
@@ -235,14 +235,14 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] CPM has some caching would should be configured to remove redundant downloads.
 - [ ] Create a pipeline that benchmarks compile speed for windows and linux with the results as artifact.
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
-- [ ] Look into libaries
+- [ ] Look into libraries
   - [ ] <https://github.com/bombela/backward-cpp>
   - [ ] <https://github.com/tgfrerer/island> has hot reloading of stuff which i want :)
   - [ ] <https://github.com/cg-tuwien/Auto-Vk-Toolkit>
 - [ ] Implement Meshlet support
 - [ ] <https://poniesandlight.co.uk/reflect/island_rendergraph_1/>
 - [ ] Add support for multiple cameras and tag the active one.
-  - [ ] Draw debug lines showing its frustrum or at least a wireframe camera.
+  - [ ] Draw debug lines showing its frustum or at least a wireframe camera.
 
 ### Descriptor Layout Idea
 

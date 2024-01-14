@@ -76,6 +76,24 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 
 		server->ReceivePackets();
 
+		for (int clientId = 0; clientId < MaxClients; clientId++) {
+			while (auto message = server->ReceiveMessage(clientId, 0)) {
+				if (message->GetType() == PHYSICS_STATE_MESSAGE) {
+					auto physicsState = (PhysicsState *)message;
+					printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
+					const int blockSize = physicsState->GetBlockSize();
+					const uint8_t *blockData = physicsState->GetBlockData();
+					for (uint32_t i = 0; i < physicsState->entities; i++) {
+						glm::vec3 position;
+						memcpy(&position, blockData, sizeof(glm::vec3));
+						blockData += sizeof(glm::vec3);
+						printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
+					}
+				}
+				server->ReleaseMessage(clientId, message);
+			}
+		}
+
 		server->AdvanceTime(serverTime);
 	}
 }

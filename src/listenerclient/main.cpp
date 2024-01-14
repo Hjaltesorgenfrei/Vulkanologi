@@ -44,20 +44,20 @@ void interrupt_handler(int /*dummy*/) {
 	quit = 1;
 }
 
-void printNetworkInfo(Client& client) {
+void printNetworkInfo(Client &client) {
 	NetworkInfo info;
 	client.GetNetworkInfo(info);
 	printf("client: sent: %lld, received: %lld, acked: %lld, lost: %f, rtt: %f ms\n", info.numPacketsSent,
 		   info.numPacketsReceived, info.numPacketsAcked, info.packetLoss, info.RTT);
 }
 
-int ClientMain(int argc, char* argv[]) {
+int ClientMain(int argc, char *argv[]) {
 	printf("\nconnecting client (insecure)\n");
 
 	double time = 100.0;
 
 	uint64_t clientId = 0;
-	yojimbo_random_bytes((uint8_t*)&clientId, 8);
+	yojimbo_random_bytes((uint8_t *)&clientId, 8);
 	printf("client id is %.16" PRIx64 "\n", clientId);
 	PhysicsNetworkAdapter adapter;
 	ClientServerConfig config;
@@ -97,10 +97,10 @@ int ClientMain(int argc, char* argv[]) {
 
 		while (auto message = client.ReceiveMessage(0)) {
 			if (message->GetType() == PHYSICS_STATE_MESSAGE) {
-				auto physicsState = (PhysicsState*)message;
+				auto physicsState = (PhysicsState *)message;
 				printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
 				const int blockSize = physicsState->GetBlockSize();
-				const uint8_t* blockData = physicsState->GetBlockData();
+				const uint8_t *blockData = physicsState->GetBlockData();
 				for (uint32_t i = 0; i < physicsState->entities; i++) {
 					glm::vec3 position;
 					memcpy(&position, blockData, sizeof(glm::vec3));
@@ -109,6 +109,21 @@ int ClientMain(int argc, char* argv[]) {
 				}
 			}
 			client.ReleaseMessage(message);
+		}
+
+		{
+			PhysicsState *message = (PhysicsState *)client.CreateMessage(PHYSICS_STATE_MESSAGE);
+			const int blockSize = static_cast<int>(1 * sizeof(glm::vec3));
+			uint8_t *block = client.AllocateBlock(blockSize);
+
+			for (uint32_t i = 0; i < 1; i++) {
+				glm::vec3 *data = (glm::vec3 *)(block + i * sizeof(glm::vec3));
+				*data = glm::vec3(4.f, 2.f, 0.f);
+			}
+			client.AttachBlockToMessage(message, block, blockSize);
+			message->tick = 69420;
+			message->entities = static_cast<uint32_t>(1);
+			client.SendMessage(0, message);
 		}
 
 		time += deltaTime;
@@ -127,7 +142,7 @@ int ClientMain(int argc, char* argv[]) {
 	return 0;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	if (!InitializeYojimbo()) {
 		printf("error: failed to initialize Yojimbo!\n");
 		return 1;

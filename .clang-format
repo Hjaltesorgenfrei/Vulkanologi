@@ -7,7 +7,6 @@ BreakBeforeBraces: Attach
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AllowShortFunctionsOnASingleLine: Inline
-SortIncludes: true
 Cpp11BracedListStyle: true
 EmptyLineBeforeAccessModifier: LogicalBlock
 FixNamespaceComments: true

@@ -52,6 +52,8 @@ private:
 	void setupCallBacks();
 	bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
 	void setupWorld();
+	void spawnArena();
+	void spawnRandomCrap();
 	void bezierTesting();
 	void createSpawnPoints(int numberOfSpawns);
 	void setupControllerPlayers();

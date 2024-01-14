@@ -18,8 +18,8 @@
 #include "Cube.hpp"
 #include "Renderer.hpp"
 #include "Sphere.hpp"
-#include "systems/Systems.hpp"
 #include "Util.hpp"
+#include "systems/Systems.hpp"
 
 void App::run() {
 	instance = this;
@@ -537,15 +537,15 @@ void App::setupWorld() {
 
 	setupControllerPlayers();
 
-	for (int i = 0; i < 4; i++) {
-		auto entity = registry.create();
-		entities.insert(entity);
-		physicsWorld->addBox(registry, entity, glm::vec3(0, 5, 0), glm::vec3(1, 1, 1));
-		registry.emplace<Transform>(entity);
-		registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
-	}
+	spawnArena();
 
-	// Arena
+	setupSystems(systemGraph);
+	systemGraph.init(registry);
+	systemGraph.update(registry, 0.0f);
+	physicsWorld->update(0.0f, registry);
+}
+
+void App::spawnArena() {
 	auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/map.obj"));
 	for (auto& vertex : arena->mesh->_vertices) {
 		vertex.materialIndex = 0;
@@ -565,35 +565,9 @@ void App::setupWorld() {
 		indices.push_back(index);
 	}
 	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -10, 0), glm::vec3(2, 2, 2));
+}
 
-	setupSystems(systemGraph);
-	systemGraph.init(registry);
-	systemGraph.update(registry, 0.0f);
-	physicsWorld->update(0.0f, registry);
-
-	auto beziers = registry.view<Bezier>();
-	for (auto bezier : beziers) {
-		// auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-		// auto& bezierComponent = registry.get<Bezier>(bezier);
-		// // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
-		// // registry.emplace<SplineMesh>(bezier, splineMesh);
-		// bezierComponent.recomputeIfDirty();
-		// road->mesh = deformMesh(bezierComponent, road->mesh);
-		// registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-		// registry.emplace<Transform>(bezier);
-		// // Make a bullet3 polygonal mesh
-		// std::vector<btVector3> vertices;
-		// for (auto index : road->mesh->_indices) {
-		//     vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
-		//     road->mesh->_vertices[index].pos.z));
-		// }
-
-		// auto body = physicsWorld->createWorldGeometry(vertices);
-		// body->setUserIndex((int)bezier);
-		// registry.emplace<RigidBody>(bezier, body);
-		// renderer->uploadMeshes({road});
-	}
-
+void App::spawnRandomCrap() {
 	auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
 	renderer->uploadMeshes({rat});
 	auto ratEntity = registry.create();
@@ -621,6 +595,29 @@ void App::setupWorld() {
 }
 
 void App::bezierTesting() {
+	auto beziers = registry.view<Bezier>();
+	for (auto bezier : beziers) {
+		// auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+		// auto& bezierComponent = registry.get<Bezier>(bezier);
+		// // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
+		// // registry.emplace<SplineMesh>(bezier, splineMesh);
+		// bezierComponent.recomputeIfDirty();
+		// road->mesh = deformMesh(bezierComponent, road->mesh);
+		// registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+		// registry.emplace<Transform>(bezier);
+		// // Make a bullet3 polygonal mesh
+		// std::vector<btVector3> vertices;
+		// for (auto index : road->mesh->_indices) {
+		//     vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
+		//     road->mesh->_vertices[index].pos.z));
+		// }
+
+		// auto body = physicsWorld->createWorldGeometry(vertices);
+		// body->setUserIndex((int)bezier);
+		// registry.emplace<RigidBody>(bezier, body);
+		// renderer->uploadMeshes({road});
+	}
+
 	for (int i = 0; i < 2; i++) {
 		// auto entity = registry.create();
 		// entities.insert(entity);

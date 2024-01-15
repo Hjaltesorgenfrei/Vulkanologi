@@ -38,7 +38,7 @@ add_custom_target(copy-runtime-files ALL
 
 find_package(Vulkan REQUIRED)
 
-set(SOURCE_DIR engine)
+set(SOURCE_DIR client)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS ${SOURCE_DIR}/*.cpp)
 
@@ -49,8 +49,10 @@ add_executable(vulkanologi
 add_subdirectory(shared)
 add_subdirectory(renderer)
 add_subdirectory(listenerclient)
+add_subdirectory(server)
+add_subdirectory(engine)
 
-target_link_libraries(vulkanologi renderer EnTT Jolt yojimbo)
+target_link_libraries(vulkanologi engine)
 
 add_shader(vulkanologi shader.frag)
 add_shader(vulkanologi shader.vert)

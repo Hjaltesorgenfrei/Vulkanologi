@@ -82,7 +82,7 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 			while (auto message = server->ReceiveMessage(clientId, 0)) {
 				for (auto h : handlers) {
 					if (h->canHandle(message)) {
-						h->handle(message);
+						h->handle(registry, message);
 					}
 				}
 				server->ReleaseMessage(clientId, message);

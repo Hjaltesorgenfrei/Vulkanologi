@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-const void PhysicsHandler::internalHandle(PhysicsState* state) {
+const void PhysicsHandler::internalHandle(entt::registry& registry, PhysicsState* state) {
 	printf("tick: %d, entities: %d\n", state->tick, state->entities);
 	const int blockSize = state->GetBlockSize();
 	const uint8_t* blockData = state->GetBlockData();

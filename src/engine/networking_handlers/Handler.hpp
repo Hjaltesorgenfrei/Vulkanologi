@@ -1,13 +1,13 @@
 #pragma once
 #include <type_traits>
-
+#include <entt/entt.hpp>
 #include "SharedServerSettings.hpp"
 
 class IHandler {
 public:
 	virtual const bool canHandle(yojimbo::Message* message) = 0;
 	virtual const TestMessageType messageType() = 0;
-	virtual const void handle(yojimbo::Message* message) = 0;
+	virtual const void handle(entt::registry& registry, yojimbo::Message* message) = 0;
 };
 
 template <typename T, TestMessageType E>
@@ -17,8 +17,8 @@ class Handler : virtual public IHandler {
 public:
 	const bool canHandle(yojimbo::Message* message) { return message->GetType() == E; }
 	const TestMessageType messageType() { return E; };
-	const void handle(yojimbo::Message* message) { internalHandle((T*)message); };
+	const void handle(entt::registry& registry, yojimbo::Message* message) { internalHandle(registry, (T*)message); };
 
 protected:
-	virtual const void internalHandle(T* message) = 0;
+	virtual const void internalHandle(entt::registry& registry, T* message) = 0;
 };

@@ -7,6 +7,7 @@
 
 #include "PhysicsBody.hpp"
 #include "SharedServerSettings.hpp"
+#include "networking_handlers/PhysicsHandler.hpp"
 
 using namespace yojimbo;
 
@@ -21,6 +22,7 @@ NetworkServerSystem::NetworkServerSystem() {
 #else
 	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
 #endif
+	handlers.emplace_back(std::make_shared<PhysicsHandler>());
 
 	srand((unsigned int)time(NULL));
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
@@ -78,16 +80,9 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 
 		for (int clientId = 0; clientId < MaxClients; clientId++) {
 			while (auto message = server->ReceiveMessage(clientId, 0)) {
-				if (message->GetType() == PHYSICS_STATE_MESSAGE) {
-					auto physicsState = (PhysicsState *)message;
-					printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
-					const int blockSize = physicsState->GetBlockSize();
-					const uint8_t *blockData = physicsState->GetBlockData();
-					for (uint32_t i = 0; i < physicsState->entities; i++) {
-						glm::vec3 position;
-						memcpy(&position, blockData, sizeof(glm::vec3));
-						blockData += sizeof(glm::vec3);
-						printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
+				for (auto h : handlers) {
+					if (h->canHandle(message)) {
+						h->handle(message);
 					}
 				}
 				server->ReleaseMessage(clientId, message);

@@ -5,6 +5,8 @@
 #include <entt/entt.hpp>
 #include <memory>
 
+#include "networking_handlers/Handler.hpp"
+
 class NetworkServerSystem {
 public:
 	NetworkServerSystem();
@@ -21,4 +23,5 @@ private:
 	yojimbo::ClientServerConfig config;
 	std::unique_ptr<yojimbo::Server> server;
 	std::unique_ptr<yojimbo::Adapter> adapter;
+	std::vector<std::shared_ptr<IHandler>> handlers;  // A map is probably better
 };

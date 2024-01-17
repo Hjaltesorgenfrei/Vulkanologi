@@ -10,6 +10,13 @@ on:
       - "include/**"
       - ".github/workflows/windows_build.yml"
       - "CMakeLists.txt"
+   workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Enable profiling of compilation'
+        required: true
+        type: boolean
+        default: true
 
 env:
   BUILD_TYPE: Release
@@ -39,13 +46,16 @@ jobs:
       - name: Configure CMake
         run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
+      - name: Start Profiler
+        if: ${{ inputs.profile }}
+        run: vcperf /start Session1
+
       - name: Build
-        run: |
-          vcperf /start Session1
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-          vcperf /stop Session1  /timetrace trace.json
+      - name: Stop Profiler
+        if: ${{ inputs.profile }}
+        run: vcperf /stop Session1  /timetrace trace.json
 
       - name: Archive Release
         uses: thedoctor0/zip-release@main

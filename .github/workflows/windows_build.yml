@@ -10,10 +10,10 @@ on:
       - "include/**"
       - ".github/workflows/windows_build.yml"
       - "CMakeLists.txt"
-   workflow_dispatch:
+  workflow_dispatch:
     inputs:
       profile:
-        description: 'Enable profiling of compilation'
+        description: "Enable profiling of compilation"
         required: true
         type: boolean
         default: true

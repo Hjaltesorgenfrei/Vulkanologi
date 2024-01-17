@@ -2,14 +2,21 @@ name: Windows Build
 
 on:
   push:
-    branches: 
+    branches:
       - master
     paths:
-      - 'src/**'
-      - 'third_party/**'
-      - 'include/**'
-      - '.github/workflows/windows_build.yml'
-      - 'CMakeLists.txt'
+      - "src/**"
+      - "third_party/**"
+      - "include/**"
+      - ".github/workflows/windows_build.yml"
+      - "CMakeLists.txt"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Enable profiling of compilation"
+        required: true
+        type: boolean
+        default: true
 
 env:
   BUILD_TYPE: Release
@@ -22,36 +29,47 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
-    - uses: actions/checkout@v3
-      with:
-        submodules: recursive
+      # TODO: Change this for a winget install
+      - name: Configure Vulkan SDK using the downloaded spec
+        uses: humbletim/install-vulkan-sdk@v1.1.1
+        with:
+          version: latest
+          cache: true
 
-    # TODO: Change this for a winget install
-    - name: Configure Vulkan SDK using the downloaded spec
-      uses: humbletim/install-vulkan-sdk@v1.1.1
-      with:
-        version: latest
-        cache: true
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1
 
-    - name: Configure CMake
-      run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      - name: Configure CMake
+        run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
-    - name: Build
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}    
-    
-    - name: Archive Release
-      uses: thedoctor0/zip-release@main
-      with:
-        type: 'zip'
-        filename: 'windows-x64-release.zip'
-        path: ${{github.workspace}}/build/src/Release
+      - name: Start Profiler
+        if: ${{ inputs.profile }}
+        run: vcperf /start Session1
 
-    - name: Upload Release
-      uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
-      with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "v${{ github.run_number }}"
-        prerelease: false
-        files: |
-          windows-x64-release.zip
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+      - name: Stop Profiler
+        if: ${{ inputs.profile }}
+        run: vcperf /stop Session1  /timetrace trace.json
+
+      - name: Archive Release
+        uses: thedoctor0/zip-release@main
+        with:
+          type: "zip"
+          filename: "windows-x64-release.zip"
+          path: ${{github.workspace}}/build/src/Release
+
+      - name: Upload Release
+        uses: marvinpinto/action-automatic-releases@6273874b61ebc8c71f1a61b2d98e234cf389b303
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "v${{ github.run_number }}"
+          prerelease: false
+          files: |
+            windows-x64-release.zip
+            trace.json

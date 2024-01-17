@@ -40,15 +40,17 @@ jobs:
           version: latest
           cache: true
 
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1
-
       - name: Configure CMake
         run: cmake --no-warn-unused-cli -DCMAKE_EXPORT_COMPILE_COMMANDS:BOOL=TRUE -S${{github.workspace}} -B${{github.workspace}}/build -G "Visual Studio 17 2022" -T host=x64 -A x64 -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
-      - name: Start Profiler
+      - name: Install Windows 10 SDK & Start Profiler
         if: ${{ inputs.profile }}
-        run: vcperf /start Session1
+        shell: pwsh
+        run: |
+          choco install windows-sdk-10-version-2004-all -y
+          $sdkVersion = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\' | Sort-Object Name -Descending | Select-Object -First 1 Name
+          echo "C:\Program Files (x86)\Windows Kits\10\bin\$sdkVersion\x64" >> $GITHUB_PATH
+          vcperf /start Session1
 
       - name: Build
         run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}

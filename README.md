@@ -481,3 +481,12 @@ void Renderer::uploadMeshes(entt::registry& registry) {
 ```
 
 This really just needs a way co_await fences to be possible.
+
+#### Need to keep this in mind through
+
+Host Synchronization:
+Host access to queue must be externally synchronized
+Host access to fence must be externally synchronized
+-<https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkQueueSubmit.html>
+
+So need some kind of barrier there.

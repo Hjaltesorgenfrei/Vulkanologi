@@ -442,3 +442,40 @@ Moving the physics shapes could then be done with the transform.
 
 The old system of heavy templates seems cool, but it is harder to extend.
 Merely having a base class which returns functions which are still type sets would be preferred i think.
+
+### Using std::coroutine for async operations
+
+std::coroutine have `co_await` which make it possible to suspend functions, allowing for possibly "cleaner" code.
+An example of an use of this can be seen here: <https://www.reddit.com/r/cpp/comments/15n88a2/comment/jvlppb1/>
+I am working on a generic coroutine library in the background to try and get something cool working which can support that syntax.
+It should work something like this:
+
+```cpp
+task<Buffer> create_buffer_from(const void *data, size_t size, VkBufferUsageFlags usage)
+{
+    auto staging = create_staging_buffer_from(data, size);
+    auto device = create_device_buffer(size, usage);
+    auto command_buffer = begin_command_buffer();
+    copy(command_buffer, staging, device, size);
+    co_await command_buffer.execute_async();
+    co_return device;
+}
+
+void Renderer::uploadMeshes(entt::registry& registry) {
+  TaskList tasks{};
+  auto task_generator = [](std::shared_ptr<AwaitingMesh> mesh, auto meshId) -> Task {
+      auto uploadedVertexBuffer = co_await create_buffer_from(mesh->_vertices, ..., vk::BufferUsageFlagBits::eVertexBuffer);
+      auto uploadedIndexBuffer = co_await create_buffer_from(mesh->_indices, ..., vk::BufferUsageFlagBits::eIndexBuffer);
+      createMesh(meshId, uploadedVertexBuffer, uploadedIndexBuffer); // Sets the status
+    };
+  for (const auto entity : entities) {
+    auto mesh = registry.remove<AwaitingMesh>(entity);
+    auto meshId = getMeshId(mesh.path);
+    registry.add<Mesh>(entity, {meshId});
+    if (getStatus(meshID) != UPLOADING && != UPLOADED) // needs to be synchronized somehow
+      tasks.add_task(task_generator(mesh.ptr, meshId));
+  }
+  scheduler->schedule_tasks(tasks); // Are executed at some point, no guarentee for when.
+  // While a meshId is getting uploaded it cant be used for rendering. So when it is ready pop it in.
+}
+```

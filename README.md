@@ -479,3 +479,5 @@ void Renderer::uploadMeshes(entt::registry& registry) {
   // While a meshId is getting uploaded it cant be used for rendering. So when it is ready pop it in.
 }
 ```
+
+This really just needs a way co_await fences to be possible.

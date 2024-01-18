@@ -489,4 +489,6 @@ Host access to queue must be externally synchronized
 Host access to fence must be externally synchronized
 -<https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkQueueSubmit.html>
 
-So need some kind of barrier there.
+So need some kind of barrier there, but there can be quite a lot of queues, so spreading it out might be a good idea.
+The GTX 1080ti has a total of 26 queues over three families (16, 2, 8) which would fit for transfer.
+A counting semaphore and ringbuffer might be a good idea, or something similar.

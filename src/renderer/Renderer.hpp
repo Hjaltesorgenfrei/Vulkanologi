@@ -106,10 +106,10 @@ private:
 	AllocatedImage depthImage;
 	vk::ImageView depthImageView;
 
-	std::vector<std::shared_ptr<PersistentBuffer<GlobalUbo>>> uniformBuffers;
+	std::vector<std::shared_ptr<PersistentlyMappedBuffer<GlobalUbo>>> uniformBuffers;
 
-	std::shared_ptr<PersistentBuffer<Point>> lineVertexBuffer;
-	std::shared_ptr<PersistentBuffer<uint32_t>> lineIndexBuffer;
+	std::shared_ptr<PersistentlyMappedBuffer<Point>> lineVertexBuffer;
+	std::shared_ptr<PersistentlyMappedBuffer<uint32_t>> lineIndexBuffer;
 
 	AllocatedImage colorImage;
 	vk::ImageView colorImageView;

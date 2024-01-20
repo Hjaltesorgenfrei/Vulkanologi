@@ -493,3 +493,13 @@ So need some kind of barrier there, but there can be quite a lot of queues, so s
 The GTX 1080ti has a total of 26 queues over three families (16, 2, 8) which would fit for transfer.
 The queue family with only 2 queues is the transfer only family and might be preferred as it should be faster.
 A counting semaphore and ringbuffer might be a good idea, or something similar.
+
+### After discussion
+
+This might seem fun, but also wildly complicated and probably unnecessary.
+A single thread living in the background and waking to upload via a single transfer queue is much simpler and still allows for rendering to continue.
+The above idea with IDs would probably still fit well as it would allow for just taking in a string and mapping it to an ID, which does not need any sync.
+A map of ids to uploaded meshes would then be kept internally and ignore the ones not ready yet.
+If two maps are kept as storage for new meshes uploaded, sync would also only have to be once per frame when the maps are swapped.
+By keeping uploads on a single thread it should also simplify batching a lot of uploads together in a single command buffer, before submitting it.
+Overall this would require much less work, be less prone to hard to diagnose problems and probably fast enough as the streaming requirements of my engine is likely to be low.

@@ -437,6 +437,7 @@ Instead it should be possible to save the shape in a component and draw each of 
 As most thing consists of simple geometry it should be possible to use instancing to draw these.
 Mesh colliders and height maps might need to be uploaded and use the mesh handle explained earlier.
 Moving the physics shapes could then be done with the transform.
+<https://github.com/BoomingTech/Piccolo> has Jolt Physics debug view.
 
 ### New System base class
 

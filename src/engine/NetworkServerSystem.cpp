@@ -80,7 +80,8 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 			auto spawnMessage = (CreateGameObject *)server->CreateMessage(clientId, CREATE_GAME_OBJECT_MESSAGE);
 			spawnMessage->tick = tick;
 			spawnMessage->hasMesh = true;
-			spawnMessage->hasPhysics = true;
+			spawnMessage->hasPhysics = false;
+			spawnMessage->physicsSettings.size = 42;
 			spawnMessage->isClientOwned = false;
 			spawnMessage->isPlayerControlled = true;
 			strcpy_s(spawnMessage->meshPath, path);

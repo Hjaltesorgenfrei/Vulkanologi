@@ -33,6 +33,9 @@ struct CreateGameObject : public Message {
 	bool isPlayerControlled;
 	bool isClientOwned;
 	bool hasPhysics;
+	struct PhysicsSettings {
+		int size;
+	} physicsSettings;
 	bool hasMesh;
 	char meshPath[128];
 	uint32_t meshPathLength;
@@ -42,6 +45,9 @@ struct CreateGameObject : public Message {
 		serialize_bits(stream, tick, 32);
 		serialize_bool(stream, hasMesh);
 		serialize_bool(stream, hasPhysics);
+		if (hasPhysics) {
+			serialize_int(stream, physicsSettings.size, 0, 511);
+		}
 		serialize_bool(stream, isPlayerControlled);
 		serialize_bool(stream, isClientOwned);
 		serialize_string(stream, meshPath, 128);

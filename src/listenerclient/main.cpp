@@ -115,6 +115,7 @@ int ClientMain(int argc, char *argv[]) {
 				auto spawnMessage = (CreateGameObject *)message;
 				std::string path(spawnMessage->meshPath);
 				std::cout << "Physics: " << (spawnMessage->hasPhysics ? "true" : "false") << ", " << path << "\n";
+				std::cout << "size: " << spawnMessage->physicsSettings.size << "\n";
 			}
 			client.ReleaseMessage(message);
 		}

@@ -33,6 +33,8 @@
 #include <yojimbo.h>
 
 #include <glm/glm.hpp>
+#include <iostream>
+#include <string>
 
 #include "SharedServerSettings.hpp"
 
@@ -62,6 +64,7 @@ int ClientMain(int argc, char *argv[]) {
 	PhysicsNetworkAdapter adapter;
 	ClientServerConfig config;
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
 
 	Client client(GetDefaultAllocator(), Address("0.0.0.0"), config, adapter, time);
 
@@ -107,6 +110,11 @@ int ClientMain(int argc, char *argv[]) {
 					blockData += sizeof(glm::vec3);
 					printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
 				}
+			}
+			if (message->GetType() == CREATE_GAME_OBJECT_MESSAGE) {
+				auto spawnMessage = (CreateGameObject *)message;
+				std::string path(spawnMessage->meshPath);
+				std::cout << "Physics: " << (spawnMessage->hasPhysics ? "true" : "false") << ", " << path << "\n";
 			}
 			client.ReleaseMessage(message);
 		}

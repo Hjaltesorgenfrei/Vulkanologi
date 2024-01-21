@@ -28,10 +28,35 @@ struct PhysicsState : public BlockMessage {
 	YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
 };
 
-enum TestMessageType { PHYSICS_STATE_MESSAGE, NUM_TEST_MESSAGE_TYPES };
+struct CreateGameObject : public Message {
+	uint32_t tick;
+	bool isPlayerControlled;
+	bool isClientOwned;
+	bool hasPhysics;
+	bool hasMesh;
+	char meshPath[128];
+	uint32_t meshPathLength;
 
+	template <typename Stream>
+	bool Serialize(Stream& stream) {
+		serialize_bits(stream, tick, 32);
+		serialize_bool(stream, hasMesh);
+		serialize_bool(stream, hasPhysics);
+		serialize_bool(stream, isPlayerControlled);
+		serialize_bool(stream, isClientOwned);
+		serialize_string(stream, meshPath, 128);
+		return true;
+	}
+
+	YOJIMBO_VIRTUAL_SERIALIZE_FUNCTIONS();
+};
+
+enum TestMessageType { PHYSICS_STATE_MESSAGE, CREATE_GAME_OBJECT_MESSAGE, NUM_TEST_MESSAGE_TYPES };
+
+// TODO: Fix some naming here, it is not only physics.
 YOJIMBO_MESSAGE_FACTORY_START(PhysicsMessageFactory, NUM_TEST_MESSAGE_TYPES);
 YOJIMBO_DECLARE_MESSAGE_TYPE(PHYSICS_STATE_MESSAGE, PhysicsState);
+YOJIMBO_DECLARE_MESSAGE_TYPE(CREATE_GAME_OBJECT_MESSAGE, CreateGameObject);
 YOJIMBO_MESSAGE_FACTORY_FINISH();
 
 class PhysicsNetworkAdapter : public Adapter {

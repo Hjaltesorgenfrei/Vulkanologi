@@ -25,7 +25,9 @@ NetworkServerSystem::NetworkServerSystem() {
 	handlers.emplace_back(std::make_shared<PhysicsHandler>());
 
 	srand((unsigned int)time(NULL));
+	// TODO: Move config to a central place so there is no duplication.
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
 	adapter = std::make_unique<PhysicsNetworkAdapter>();
 	server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config,
 									  *adapter, serverTime);
@@ -39,6 +41,8 @@ NetworkServerSystem::~NetworkServerSystem() {
 	server->Stop();
 	ShutdownYojimbo();
 }
+
+auto path = "lol/car.obj";
 
 void NetworkServerSystem::update(entt::registry &registry, float delta) {
 	serverTime += delta;
@@ -72,6 +76,16 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 			message->tick = tick;
 			message->entities = static_cast<uint32_t>(count);
 			server->SendMessage(clientId, 0, message);
+
+			auto spawnMessage = (CreateGameObject *)server->CreateMessage(clientId, CREATE_GAME_OBJECT_MESSAGE);
+			spawnMessage->tick = tick;
+			spawnMessage->hasMesh = true;
+			spawnMessage->hasPhysics = true;
+			spawnMessage->isClientOwned = false;
+			spawnMessage->isPlayerControlled = true;
+			strcpy_s(spawnMessage->meshPath, path);
+			spawnMessage->meshPathLength = strlen(path);
+			server->SendMessage(clientId, 0, spawnMessage);
 		}
 
 		server->SendPackets();

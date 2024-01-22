@@ -201,15 +201,15 @@ entt::entity App::addCubePlayer(T input) {
 	}
 	auto entity = registry.create();
 	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-	physicsWorld->addCar(registry, entity, spawnPoint.position);
 	// TODO: rotate the car to face the spawn point
 	registry.emplace<T>(entity, input);
 	auto color = Color::playerColor(playerId);
 	registry.emplace<Player>(entity, playerId, color);
 	registry.emplace<Transform>(entity);
 	registry.emplace<PlayerCube>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(entity,
-													std::make_shared<RenderObject>(meshes["cube"], carMaterial));
+	auto body = physicsWorld->addBox(registry, entity, spawnPoint.position, glm::vec3(0.5f, 0.5f, 0.5f));
+	physicsWorld->setBodyScale(body, glm::vec3(5.f, 5.f, 5.f));
+	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 	return entity;
 }
 

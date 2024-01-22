@@ -68,6 +68,9 @@ private:
 	static void joystickCallback(int joystickId, int event);
 
 	template <typename T>
+	entt::entity addCubePlayer(T input);
+
+	template <typename T>
 	entt::entity addPlayer(T input);
 
 	entt::entity addSwiper(Axis direction, float speed, int swiper);

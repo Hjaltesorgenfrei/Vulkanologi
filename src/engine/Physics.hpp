@@ -39,7 +39,7 @@ public:
 	void addFloor(entt::registry& registry, entt::entity entity, glm::vec3 position);
 	void addSphere(entt::registry& registry, entt::entity entity, glm::vec3 position, float radius,
 				   bool isSensor = false);
-	void addBox(entt::registry& registry, entt::entity entity, glm::vec3 position, glm::vec3 size);
+	IDType addBox(entt::registry& registry, entt::entity entity, glm::vec3 position, glm::vec3 size);
 	void addMesh(entt::registry& registry, entt::entity entity, std::vector<glm::vec3>& vertices,
 				 std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), glm::vec3 scale = glm::vec3(1.f),
 				 MotionType motionType = MotionType::Static);

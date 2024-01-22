@@ -733,6 +733,15 @@ void App::mainLoop() {
 		cursorDeltaY = 0.0;
 
 		systemGraph.update(registry, delta.count());
+		// Hacking about with box to look like glenn
+		auto deltaTime = delta.count() / 1000.f;
+		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody, PlayerCube>().each()) {
+			if (input.keys[GLFW_KEY_UP]) {
+				std::cout << "Added Force\n";
+				physicsWorld->addForce(body.bodyID, glm::vec3(100000.f, 0.f, 100000.f) * deltaTime);
+			}
+		}
+		// Stop hacking here
 		networkServerSystem->update(registry, delta.count() / 1000.f);
 
 		if (updateWindowSize) {

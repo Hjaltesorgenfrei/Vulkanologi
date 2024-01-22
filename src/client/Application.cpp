@@ -188,6 +188,32 @@ void App::joystickCallback(int joystickId, int event) {
 }
 
 template <typename T>
+entt::entity App::addCubePlayer(T input) {
+	int playerId = 0;
+	for (auto [entity, player] : registry.view<Player>().each()) {
+		if (player.id >= playerId) {
+			playerId = player.id + 1;
+		}
+	}
+	std::vector<SpawnPoint> spawnPoints;
+	for (auto [entity, spawnPoint] : registry.view<SpawnPoint>().each()) {
+		spawnPoints.push_back(spawnPoint);
+	}
+	auto entity = registry.create();
+	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+	physicsWorld->addCar(registry, entity, spawnPoint.position);
+	// TODO: rotate the car to face the spawn point
+	registry.emplace<T>(entity, input);
+	auto color = Color::playerColor(playerId);
+	registry.emplace<Player>(entity, playerId, color);
+	registry.emplace<Transform>(entity);
+	registry.emplace<PlayerCube>(entity);
+	registry.emplace<std::shared_ptr<RenderObject>>(entity,
+													std::make_shared<RenderObject>(meshes["cube"], carMaterial));
+	return entity;
+}
+
+template <typename T>
 entt::entity App::addPlayer(T input) {
 	int playerId = 0;
 	for (auto [entity, player] : registry.view<Player>().each()) {
@@ -526,8 +552,11 @@ void App::setupWorld() {
 
 	createSpawnPoints(10);
 
-	auto keyboardPlayer = addPlayer(KeyboardInput{});
+	// auto keyboardPlayer = addPlayer(KeyboardInput{});
 	// registry.emplace<Camera>(keyboardPlayer);
+
+	// Create player cube for debug
+	auto keyboardPlayer = addCubePlayer(KeyboardInput{});
 
 	auto debugCamera = registry.create();
 	registry.emplace<Camera>(debugCamera);

@@ -55,6 +55,7 @@ public:
 	void setBodyRotation(IDType bodyID, glm::quat rotation);
 	void setBodyScale(IDType bodyID, glm::vec3 scale);
 	void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
+	void addForce(IDType bodyID, glm::vec3 force);
 
 private:
 	std::unique_ptr<JPH::PhysicsSystem> physicsSystem;

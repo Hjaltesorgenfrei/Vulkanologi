@@ -98,15 +98,6 @@ int ClientMain(int argc, char* argv[]) {
 		while (auto message = client.ReceiveMessage(0)) {
 			if (message->GetType() == PHYSICS_STATE_MESSAGE) {
 				auto physicsState = (PhysicsState*)message;
-				printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
-				const int blockSize = physicsState->GetBlockSize();
-				const uint8_t* blockData = physicsState->GetBlockData();
-				for (uint32_t i = 0; i < physicsState->entities; i++) {
-					glm::vec3 position;
-					memcpy(&position, blockData, sizeof(glm::vec3));
-					blockData += sizeof(glm::vec3);
-					printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
-				}
 			}
 			client.ReleaseMessage(message);
 		}

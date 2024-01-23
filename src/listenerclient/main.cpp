@@ -101,15 +101,6 @@ int ClientMain(int argc, char *argv[]) {
 		while (auto message = client.ReceiveMessage(0)) {
 			if (message->GetType() == PHYSICS_STATE_MESSAGE) {
 				auto physicsState = (PhysicsState *)message;
-				printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
-				const int blockSize = physicsState->GetBlockSize();
-				const uint8_t *blockData = physicsState->GetBlockData();
-				for (uint32_t i = 0; i < physicsState->entities; i++) {
-					glm::vec3 position;
-					memcpy(&position, blockData, sizeof(glm::vec3));
-					blockData += sizeof(glm::vec3);
-					printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
-				}
 			}
 			if (message->GetType() == CREATE_GAME_OBJECT_MESSAGE) {
 				auto spawnMessage = (CreateGameObject *)message;
@@ -118,21 +109,6 @@ int ClientMain(int argc, char *argv[]) {
 				std::cout << "size: " << spawnMessage->physicsSettings.size << "\n";
 			}
 			client.ReleaseMessage(message);
-		}
-
-		{
-			PhysicsState *message = (PhysicsState *)client.CreateMessage(PHYSICS_STATE_MESSAGE);
-			const int blockSize = static_cast<int>(1 * sizeof(glm::vec3));
-			uint8_t *block = client.AllocateBlock(blockSize);
-
-			for (uint32_t i = 0; i < 1; i++) {
-				glm::vec3 *data = (glm::vec3 *)(block + i * sizeof(glm::vec3));
-				*data = glm::vec3(4.f, 2.f, 0.f);
-			}
-			client.AttachBlockToMessage(message, block, blockSize);
-			message->tick = 69420;
-			message->entities = static_cast<uint32_t>(1);
-			client.SendMessage(0, message);
 		}
 
 		time += deltaTime;

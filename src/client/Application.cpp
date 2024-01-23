@@ -28,7 +28,7 @@ void App::run() {
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	networkServerSystem = std::make_unique<NetworkServerSystem>();
+	networkServerSystem = std::make_unique<NetworkServerSystem>(registry);
 	setupWorld();
 	mainLoop();
 }

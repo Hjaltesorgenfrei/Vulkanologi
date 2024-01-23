@@ -47,7 +47,7 @@ private:
 	bool cursorShouldReset = true;
 	bool cursorHidden = false;
 	glm::vec3 blackHole = glm::vec3(0.f, 5.f, 0.f);
-	float blackHolePower = 100000.f;
+	float blackHolePower = 5000000.f;
 	ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();

@@ -8,10 +8,11 @@
 #include "PhysicsBody.hpp"
 #include "SharedServerSettings.hpp"
 #include "networking_handlers/PhysicsHandler.hpp"
+#include "Components.hpp"
 
 using namespace yojimbo;
 
-NetworkServerSystem::NetworkServerSystem() {
+NetworkServerSystem::NetworkServerSystem(entt::registry &registry) {
 	if (!InitializeYojimbo()) {
 		// This should happen in a init instead, because we can't throw exceptions in constructors
 		std::cout << "error: failed to initialize Yojimbo!\n";
@@ -35,11 +36,26 @@ NetworkServerSystem::NetworkServerSystem() {
 	if (!server->IsRunning()) {
 		std::cout << "Server failed to start\n";
 	}
+	registry.on_construct<Networked>().connect<&NetworkServerSystem::onNetworkedConstructed>(this);
+	registry.on_destroy<Networked>().connect<&NetworkServerSystem::onNetworkedDestroyed>(this);
 }
 
 NetworkServerSystem::~NetworkServerSystem() {
 	server->Stop();
 	ShutdownYojimbo();
+}
+
+void NetworkServerSystem::onNetworkedConstructed(entt::registry &registry, entt::entity entity) {
+	auto &network = registry.get<Networked>(entity);
+	network.id = currentId++;
+	idToEntity[network.id] = entity;
+	entityToId[entity] = network.id;
+}
+
+void NetworkServerSystem::onNetworkedDestroyed(entt::registry &registry, entt::entity entity) {
+	auto network = registry.get<Networked>(entity);
+	idToEntity.erase(idToEntity.find(network.id));
+	entityToId.erase(entityToId.find(entity));
 }
 
 auto path = "lol/car.obj";
@@ -58,25 +74,26 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 				continue;
 			}
 
-			auto view =
-				registry
-					.view<CarPhysics, PhysicsBody>();  // TODO: Split it up so we dont send too much data in one packet
-			int count = 0;
-			view.each([&count](auto entity, auto &car, auto &body) { count++; });
-			PhysicsState *message = (PhysicsState *)server->CreateMessage(clientId, PHYSICS_STATE_MESSAGE);
-			const int blockSize = static_cast<int>(count * sizeof(glm::vec3));
-			uint8_t *block = server->AllocateBlock(clientId, blockSize);
-			size_t i = 0;
-			view.each([&i, &block](auto entity, auto &car, auto &body) {
-				glm::vec3 *data = (glm::vec3 *)(block + i * sizeof(glm::vec3));
-				*data = body.position;
-				i++;
-			});
-			server->AttachBlockToMessage(clientId, message, block, blockSize);
-			message->tick = tick;
-			message->entities = static_cast<uint32_t>(count);
-			server->SendMessage(clientId, 0, message);
+			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
+				PhysicsState *message = (PhysicsState *)server->CreateMessage(clientId, PHYSICS_STATE_MESSAGE);
+				message->tick = tick;
+				message->position.x = body.position.x;
+				message->position.y = body.position.y;
+				message->position.z = body.position.z;
 
+				message->rotation.x = body.rotation.x;
+				message->rotation.y = body.rotation.y;
+				message->rotation.z = body.rotation.z;
+				message->rotation.w = body.rotation.w;
+
+				message->velocity.x = body.velocity.x;
+				message->velocity.y = body.velocity.y;
+				message->velocity.z = body.velocity.z;
+				server->SendMessage(clientId, 0, message);
+			}
+
+			continue;
+			// Currently unused, network ids are hardcoded
 			auto spawnMessage = (CreateGameObject *)server->CreateMessage(clientId, CREATE_GAME_OBJECT_MESSAGE);
 			spawnMessage->tick = tick;
 			spawnMessage->hasMesh = true;
@@ -85,7 +102,7 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 			spawnMessage->isClientOwned = false;
 			spawnMessage->isPlayerControlled = true;
 			strcpy_s(spawnMessage->meshPath, path);
-			spawnMessage->meshPathLength = strlen(path);
+			spawnMessage->meshPathLength = static_cast<uint32_t>(strlen(path));
 			server->SendMessage(clientId, 0, spawnMessage);
 		}
 

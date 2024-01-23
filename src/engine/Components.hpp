@@ -106,6 +106,10 @@ struct Camera {
 	BehCamera camera{};
 };
 
+struct Networked {
+	uint64_t id;
+};
+
 // TAGS
 
 struct ShowNormalsTag {

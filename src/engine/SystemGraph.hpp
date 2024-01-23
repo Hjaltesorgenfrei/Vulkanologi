@@ -1,5 +1,4 @@
 #pragma once
-#include <iostream>
 #include <memory>
 #include <unordered_map>
 
@@ -97,14 +96,13 @@ public:
 
 		for (auto& node : nodes) {
 			if (!node.ran) {
-				std::cerr << "SystemGraph::update() - system did not run. System name: " << node.system->name()
-						  << std::endl;
-				std::cerr << "SystemGraph::update() - system dependencies: ";
+				fprintf(stderr, "SystemGraph::update() - system did not run. System name: %s\n",
+						node.system->name().data());
+				fprintf(stderr, "SystemGraph::update() - system dependencies: ");
 				for (auto& dependency : node.dependencies) {
-					std::cerr << nodes[dependency].system->name() << " ";
+					fprintf(stderr, "%s ", nodes[dependency].system->name().data());
 				}
-				std::cerr << std::endl;
-				std::cerr << "A cycle likely exists in the system graph." << std::endl;
+				fprintf(stderr, "\nA cycle likely exists in the system graph.\n");
 			}
 		}
 	}
@@ -112,19 +110,19 @@ public:
 	void debugPrint() {
 		for (auto& node : nodes) {
 			auto name = node.system->name();
-			std::cout << name << " depends on: (";
+			printf(" depends on: (");
 			for (int i = 0; i < node.dependencies.size(); i++) {
 				auto dependency = node.dependencies[i];
 				auto dependencyName = nodes[dependency].system->name();
-				std::cout << dependencyName << (i + 1 < node.dependencies.size() ? ", " : "");
+				printf("%s%s", dependencyName.data(), i + 1 < node.dependencies.size() ? ", " : "");
 			}
-			std::cout << ") and is depended on by: (";
+			printf(") and is depended on by: (");
 			for (int i = 0; i < node.dependents.size(); i++) {
 				auto dependent = node.dependents[i];
 				auto dependentName = nodes[dependent].system->name();
-				std::cout << dependentName << (i + 1 < node.dependents.size() ? ", " : "");
+				printf("%s%s", dependentName.data(), i + 1 < node.dependents.size() ? ", " : "");
 			}
-			std::cout << ")" << std::endl;
+			printf(")\n");
 		}
 	}
 

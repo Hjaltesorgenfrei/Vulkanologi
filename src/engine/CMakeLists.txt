@@ -9,5 +9,6 @@ add_library(engine
 )
 
 target_link_libraries(engine renderer EnTT Jolt yojimbo)
+target_precompile_headers(engine PRIVATE ${SOURCE_DIR}/Components.hpp)
 
 target_include_directories(engine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

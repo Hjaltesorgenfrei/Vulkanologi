@@ -741,6 +741,10 @@ void PhysicsWorld::addForce(IDType bodyID, glm::vec3 force) {
 	bodyInterface->AddForce(bodyID, Vec3(force.x, force.y, force.z));
 }
 
+void PhysicsWorld::addTorque(IDType bodyID, glm::vec3 torque) {
+	bodyInterface->AddTorque(bodyID, Vec3(torque.x, torque.y, torque.z));
+}
+
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity) {
 	auto &body_interface = physicsSystem->GetBodyLockInterface();
 	JPH::BodyLockWrite lock(body_interface, bodyID);

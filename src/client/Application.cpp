@@ -16,6 +16,7 @@
 #include "Colors.hpp"
 #include "Components.hpp"
 #include "Cube.hpp"
+#include "CubeForce.hpp"
 #include "Renderer.hpp"
 #include "Sphere.hpp"
 #include "Util.hpp"
@@ -208,7 +209,7 @@ entt::entity App::addCubePlayer(T input) {
 	registry.emplace<Transform>(entity);
 	registry.emplace<PlayerCube>(entity);
 	auto body = physicsWorld->addBox(registry, entity, spawnPoint.position, glm::vec3(0.5f, 0.5f, 0.5f));
-	physicsWorld->setBodyScale(body, glm::vec3(5.f, 5.f, 5.f));
+	// physicsWorld->setBodyScale(body, glm::vec3(5.f, 5.f, 5.f));
 	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 	return entity;
 }
@@ -733,13 +734,16 @@ void App::mainLoop() {
 		cursorDeltaY = 0.0;
 
 		systemGraph.update(registry, delta.count());
-		// Hacking about with box to look like glenn
-		auto deltaTime = delta.count() / 1000.f;
+		// Hacking about with box to look like glenn's example
 		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody, PlayerCube>().each()) {
-			if (input.keys[GLFW_KEY_UP]) {
-				std::cout << "Added Force\n";
-				physicsWorld->addForce(body.bodyID, glm::vec3(100000.f, 0.f, 100000.f) * deltaTime);
-			}
+			Input i{};
+			i.down = input.keys[GLFW_KEY_DOWN];
+			i.up = input.keys[GLFW_KEY_UP];
+			i.left = input.keys[GLFW_KEY_LEFT];
+			i.right = input.keys[GLFW_KEY_RIGHT];
+			i.push = input.keys[GLFW_KEY_SPACE];
+			i.pull = input.keys[GLFW_KEY_Z];
+			game_process_player_input(physicsWorld.get(), i, delta.count() / 1000.f, body);
 		}
 		// Stop hacking here
 		networkServerSystem->update(registry, delta.count() / 1000.f);

@@ -249,6 +249,7 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Decide if Keyboard/Mouse Input should be a component or just a singleton.
   - There is only ever gonna be one.
   - But it does make some stuff simple.
+- [ ] Create a `World` struct that keeps the world and can be passed around to access stuff entities and physics.
 
 ### Descriptor Layout Idea
 

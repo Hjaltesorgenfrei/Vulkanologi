@@ -766,7 +766,6 @@ void App::mainLoop() {
 			spacePressed = input.keys[GLFW_KEY_K];
 		}
 		if (spacePressed) {
-			std::cout << "brrrr\n";
 			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
 				auto direction = glm::normalize(blackHole - body.position);
 				auto directionalPower = direction * deltaTime * blackHolePower;

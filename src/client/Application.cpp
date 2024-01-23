@@ -503,10 +503,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	}
 
 	frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
-
+	ImGui::Begin("Selected Object");
 	for (auto entity : registry.view<SelectedTag>()) {
 		drawDebugForSelectedEntity(entity, frameInfo);
 	}
+	ImGui::End();
 }
 
 void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo) {
@@ -519,6 +520,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 	}
 
 	if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
+		ImGui::InputFloat3("Position", glm::value_ptr(body->position));
 		auto transform = body->getTransform();
 		glm::mat4 delta(1.0f);
 
@@ -553,17 +555,18 @@ void App::setupWorld() {
 
 	createSpawnPoints(10);
 
-	// auto keyboardPlayer = addPlayer(KeyboardInput{});
-	// registry.emplace<Camera>(keyboardPlayer);
+	auto keyboardPlayer = addPlayer(KeyboardInput{});
+	registry.emplace<Camera>(keyboardPlayer);
+	registry.emplace<ActiveCameraTag>(keyboardPlayer);
 
 	// Create player cube for debug
-	auto keyboardPlayer = addCubePlayer(KeyboardInput{});
+	// auto keyboardPlayer = addCubePlayer(KeyboardInput{});
 
-	auto debugCamera = registry.create();
-	registry.emplace<Camera>(debugCamera);
-	registry.emplace<ActiveCameraTag>(debugCamera);
-	registry.emplace<KeyboardInput>(debugCamera);
-	registry.emplace<MouseInput>(debugCamera);
+	// auto debugCamera = registry.create();
+	// registry.emplace<Camera>(debugCamera);
+	// registry.emplace<ActiveCameraTag>(debugCamera);
+	// registry.emplace<KeyboardInput>(debugCamera);
+	// registry.emplace<MouseInput>(debugCamera);
 
 	setupControllerPlayers();
 

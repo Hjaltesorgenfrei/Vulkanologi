@@ -498,7 +498,7 @@ The GTX 1080ti has a total of 26 queues over three families (16, 2, 8) which wou
 The queue family with only 2 queues is the transfer only family and might be preferred as it should be faster.
 A counting semaphore and ringbuffer might be a good idea, or something similar.
 
-### After discussion
+### After discussion with vulkan Discord
 
 This might seem fun, but also wildly complicated and probably unnecessary.
 A single thread living in the background and waking to upload via a single transfer queue is much simpler and still allows for rendering to continue.

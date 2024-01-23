@@ -46,6 +46,8 @@ private:
 	double cursorPosX = 0.0, cursorPosY = 0.0;
 	bool cursorShouldReset = true;
 	bool cursorHidden = false;
+	glm::vec3 blackHole = glm::vec3(0.f, 5.f, 0.f);
+	float blackHolePower = 100000.f;
 	ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
@@ -66,6 +68,8 @@ private:
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void joystickCallback(int joystickId, int event);
+
+	void addCubes(int layers, float x, float z, bool facingX);
 
 	template <typename T>
 	entt::entity addCubePlayer(T input);

@@ -16,7 +16,6 @@
 #include "Colors.hpp"
 #include "Components.hpp"
 #include "Cube.hpp"
-#include "CubeForce.hpp"
 #include "Renderer.hpp"
 #include "Sphere.hpp"
 #include "Util.hpp"
@@ -188,6 +187,19 @@ void App::joystickCallback(int joystickId, int event) {
 	}
 }
 
+void App::addCubes(int layers, float x, float z, bool facingX) {
+	for (int i = 0; i < layers; i++) {
+		for (int j = 0; j < layers; j++) {
+			glm::vec3 position(x + (i * !facingX), j, z + (i * facingX));
+			auto entity = registry.create();
+			registry.emplace<Transform>(entity);
+			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
+			registry.emplace<std::shared_ptr<RenderObject>>(entity,
+															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+		}
+	}
+}
+
 template <typename T>
 entt::entity App::addCubePlayer(T input) {
 	int playerId = 0;
@@ -237,6 +249,7 @@ entt::entity App::addPlayer(T input) {
 	registry.emplace<CarStateLastUpdate>(entity);
 	registry.emplace<CarControl>(entity);
 	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
+	registry.emplace<SelectedTag>(entity);
 	return entity;
 }
 
@@ -370,7 +383,8 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
 	return result;
 }
 
-Light light = {.position = glm::vec3(0, -5, 0), .color = glm::vec3(1, 1, 1), .intensity = 1.0f};
+Light light = {
+	.position = glm::vec3(0.45, 0.5, -0.5), .isDirectional = true, .color = glm::vec3(1, 1, 1), .intensity = 1.0f};
 
 int App::drawFrame(float delta) {
 	ImGui_ImplVulkan_NewFrame();
@@ -451,6 +465,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 
 	static int resolution = 10;
 	static int segments = 50;
+
+	ImGui::Begin("Black Hole");
+	ImGui::InputFloat3("Black Hole", glm::value_ptr(blackHole));
+	ImGui::InputFloat("Black Hole Pwer", &blackHolePower);
+	ImGui::End();
 
 	ImGui::Begin("Frame Info");
 	ImGui::Text("Frame Time: %f", averageFrameTime);
@@ -557,20 +576,21 @@ void App::setupWorld() {
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});
 	registry.emplace<Camera>(keyboardPlayer);
-	registry.emplace<ActiveCameraTag>(keyboardPlayer);
 
 	// Create player cube for debug
 	// auto keyboardPlayer = addCubePlayer(KeyboardInput{});
 
-	// auto debugCamera = registry.create();
-	// registry.emplace<Camera>(debugCamera);
-	// registry.emplace<ActiveCameraTag>(debugCamera);
-	// registry.emplace<KeyboardInput>(debugCamera);
-	// registry.emplace<MouseInput>(debugCamera);
+	auto debugCamera = registry.create();
+	registry.emplace<Camera>(debugCamera);
+	registry.emplace<ActiveCameraTag>(debugCamera);
+	registry.emplace<KeyboardInput>(debugCamera);
+	registry.emplace<MouseInput>(debugCamera);
 
 	setupControllerPlayers();
 
 	spawnArena();
+
+	addCubes(12, 20.f, 10.f, false);
 
 	setupSystems(systemGraph);
 	systemGraph.init(registry);
@@ -597,7 +617,7 @@ void App::spawnArena() {
 	for (auto index : arena->mesh->_indices) {
 		indices.push_back(index);
 	}
-	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -10, 0), glm::vec3(2, 2, 2));
+	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -1, 0), glm::vec3(2, 2, 2));
 }
 
 void App::spawnRandomCrap() {
@@ -738,16 +758,22 @@ void App::mainLoop() {
 
 		systemGraph.update(registry, delta.count());
 		// Hacking about with box to look like glenn's example
-		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody, PlayerCube>().each()) {
-			Input i{};
-			i.down = input.keys[GLFW_KEY_DOWN];
-			i.up = input.keys[GLFW_KEY_UP];
-			i.left = input.keys[GLFW_KEY_LEFT];
-			i.right = input.keys[GLFW_KEY_RIGHT];
-			i.push = input.keys[GLFW_KEY_SPACE];
-			i.pull = input.keys[GLFW_KEY_Z];
-			game_process_player_input(physicsWorld.get(), i, delta.count() / 1000.f, body);
+		float deltaTime = delta.count() / 1000.f;
+
+		bool spacePressed = false;
+
+		for (auto [entity, input] : registry.view<KeyboardInput>().each()) {
+			spacePressed = input.keys[GLFW_KEY_K];
 		}
+		if (spacePressed) {
+			std::cout << "brrrr\n";
+			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
+				auto direction = glm::normalize(blackHole - body.position);
+				auto directionalPower = direction * deltaTime * blackHolePower;
+				physicsWorld->addForce(body.bodyID, directionalPower);
+			}
+		}
+
 		// Stop hacking here
 		networkServerSystem->update(registry, delta.count() / 1000.f);
 

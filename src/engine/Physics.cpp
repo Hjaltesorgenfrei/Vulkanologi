@@ -541,6 +541,8 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 	WheeledVehicleControllerSettings *controller = new WheeledVehicleControllerSettings;
 	vehicle.mController = controller;
 
+	controller->mEngine.mMaxTorque = 500000.f;
+
 	// Differential
 	controller->mDifferentials.resize(sFourWheelDrive ? 2 : 1);
 	controller->mDifferentials[0].mLeftWheel = 0;

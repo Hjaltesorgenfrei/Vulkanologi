@@ -250,6 +250,8 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
   - There is only ever gonna be one.
   - But it does make some stuff simple.
 - [ ] Create a `World` struct that keeps the world and can be passed around to access stuff entities and physics.
+- [ ] Make something that is in front of renderer, so we dont include a file which has a million imports.
+- [ ] When the client is in, delete shared. It is unneeded and slows down compile.
 
 ### Descriptor Layout Idea
 

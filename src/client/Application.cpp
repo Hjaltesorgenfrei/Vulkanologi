@@ -43,7 +43,7 @@ void App::setupCallBacks() {
 	glfwSetJoystickCallback(joystickCallback);
 }
 
-void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+void App::framebufferResizeCallback(GLFWwindow* window, [[maybe_unused]] int width, [[maybe_unused]] int height) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	app->updateWindowSize = true;
 }
@@ -65,21 +65,20 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
 	}
 }
 
-void App::cursorEnterCallback(GLFWwindow* window, int enter) {
+void App::cursorEnterCallback(GLFWwindow* window, [[maybe_unused]] int enter) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	app->cursorShouldReset = true;
 }
 
 std::vector<Path> rays;
 
-void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+void App::mouseButtonCallback(GLFWwindow* window, int button, int action, [[maybe_unused]] int mods) {
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureMouse) {
 		return;
 	}
 
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-	auto& camera = app->getCamera();
 
 	for (auto [entity, input] : app->registry.view<MouseInput>().each()) {
 		input.buttons[button] = action == GLFW_PRESS || action == GLFW_REPEAT;
@@ -128,7 +127,8 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 	}
 }
 
-void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void App::keyCallback(GLFWwindow* window, int key, [[maybe_unused]] int scancode, int action,
+					  [[maybe_unused]] int mods) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
@@ -494,7 +494,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	ImGui::Combo("Rendering Mode", (int*)&renderer->rendererMode, "Shaded\0Wireframe\0");
 	ImGui::End();
 
-	registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
+	registry.view<Bezier>().each([&](Bezier& bezier) {
 		bezier.recomputeIfDirty();
 		frameInfo.paths.emplace_back(bezier);
 		for (const auto point : bezier.getPoints()) {
@@ -540,15 +540,15 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 
 	if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
 		ImGui::InputFloat3("Position", glm::value_ptr(body->position));
-		auto transform = body->getTransform();
+		auto bodyTransform = body->getTransform();
 		glm::mat4 delta(1.0f);
 
-		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&transform, &delta)) {
+		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&bodyTransform, &delta)) {
 			physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
-		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) {
+		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&bodyTransform, &delta)) {
 			physicsWorld->setBodyRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
 		} else if (currentGizmoOperation == ImGuizmo::SCALE &&
-				   drawImGuizmo(&transform, &delta)) {  // TODO: Broken and crashes.
+				   drawImGuizmo(&bodyTransform, &delta)) {  // TODO: Broken and crashes.
 			physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
 		}
 	}
@@ -641,63 +641,62 @@ void App::spawnRandomCrap() {
 
 	// Swipers
 	loadSwipers();
-	float offset = 80;
 	for (int i = 0; i < swiperNames.size(); i++) {
 		addSwiper(Axis::Z, -0.005f, i);
 	}
 }
 
 void App::bezierTesting() {
-	auto beziers = registry.view<Bezier>();
-	for (auto bezier : beziers) {
-		// auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-		// auto& bezierComponent = registry.get<Bezier>(bezier);
-		// // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
-		// // registry.emplace<SplineMesh>(bezier, splineMesh);
-		// bezierComponent.recomputeIfDirty();
-		// road->mesh = deformMesh(bezierComponent, road->mesh);
-		// registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-		// registry.emplace<Transform>(bezier);
-		// // Make a bullet3 polygonal mesh
-		// std::vector<btVector3> vertices;
-		// for (auto index : road->mesh->_indices) {
-		//     vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
-		//     road->mesh->_vertices[index].pos.z));
-		// }
+	// auto beziers = registry.view<Bezier>();
+	// for (auto bezier : beziers) {
+	// 	auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+	// 	auto& bezierComponent = registry.get<Bezier>(bezier);
+	// 	// SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
+	// 	// registry.emplace<SplineMesh>(bezier, splineMesh);
+	// 	bezierComponent.recomputeIfDirty();
+	// 	road->mesh = deformMesh(bezierComponent, road->mesh);
+	// 	registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+	// 	registry.emplace<Transform>(bezier);
+	// 	// Make a bullet3 polygonal mesh
+	// 	std::vector<btVector3> vertices;
+	// 	for (auto index : road->mesh->_indices) {
+	// 	    vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
+	// 	    road->mesh->_vertices[index].pos.z));
+	// 	}
 
-		// auto body = physicsWorld->createWorldGeometry(vertices);
-		// body->setUserIndex((int)bezier);
-		// registry.emplace<RigidBody>(bezier, body);
-		// renderer->uploadMeshes({road});
-	}
+	// 	auto body = physicsWorld->createWorldGeometry(vertices);
+	// 	body->setUserIndex((int)bezier);
+	// 	registry.emplace<RigidBody>(bezier, body);
+	// 	renderer->uploadMeshes({road});
+	// }
 
-	for (int i = 0; i < 2; i++) {
-		// auto entity = registry.create();
-		// entities.insert(entity);
-		// // Create a ghost object using btGhostObject, same way i need to do control points
-		// btGhostObject* ghostObject = new btGhostObject();
-		// ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
-		// 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
-		// btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
-		// ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-		// ghostObject->setUserIndex((int)entity);
-		// physicsWorld->addSensor(ghostObject);
-		// registry.emplace<Transform>(entity);
-		// registry.emplace<Sensor>(entity, ghostObject);
-		// registry.emplace<ControlPointPtr>(entity);
-	}
+	// for (int i = 0; i < 2; i++) {
+	// 	auto entity = registry.create();
+	// 	entities.insert(entity);
+	// 	// Create a ghost object using btGhostObject, same way i need to do control points
+	// 	btGhostObject* ghostObject = new btGhostObject();
+	// 	ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
+	// 	10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
+	// 	btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
+	// 	ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	// 	ghostObject->setUserIndex((int)entity);
+	// 	physicsWorld->addSensor(ghostObject);
+	// 	registry.emplace<Transform>(entity);
+	// 	registry.emplace<Sensor>(entity, ghostObject);
+	// 	registry.emplace<ControlPointPtr>(entity);
+	// }
 
-	std::vector<std::shared_ptr<ControlPoint>> controlPoints;
+	// std::vector<std::shared_ptr<ControlPoint>> controlPoints;
 
-	registry.view<ControlPointPtr>().each(
-		[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
+	// registry.view<ControlPointPtr>().each(
+	// 	[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
 
-	{
-		auto entity = registry.create();
-		entities.insert(entity);
-		Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
-		registry.emplace<Bezier>(entity, bezier);
-	}
+	// {
+	// 	auto entity = registry.create();
+	// 	entities.insert(entity);
+	// 	Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
+	// 	registry.emplace<Bezier>(entity, bezier);
+	// }
 }
 
 void App::createSpawnPoints(int numberOfSpawns) {
@@ -838,7 +837,7 @@ std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object) {
 
 Camera& App::getCamera() {
 	Camera* cameraResult = nullptr;
-	registry.view<Camera, ActiveCameraTag>().each([&](auto entity, auto& camera) { cameraResult = &camera; });
+	registry.view<Camera, ActiveCameraTag>().each([&](auto& camera) { cameraResult = &camera; });
 
 	if (cameraResult == nullptr) {
 		throw std::runtime_error("No camera found");

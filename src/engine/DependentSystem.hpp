@@ -12,7 +12,7 @@ struct ISystem {
 	// Tagged Maybe
 	// Writes for next Frame
 	virtual void update(entt::registry &registry, float delta) const = 0;
-	virtual void init(entt::registry &registry) {}
+	virtual void init([[maybe_unused]] entt::registry &registry) {}
 };
 
 template <typename... T>

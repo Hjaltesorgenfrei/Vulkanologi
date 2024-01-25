@@ -1,7 +1,5 @@
 #pragma once
 
-#include <yojimbo.h>
-
 #include <entt/entt.hpp>
 #include <memory>
 
@@ -15,6 +13,7 @@ public:
 
 	virtual void init(entt::registry& registry) override;
 	virtual void update(entt::registry& registry, float delta) override;
+	const virtual yojimbo::NetworkInfo& getNetworkInfo() override;
 
 private:
 	double serverTime = 0.0;
@@ -23,6 +22,7 @@ private:
 	uint64_t tick = 0;
 	uint8_t privateKey[yojimbo::KeyBytes] = {0};
 	yojimbo::ClientServerConfig config;
+	yojimbo::NetworkInfo networkInfo;
 
 	void onNetworkedConstructed(entt::registry& registry, entt::entity entity);
 	void onNetworkedDestroyed(entt::registry& registry, entt::entity entity);

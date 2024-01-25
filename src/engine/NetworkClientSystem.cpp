@@ -48,29 +48,17 @@ void NetworkClientSystem::init(entt::registry &registry) {
 	registry.on_construct<Networked>().connect<&NetworkClientSystem::onNetworkedConstructed>(this);
 	registry.on_destroy<Networked>().connect<&NetworkClientSystem::onNetworkedDestroyed>(this);
 	srand((unsigned int)time(NULL));
-	uint64_t clientId = 0;
+
 	yojimbo_random_bytes((uint8_t *)&clientId, 8);
-	printf("client id is %.16" PRIx64 "\n", clientId);
-	PhysicsNetworkAdapter adapter;
-	ClientServerConfig config;
+
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
 	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
-
-	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, adapter, clientTime);
+	adapter = std::make_unique<PhysicsNetworkAdapter>();
+	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
 
 	Address serverAddress("127.0.0.1", ServerPort);
 
-	uint8_t privateKey[KeyBytes];
-	memset(privateKey, 0, KeyBytes);
-
 	client->InsecureConnect(privateKey, clientId, serverAddress);
-
-	char addressString[256];
-	client->GetAddress().ToString(addressString, sizeof(addressString));
-	printf("client address is %s\n", addressString);
-	if (!client->IsConnected()) {
-		std::cout << "Client failed to connect\n";
-	}
 }
 
 void NetworkClientSystem::update(entt::registry &registry, float delta) {
@@ -80,12 +68,12 @@ void NetworkClientSystem::update(entt::registry &registry, float delta) {
 	while (accumulator >= tickRateMs) {
 		accumulator -= tickRateMs;
 		tick++;
-		if (!client->IsConnected()) return;
+		if (client->IsDisconnected()) return;
 
 		client->SendPackets();
 
 		client->ReceivePackets();
-
+		messageCountThisTick = 0;
 		for (int clientId = 0; clientId < MaxClients; clientId++) {
 			while (auto message = client->ReceiveMessage(0)) {
 				for (auto h : handlers) {
@@ -94,9 +82,15 @@ void NetworkClientSystem::update(entt::registry &registry, float delta) {
 					}
 				}
 				client->ReleaseMessage(message);
+				messageCountThisTick++;
 			}
 		}
-
+		std::cout << "Recieved " << messageCountThisTick << " messages this tick\n";
 		client->AdvanceTime(clientTime);
 	}
+}
+
+const yojimbo::NetworkInfo &NetworkClientSystem::getNetworkInfo() {
+	client->GetNetworkInfo(networkInfo);
+	return networkInfo;
 }

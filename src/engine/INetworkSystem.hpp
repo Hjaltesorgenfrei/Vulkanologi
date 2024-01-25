@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <yojimbo.h>
 
 typedef uint64_t NetworkID;
 
@@ -10,4 +11,5 @@ class INetworkSystem {
 public:
 	virtual void init(entt::registry& registry) = 0;
 	virtual void update(entt::registry& registry, float delta) = 0;
+	const virtual yojimbo::NetworkInfo& getNetworkInfo() = 0;
 };

@@ -124,3 +124,14 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 		server->AdvanceTime(serverTime);
 	}
 }
+
+const yojimbo::NetworkInfo &NetworkServerSystem::getNetworkInfo() {
+	// TODO: Fix this loop, it wont work when we have more than 1 client
+	for (int clientId = 0; clientId < MaxClients; clientId++) {
+		if (!server->IsClientConnected(clientId)) {
+			continue;
+		}
+		server->GetNetworkInfo(clientId, networkInfo);
+	}
+	return networkInfo;
+}

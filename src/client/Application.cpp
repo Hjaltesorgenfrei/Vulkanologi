@@ -503,11 +503,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 
 	auto networkInfo = networkSystem->getNetworkInfo();
 	ImGui::Begin("Network Info");
-	ImGui::Text("RTT: %f", networkInfo.RTT);
-	ImGui::Text("Packet Loss: %f", networkInfo.packetLoss);
-	ImGui::Text("Received Bandwidth: %f kbps", networkInfo.receivedBandwidth);
-	ImGui::Text("Sent Bandwidth: %f kbps", networkInfo.sentBandwidth);
-	ImGui::Text("Acked Bandwidth: %f kbps", networkInfo.ackedBandwidth);
+	ImGui::Text("RTT: %fms", networkInfo.RTT);
+	ImGui::Text("Packet Loss: %f%", networkInfo.packetLoss);
+	ImGui::Text("Received Bandwidth: %fkbps", networkInfo.receivedBandwidth);
+	ImGui::Text("Sent Bandwidth: %fkbps", networkInfo.sentBandwidth);
+	ImGui::Text("Acked Bandwidth: %fkbps", networkInfo.ackedBandwidth);
 	ImGui::Text("Number of Reliable Packets Acked: %f", networkInfo.numPacketsAcked);
 	ImGui::Text("Number of Reliable Packets Received: %f", networkInfo.numPacketsReceived);
 	ImGui::Text("Number of Reliable Packets Sent: %f", networkInfo.numPacketsSent);

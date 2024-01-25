@@ -47,19 +47,27 @@ void NetworkClientSystem::init(entt::registry &registry) {
 	handlers.emplace_back(std::make_shared<PhysicsHandler>());
 	registry.on_construct<Networked>().connect<&NetworkClientSystem::onNetworkedConstructed>(this);
 	registry.on_destroy<Networked>().connect<&NetworkClientSystem::onNetworkedDestroyed>(this);
-
 	srand((unsigned int)time(NULL));
-	// TODO: Move config to a central place so there is no duplication.
-	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
-	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
-	adapter = std::make_unique<PhysicsNetworkAdapter>();
-	Address serverAddress("127.0.0.1", ServerPort);
 	uint64_t clientId = 0;
 	yojimbo_random_bytes((uint8_t *)&clientId, 8);
+	printf("client id is %.16" PRIx64 "\n", clientId);
+	PhysicsNetworkAdapter adapter;
+	ClientServerConfig config;
+	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
+
+	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, adapter, clientTime);
+
+	Address serverAddress("127.0.0.1", ServerPort);
+
+	uint8_t privateKey[KeyBytes];
 	memset(privateKey, 0, KeyBytes);
 
-	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
 	client->InsecureConnect(privateKey, clientId, serverAddress);
+
+	char addressString[256];
+	client->GetAddress().ToString(addressString, sizeof(addressString));
+	printf("client address is %s\n", addressString);
 	if (!client->IsConnected()) {
 		std::cout << "Client failed to connect\n";
 	}

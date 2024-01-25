@@ -12,20 +12,7 @@
 
 using namespace yojimbo;
 
-NetworkClientSystem::NetworkClientSystem() {
-	if (!InitializeYojimbo()) {
-		// This should happen in a init instead, because we can't throw exceptions in constructors
-		std::cout << "error: failed to initialize Yojimbo!\n";
-		return;
-	}
-#ifdef _DEBUG
-	yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
-#else
-	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
-#endif
-	// We only use the physics handler in clients right now and dont send anything back
-	handlers.emplace_back(std::make_shared<PhysicsHandler>());
-}
+NetworkClientSystem::NetworkClientSystem() {}
 
 NetworkClientSystem::~NetworkClientSystem() {
 	client->Disconnect();
@@ -46,6 +33,18 @@ void NetworkClientSystem::onNetworkedDestroyed(entt::registry &registry, entt::e
 }
 
 void NetworkClientSystem::init(entt::registry &registry) {
+	if (!InitializeYojimbo()) {
+		// This should happen in a init instead, because we can't throw exceptions in constructors
+		std::cout << "error: failed to initialize Yojimbo!\n";
+		return;
+	}
+#ifdef _DEBUG
+	yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+#else
+	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
+#endif
+	// We only use the physics handler in clients right now and dont send anything back
+	handlers.emplace_back(std::make_shared<PhysicsHandler>());
 	registry.on_construct<Networked>().connect<&NetworkClientSystem::onNetworkedConstructed>(this);
 	registry.on_destroy<Networked>().connect<&NetworkClientSystem::onNetworkedDestroyed>(this);
 
@@ -56,6 +55,8 @@ void NetworkClientSystem::init(entt::registry &registry) {
 	adapter = std::make_unique<PhysicsNetworkAdapter>();
 	Address serverAddress("127.0.0.1", ServerPort);
 	uint64_t clientId = 0;
+	yojimbo_random_bytes((uint8_t *)&clientId, 8);
+	memset(privateKey, 0, KeyBytes);
 
 	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
 	client->InsecureConnect(privateKey, clientId, serverAddress);

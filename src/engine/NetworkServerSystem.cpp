@@ -12,18 +12,7 @@
 
 using namespace yojimbo;
 
-NetworkServerSystem::NetworkServerSystem() {
-	if (!InitializeYojimbo()) {
-		// This should happen in a init instead, because we can't throw exceptions in constructors
-		std::cout << "error: failed to initialize Yojimbo!\n";
-		return;
-	}
-#ifdef _DEBUG
-	yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
-#else
-	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
-#endif
-}
+NetworkServerSystem::NetworkServerSystem() {}
 
 NetworkServerSystem::~NetworkServerSystem() {
 	server->Stop();
@@ -46,6 +35,16 @@ void NetworkServerSystem::onNetworkedDestroyed(entt::registry &registry, entt::e
 auto path = "lol/car.obj";
 
 void NetworkServerSystem::init(entt::registry &registry) {
+	if (!InitializeYojimbo()) {
+		// This should happen in a init instead, because we can't throw exceptions in constructors
+		std::cout << "error: failed to initialize Yojimbo!\n";
+		return;
+	}
+#ifdef _DEBUG
+	yojimbo_log_level(YOJIMBO_LOG_LEVEL_INFO);
+#else
+	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
+#endif
 	srand((unsigned int)time(NULL));
 	// TODO: Move config to a central place so there is no duplication.
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;

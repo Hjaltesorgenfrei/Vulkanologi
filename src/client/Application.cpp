@@ -23,14 +23,19 @@
 #include "NetworkServerSystem.hpp"
 #include "NetworkClientSystem.hpp"
 
-void App::run() {
+void App::run(bool isClient) {
 	instance = this;
 	setupCallBacks();  // We create ImGui in the renderer, so callbacks have to happen before.
 	device = std::make_unique<BehDevice>(window);
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	networkSystem = std::make_unique<NetworkClientSystem>();
+	if (isClient) {
+		networkSystem = std::make_unique<NetworkClientSystem>();
+	}
+	else {
+		networkSystem = std::make_unique<NetworkServerSystem>();
+	}
 	networkSystem->init(registry);
 	setupWorld();
 	mainLoop();
@@ -593,7 +598,7 @@ void App::setupWorld() {
 
 	spawnArena();
 
-	addCubes(12, 20.f, 10.f, false);
+	addCubes(6, 20.f, 10.f, false);
 
 	setupSystems(systemGraph);
 	systemGraph.init(registry);
@@ -851,10 +856,10 @@ Camera& App::getCamera() {
 
 App::App() = default;
 
-int main() {
+int main(int argc, char *argv[]) {
 	App app;
 	try {
-		app.run();
+		app.run(argc > 1);
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;

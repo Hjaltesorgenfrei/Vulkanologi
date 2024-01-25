@@ -20,7 +20,7 @@ class App {
 public:
 	App();
 
-	void run();
+	void run(bool isClient);
 
 	App inline static* instance = nullptr;
 

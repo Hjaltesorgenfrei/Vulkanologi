@@ -32,8 +32,7 @@ void App::run(bool isClient) {
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
 	if (isClient) {
 		networkSystem = std::make_unique<NetworkClientSystem>();
-	}
-	else {
+	} else {
 		networkSystem = std::make_unique<NetworkServerSystem>();
 	}
 	networkSystem->init(registry);
@@ -502,6 +501,18 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	ImGui::Combo("Rendering Mode", (int*)&renderer->rendererMode, "Shaded\0Wireframe\0");
 	ImGui::End();
 
+	auto networkInfo = networkSystem->getNetworkInfo();
+	ImGui::Begin("Network Info");
+	ImGui::Text("RTT: %f", networkInfo.RTT);
+	ImGui::Text("Packet Loss: %f", networkInfo.packetLoss);
+	ImGui::Text("Received Bandwidth: %f", networkInfo.receivedBandwidth);
+	ImGui::Text("Sent Bandwidth: %f", networkInfo.sentBandwidth);
+	ImGui::Text("Acked Bandwidth: %f", networkInfo.ackedBandwidth);
+	ImGui::Text("Number of Reliable Packets Acked: %f", networkInfo.numPacketsAcked);
+	ImGui::Text("Number of Reliable Packets Received: %f", networkInfo.numPacketsReceived);
+	ImGui::Text("Number of Reliable Packets Sent: %f", networkInfo.numPacketsSent);
+	ImGui::End();
+
 	registry.view<Bezier>().each([&](Bezier& bezier) {
 		bezier.recomputeIfDirty();
 		frameInfo.paths.emplace_back(bezier);
@@ -856,7 +867,7 @@ Camera& App::getCamera() {
 
 App::App() = default;
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 	App app;
 	try {
 		app.run(argc > 1);

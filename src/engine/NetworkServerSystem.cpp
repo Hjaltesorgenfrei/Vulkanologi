@@ -23,7 +23,6 @@ NetworkServerSystem::NetworkServerSystem(entt::registry &registry) {
 #else
 	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
 #endif
-	handlers.emplace_back(std::make_shared<PhysicsHandler>());
 
 	srand((unsigned int)time(NULL));
 	// TODO: Move config to a central place so there is no duplication.

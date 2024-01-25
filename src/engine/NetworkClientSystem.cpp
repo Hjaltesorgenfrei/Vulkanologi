@@ -5,14 +5,14 @@
 #include <iostream>
 #include <vector>
 
+#include "Components.hpp"
 #include "PhysicsBody.hpp"
 #include "SharedServerSettings.hpp"
 #include "networking_handlers/PhysicsHandler.hpp"
-#include "Components.hpp"
 
 using namespace yojimbo;
 
-NetworkClientSystem::NetworkClientSystem(entt::registry &registry) {
+NetworkClientSystem::NetworkClientSystem() {
 	if (!InitializeYojimbo()) {
 		// This should happen in a init instead, because we can't throw exceptions in constructors
 		std::cout << "error: failed to initialize Yojimbo!\n";
@@ -25,24 +25,6 @@ NetworkClientSystem::NetworkClientSystem(entt::registry &registry) {
 #endif
 	// We only use the physics handler in clients right now and dont send anything back
 	handlers.emplace_back(std::make_shared<PhysicsHandler>());
-	
-	registry.on_construct<Networked>().connect<&NetworkClientSystem::onNetworkedConstructed>(this);
-	registry.on_destroy<Networked>().connect<&NetworkClientSystem::onNetworkedDestroyed>(this);
-
-	srand((unsigned int)time(NULL));
-	// TODO: Move config to a central place so there is no duplication.
-	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
-	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
-	adapter = std::make_unique<PhysicsNetworkAdapter>();
-	Address serverAddress("127.0.0.1", ServerPort);
-	uint64_t clientId = 0;
-
-	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
-	client->InsecureConnect(privateKey, clientId, serverAddress);
-	if (!client->IsConnected()) {
-		std::cout << "Client failed to connect\n";
-	}
-
 }
 
 NetworkClientSystem::~NetworkClientSystem() {
@@ -61,6 +43,25 @@ void NetworkClientSystem::onNetworkedDestroyed(entt::registry &registry, entt::e
 	auto network = registry.get<Networked>(entity);
 	idToEntity.erase(idToEntity.find(network.id));
 	entityToId.erase(entityToId.find(entity));
+}
+
+void NetworkClientSystem::init(entt::registry &registry) {
+	registry.on_construct<Networked>().connect<&NetworkClientSystem::onNetworkedConstructed>(this);
+	registry.on_destroy<Networked>().connect<&NetworkClientSystem::onNetworkedDestroyed>(this);
+
+	srand((unsigned int)time(NULL));
+	// TODO: Move config to a central place so there is no duplication.
+	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
+	adapter = std::make_unique<PhysicsNetworkAdapter>();
+	Address serverAddress("127.0.0.1", ServerPort);
+	uint64_t clientId = 0;
+
+	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
+	client->InsecureConnect(privateKey, clientId, serverAddress);
+	if (!client->IsConnected()) {
+		std::cout << "Client failed to connect\n";
+	}
 }
 
 void NetworkClientSystem::update(entt::registry &registry, float delta) {

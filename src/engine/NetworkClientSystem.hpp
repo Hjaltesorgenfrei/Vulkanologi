@@ -5,18 +5,20 @@
 #include <entt/entt.hpp>
 #include <memory>
 
+#include "INetworkSystem.hpp"
 #include "networking_handlers/Handler.hpp"
 
 typedef uint64_t NetworkID;
 
 // This file is a nasty nasty dirty copy and should be deleted after the hackathon
 // TODO: Delete this file. Or at least gut it and rework it a bunch
-class NetworkClientSystem {
+class NetworkClientSystem : public INetworkSystem {
 public:
-	NetworkClientSystem(entt::registry& registry);
+	NetworkClientSystem();
 	~NetworkClientSystem();
 
-	void update(entt::registry& registry, float delta);
+	virtual void init(entt::registry& registry) override;
+	virtual void update(entt::registry& registry, float delta) override;
 
 private:
 	double clientTime = 0.0;

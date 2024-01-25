@@ -8,7 +8,7 @@
 
 #include "Components.hpp"
 #include "DependentSystem.hpp"
-#include "NetworkServerSystem.hpp"
+#include "INetworkSystem.hpp"
 #include "Physics.hpp"
 #include "Renderer.hpp"
 #include "SystemGraph.hpp"
@@ -29,7 +29,7 @@ private:
 		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Rotte Simulator: Live your best life as a rat");
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<BehDevice> device;
-	std::unique_ptr<NetworkServerSystem> networkServerSystem;
+	std::unique_ptr<INetworkSystem> networkSystem;
 	entt::registry registry;
 	std::unordered_set<entt::entity> entities;
 	SystemGraph systemGraph;

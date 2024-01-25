@@ -5,14 +5,14 @@
 #include <iostream>
 #include <vector>
 
+#include "Components.hpp"
 #include "PhysicsBody.hpp"
 #include "SharedServerSettings.hpp"
 #include "networking_handlers/PhysicsHandler.hpp"
-#include "Components.hpp"
 
 using namespace yojimbo;
 
-NetworkServerSystem::NetworkServerSystem(entt::registry &registry) {
+NetworkServerSystem::NetworkServerSystem() {
 	if (!InitializeYojimbo()) {
 		// This should happen in a init instead, because we can't throw exceptions in constructors
 		std::cout << "error: failed to initialize Yojimbo!\n";
@@ -23,20 +23,6 @@ NetworkServerSystem::NetworkServerSystem(entt::registry &registry) {
 #else
 	yojimbo_log_level(YOJIMBO_LOG_LEVEL_NONE);
 #endif
-
-	srand((unsigned int)time(NULL));
-	// TODO: Move config to a central place so there is no duplication.
-	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
-	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
-	adapter = std::make_unique<PhysicsNetworkAdapter>();
-	server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config,
-									  *adapter, serverTime);
-	server->Start(MaxClients);
-	if (!server->IsRunning()) {
-		std::cout << "Server failed to start\n";
-	}
-	registry.on_construct<Networked>().connect<&NetworkServerSystem::onNetworkedConstructed>(this);
-	registry.on_destroy<Networked>().connect<&NetworkServerSystem::onNetworkedDestroyed>(this);
 }
 
 NetworkServerSystem::~NetworkServerSystem() {
@@ -58,6 +44,22 @@ void NetworkServerSystem::onNetworkedDestroyed(entt::registry &registry, entt::e
 }
 
 auto path = "lol/car.obj";
+
+void NetworkServerSystem::init(entt::registry &registry) {
+	srand((unsigned int)time(NULL));
+	// TODO: Move config to a central place so there is no duplication.
+	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
+	adapter = std::make_unique<PhysicsNetworkAdapter>();
+	server = std::make_unique<Server>(GetDefaultAllocator(), privateKey, Address("127.0.0.1", ServerPort), config,
+									  *adapter, serverTime);
+	server->Start(MaxClients);
+	if (!server->IsRunning()) {
+		std::cout << "Server failed to start\n";
+	}
+	registry.on_construct<Networked>().connect<&NetworkServerSystem::onNetworkedConstructed>(this);
+	registry.on_destroy<Networked>().connect<&NetworkServerSystem::onNetworkedDestroyed>(this);
+}
 
 void NetworkServerSystem::update(entt::registry &registry, float delta) {
 	serverTime += delta;

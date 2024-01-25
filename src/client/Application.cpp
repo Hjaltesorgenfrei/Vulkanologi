@@ -20,6 +20,8 @@
 #include "Sphere.hpp"
 #include "Util.hpp"
 #include "systems/Systems.hpp"
+#include "NetworkServerSystem.hpp"
+#include "NetworkClientSystem.hpp"
 
 void App::run() {
 	instance = this;
@@ -28,7 +30,8 @@ void App::run() {
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	networkServerSystem = std::make_unique<NetworkServerSystem>(registry);
+	networkSystem = std::make_unique<NetworkClientSystem>();
+	networkSystem->init(registry);
 	setupWorld();
 	mainLoop();
 }
@@ -773,7 +776,7 @@ void App::mainLoop() {
 		}
 
 		// Stop hacking here
-		networkServerSystem->update(registry, delta.count() / 1000.f);
+		networkSystem->update(registry, delta.count() / 1000.f);
 
 		if (updateWindowSize) {
 			renderer->recreateSwapchain();

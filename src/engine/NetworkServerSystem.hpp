@@ -5,16 +5,16 @@
 #include <entt/entt.hpp>
 #include <memory>
 
+#include "INetworkSystem.hpp"
 #include "networking_handlers/Handler.hpp"
 
-typedef uint64_t NetworkID;
-
-class NetworkServerSystem {
+class NetworkServerSystem : public INetworkSystem {
 public:
-	NetworkServerSystem(entt::registry& registry);
+	NetworkServerSystem();
 	~NetworkServerSystem();
 
-	void update(entt::registry& registry, float delta);
+	virtual void init(entt::registry& registry) override;
+	virtual void update(entt::registry& registry, float delta) override;
 
 private:
 	double serverTime = 0.0;

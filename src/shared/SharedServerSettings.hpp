@@ -27,7 +27,8 @@ struct PhysicsState : public Message {
 	uint32_t networkID;
 	float3 position;
 	float4 rotation;
-	float3 velocity;
+	float3 linearVelocity;
+	float3 angularVelocity;
 
 	PhysicsState() { tick = 0; }
 
@@ -44,9 +45,13 @@ struct PhysicsState : public Message {
 		serialize_float(stream, rotation.z);
 		serialize_float(stream, rotation.w);
 
-		serialize_float(stream, velocity.x);
-		serialize_float(stream, velocity.y);
-		serialize_float(stream, velocity.z);
+		serialize_float(stream, linearVelocity.x);
+		serialize_float(stream, linearVelocity.y);
+		serialize_float(stream, linearVelocity.z);
+
+		serialize_float(stream, angularVelocity.x);
+		serialize_float(stream, angularVelocity.y);
+		serialize_float(stream, angularVelocity.z);
 
 		return true;
 	}

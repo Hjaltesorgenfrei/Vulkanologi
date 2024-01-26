@@ -612,7 +612,7 @@ void PhysicsWorld::addMesh(entt::registry &registry, entt::entity entity, std::v
 
 	setUserData(mesh_id, entity);
 	bodies.push_back(mesh_id);
-	setBodyScale(mesh_id, scale);
+	setScale(mesh_id, scale);
 	addBody(registry, entity, mesh_id);
 }
 
@@ -649,28 +649,26 @@ void PhysicsWorld::removeBody(IDType bodyID) {
 
 PhysicsBody PhysicsWorld::getBody(IDType bodyID) {
 	return {
-		bodyID,
-		getMotionType(bodyID),
-		getBodyPosition(bodyID),
-		getBodyRotation(bodyID),
-		getBodyScale(bodyID),
-		getBodyVelocity(bodyID),
+		bodyID,           getMotionType(bodyID),     getPosition(bodyID),        getRotation(bodyID),
+		getScale(bodyID), getLinearVelocity(bodyID), getAngularVelocity(bodyID),
 	};
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body) {
 	body.bodyID = bodyID;
-	body.position = getBodyPosition(bodyID);
-	body.rotation = getBodyRotation(bodyID);
-	body.scale = getBodyScale(bodyID);
-	body.velocity = getBodyVelocity(bodyID);
+	body.position = getPosition(bodyID);
+	body.rotation = getRotation(bodyID);
+	body.scale = getScale(bodyID);
+	body.linearVelocity = getLinearVelocity(bodyID);
+	body.angularVelocity = getAngularVelocity(bodyID);
 }
 
 void PhysicsWorld::updateBody(IDType bodyID, PhysicsBody body) {
-	setBodyPosition(bodyID, body.position);
-	setBodyRotation(bodyID, body.rotation);
-	setBodyScale(bodyID, body.scale);
-	setBodyVelocity(bodyID, body.velocity);
+	setPosition(bodyID, body.position);
+	setRotation(bodyID, body.rotation);
+	setScale(bodyID, body.scale);
+	setLinearVelocity(bodyID, body.linearVelocity);
+	setAngularVelocity(bodyID, body.linearVelocity);
 }
 
 MotionType PhysicsWorld::getMotionType(IDType bodyID) {
@@ -687,17 +685,17 @@ MotionType PhysicsWorld::getMotionType(IDType bodyID) {
 	}
 }
 
-glm::vec3 PhysicsWorld::getBodyPosition(IDType bodyID) {
+glm::vec3 PhysicsWorld::getPosition(IDType bodyID) {
 	RVec3 position = bodyInterface->GetCenterOfMassPosition(bodyID);
 	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
 }
 
-glm::quat PhysicsWorld::getBodyRotation(IDType bodyID) {
+glm::quat PhysicsWorld::getRotation(IDType bodyID) {
 	Quat quat = bodyInterface->GetRotation(bodyID);
 	return glm::quat(quat.GetW(), quat.GetX(), quat.GetY(), quat.GetZ());
 }
 
-glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID) {
+glm::vec3 PhysicsWorld::getScale(IDType bodyID) {
 	const Shape *shape = bodyInterface->GetShape(bodyID);
 	if (shape->GetSubType() == EShapeSubType::Scaled) {
 		// Might not always be valid, as the more decorations can be on the shape
@@ -709,21 +707,26 @@ glm::vec3 PhysicsWorld::getBodyScale(IDType bodyID) {
 	return glm::vec3(1, 1, 1);
 }
 
-glm::vec3 PhysicsWorld::getBodyVelocity(IDType bodyID) {
+glm::vec3 PhysicsWorld::getLinearVelocity(IDType bodyID) {
 	Vec3 velocity = bodyInterface->GetLinearVelocity(bodyID);
 	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
 }
 
-void PhysicsWorld::setBodyPosition(IDType bodyID, glm::vec3 position) {
+glm::vec3 PhysicsWorld::getAngularVelocity(IDType bodyID) {
+	Vec3 velocity = bodyInterface->GetAngularVelocity(bodyID);
+	return glm::vec3(velocity.GetX(), velocity.GetY(), velocity.GetZ());
+}
+
+void PhysicsWorld::setPosition(IDType bodyID, glm::vec3 position) {
 	// TODO: Maybe bool for if it should activate?
 	bodyInterface->SetPosition(bodyID, RVec3(position.x, position.y, position.z), EActivation::Activate);
 }
 
-void PhysicsWorld::setBodyRotation(IDType bodyID, glm::quat rotation) {
-	bodyInterface->SetRotation(bodyID, Quat(rotation.x, rotation.y, rotation.z, rotation.w), EActivation::Activate);
+void PhysicsWorld::setRotation(IDType bodyID, glm::quat rotation) {
+	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
 }
 
-void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale) {
+void PhysicsWorld::setScale(IDType bodyID, glm::vec3 scale) {
 	auto &body_interface = physicsSystem->GetBodyLockInterfaceNoLock();
 	BodyLockWrite lock(body_interface, bodyID);
 	auto result = lock.GetBody().GetShape()->ScaleShape(Vec3Arg(scale.x, scale.y, scale.z));
@@ -733,8 +736,12 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale) {
 	bodyInterface->SetShape(bodyID, result.Get(), false, EActivation::Activate);
 }
 
-void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity) {
+void PhysicsWorld::setLinearVelocity(IDType bodyID, glm::vec3 velocity) {
 	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+void PhysicsWorld::setAngularVelocity(IDType bodyID, glm::vec3 velocity) {
+	bodyInterface->SetAngularVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
 }
 
 void PhysicsWorld::addForce(IDType bodyID, glm::vec3 force) {
@@ -789,11 +796,12 @@ void PhysicsWorld::update(float dt, entt::registry &registry) {
 
 	float ratio = accumulator / cDeltaTime;
 
-	registry.view<PhysicsBody, InterpolatingBody>().each(
-		[this, ratio](entt::entity entity, PhysicsBody &body, InterpolatingBody &interpolation) {
-			body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
-			body.rotation = glm::slerp(interpolation.current.rotation, interpolation.next.rotation, ratio);
-			body.velocity = glm::mix(interpolation.current.velocity, interpolation.next.velocity, ratio);
-			body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
-		});
+	registry.view<PhysicsBody, InterpolatingBody>().each([this, ratio](entt::entity entity, PhysicsBody &body,
+																	   InterpolatingBody &interpolation) {
+		body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
+		body.rotation = glm::slerp(interpolation.current.rotation, interpolation.next.rotation, ratio);
+		body.linearVelocity = glm::mix(interpolation.current.linearVelocity, interpolation.next.linearVelocity, ratio);
+		body.angularVelocity = glm::mix(interpolation.current.angularVelocity, interpolation.next.angularVelocity, ratio);
+		body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
+	});
 }

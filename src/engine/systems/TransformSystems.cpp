@@ -18,7 +18,7 @@ void PhysicsCamera::update(entt::registry &registry, float delta, entt::entity e
 						   Camera &camera) const {
 	auto carPosition = body.position;
 	auto carRotation = body.rotation;
-	auto carVelocity = body.velocity;
+	auto carVelocity = body.linearVelocity;
 
 	carRotation.y *= -1;
 	auto forward = glm::vec3(0.0f, 0.0f, 1.0f) * carRotation;

@@ -19,8 +19,9 @@ const void PhysicsHandler::internalHandle(entt::registry& registry, PhysicsWorld
 	printf("Set body %i!\n", state->networkID);
 
 	if (body) {
-		world->setBodyPosition(body->bodyID, fromFloat3(state->position));
-		world->setBodyVelocity(body->bodyID, fromFloat3(state->velocity));
-		world->setBodyRotation(body->bodyID, fromFloat4(state->rotation));
+		world->setPosition(body->bodyID, fromFloat3(state->position));
+		world->setLinearVelocity(body->bodyID, fromFloat3(state->linearVelocity));
+		world->setAngularVelocity(body->bodyID, fromFloat3(state->angularVelocity));
+		world->setRotation(body->bodyID, fromFloat4(state->rotation));
 	}
 }

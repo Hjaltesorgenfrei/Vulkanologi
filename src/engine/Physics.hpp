@@ -51,10 +51,11 @@ public:
 	std::vector<std::pair<glm::vec3, glm::vec3>> debugDraw();
 
 	// TODO: Add that these modify the PhysicsBody.
-	void setBodyPosition(IDType bodyID, glm::vec3 position);
-	void setBodyRotation(IDType bodyID, glm::quat rotation);
-	void setBodyScale(IDType bodyID, glm::vec3 scale);
-	void setBodyVelocity(IDType bodyID, glm::vec3 velocity);
+	void setPosition(IDType bodyID, glm::vec3 position);
+	void setRotation(IDType bodyID, glm::quat rotation);
+	void setScale(IDType bodyID, glm::vec3 scale);
+	void setLinearVelocity(IDType bodyID, glm::vec3 velocity);
+	void setAngularVelocity(IDType bodyID, glm::vec3 velocity);
 	void addForce(IDType bodyID, glm::vec3 force);
 	void addTorque(IDType bodyID, glm::vec3 torque);
 
@@ -88,10 +89,11 @@ private:
 	void onCarPhysicsDestroyed(entt::registry& registry, entt::entity entity);
 
 	MotionType getMotionType(IDType bodyID);
-	glm::vec3 getBodyPosition(IDType bodyID);
-	glm::quat getBodyRotation(IDType bodyID);
-	glm::vec3 getBodyScale(IDType bodyID);
-	glm::vec3 getBodyVelocity(IDType bodyID);
+	glm::vec3 getPosition(IDType bodyID);
+	glm::quat getRotation(IDType bodyID);
+	glm::vec3 getScale(IDType bodyID);
+	glm::vec3 getLinearVelocity(IDType bodyID);
+	glm::vec3 getAngularVelocity(IDType bodyID);
 
 	void setUserData(IDType bodyID, entt::entity entity);
 	entt::entity getUserData(IDType bodyID);

@@ -230,7 +230,7 @@ entt::entity App::addCubePlayer(T input) {
 	registry.emplace<Transform>(entity);
 	registry.emplace<PlayerCube>(entity);
 	auto body = physicsWorld->addBox(registry, entity, spawnPoint.position, glm::vec3(0.5f, 0.5f, 0.5f));
-	// physicsWorld->setBodyScale(body, glm::vec3(5.f, 5.f, 5.f));
+	// physicsWorld->setScale(body, glm::vec3(5.f, 5.f, 5.f));
 	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 	return entity;
 }
@@ -565,12 +565,12 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 		glm::mat4 delta(1.0f);
 
 		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&bodyTransform, &delta)) {
-			physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
+			physicsWorld->setPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
 		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&bodyTransform, &delta)) {
-			physicsWorld->setBodyRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
+			physicsWorld->setRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
 		} else if (currentGizmoOperation == ImGuizmo::SCALE &&
 				   drawImGuizmo(&bodyTransform, &delta)) {  // TODO: Broken and crashes.
-			physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
+			physicsWorld->setScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
 		}
 	}
 }

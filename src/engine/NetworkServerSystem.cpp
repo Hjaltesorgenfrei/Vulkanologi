@@ -98,7 +98,10 @@ void NetworkServerSystem::update(entt::registry &registry, PhysicsWorld *world, 
 					message->angularVelocity.z = body.angularVelocity.z;
 				}
 
-				server->SendMessage(clientId, 0, message);
+				if (server->CanSendMessage(clientId, 0)) {  // This is a bit of problem as the message will get
+															// outdated, but without it crashes on too many messages
+					server->SendMessage(clientId, 0, message);
+				}
 			}
 
 			continue;

@@ -210,7 +210,7 @@ void App::joystickCallback(int joystickId, int event) {
 void App::addCubes(int layers, float x, float z, bool facingX) {
 	for (int i = 0; i < layers; i++) {
 		for (int j = 0; j < layers; j++) {
-			glm::vec3 position(x + (i * !facingX), j, z + (i * facingX));
+			glm::vec3 position(x + (i * 5) , 1, z + (j * 5));
 			auto entity = registry.create();
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -623,7 +623,7 @@ void App::setupWorld() {
 
 	spawnArena();
 
-	addCubes(6, 20.f, 10.f, false);
+	addCubes(8, -20.f, -10.f, false);
 
 	setupSystems(systemGraph);
 	systemGraph.init(registry);
@@ -794,13 +794,18 @@ void App::mainLoop() {
 
 		bool spacePressed = false;
 
-		for (auto [entity, input] : registry.view<KeyboardInput>().each()) {
+		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody>().each()) {
 			spacePressed = input.keys[GLFW_KEY_K];
+			blackHole = body.position;
+			if (input.keys[GLFW_KEY_SPACE]) {
+				physicsWorld->addForce(body.bodyID, glm::vec3(0.f, 1.f, 0.f) * deltaTime * blackHolePower);
+			}
 		}
 		if (spacePressed) {
-			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
-				auto direction = glm::normalize(blackHole - body.position);
-				auto directionalPower = direction * deltaTime * blackHolePower;
+			for (auto [entity, body] : registry.view<PhysicsBody>(entt::exclude<KeyboardInput>).each()) {
+				auto direction = blackHole - body.position;
+				if (glm::length(direction) > 15.f) continue;
+				auto directionalPower = glm::normalize(direction) * deltaTime * blackHolePower;
 				physicsWorld->addForce(body.bodyID, directionalPower);
 			}
 		}

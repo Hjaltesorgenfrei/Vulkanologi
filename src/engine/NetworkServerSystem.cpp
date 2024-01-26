@@ -87,9 +87,13 @@ void NetworkServerSystem::update(entt::registry &registry, PhysicsWorld *world, 
 				message->rotation.z = body.rotation.z;
 				message->rotation.w = body.rotation.w;
 
-				message->velocity.x = body.velocity.x;
-				message->velocity.y = body.velocity.y;
-				message->velocity.z = body.velocity.z;
+				message->linearVelocity.x = body.linearVelocity.x;
+				message->linearVelocity.y = body.linearVelocity.y;
+				message->linearVelocity.z = body.linearVelocity.z;
+
+				message->angularVelocity.x = body.angularVelocity.x;
+				message->angularVelocity.y = body.angularVelocity.y;
+				message->angularVelocity.z = body.angularVelocity.z;
 				server->SendMessage(clientId, 0, message);
 			}
 

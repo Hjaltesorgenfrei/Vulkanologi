@@ -27,7 +27,8 @@ struct PhysicsBody {
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 scale;
-	glm::vec3 velocity;
+	glm::vec3 linearVelocity;
+	glm::vec3 angularVelocity;
 
 	glm::mat4 getTransform() const;
 };

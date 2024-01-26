@@ -16,12 +16,12 @@
 #include "Colors.hpp"
 #include "Components.hpp"
 #include "Cube.hpp"
+#include "NetworkClientSystem.hpp"
+#include "NetworkServerSystem.hpp"
 #include "Renderer.hpp"
 #include "Sphere.hpp"
 #include "Util.hpp"
 #include "systems/Systems.hpp"
-#include "NetworkServerSystem.hpp"
-#include "NetworkClientSystem.hpp"
 
 void App::run(int argc, char* argv[]) {
 	instance = this;
@@ -30,9 +30,14 @@ void App::run(int argc, char* argv[]) {
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	if (argc > 1) {
-		// TODO: send the ip and port
-		networkSystem = std::make_unique<NetworkClientSystem>();
+	if (argc == 3) {
+		// We probably have an ip and port here.
+		std::string ip = std::string(argv[1]);
+		uint16_t port = static_cast<uint16_t>(std::stoi(argv[2]));
+		networkSystem = std::make_unique<NetworkClientSystem>(ip, port);
+	} else if (argc == 2) {
+		std::string ip = std::string(argv[1]);
+		networkSystem = std::make_unique<NetworkClientSystem>(ip);
 	} else {
 		networkSystem = std::make_unique<NetworkServerSystem>();
 	}

@@ -696,7 +696,7 @@ MotionType PhysicsWorld::getMotionType(IDType bodyID) {
 }
 
 glm::vec3 PhysicsWorld::getPosition(IDType bodyID) {
-	RVec3 position = bodyInterface->GetCenterOfMassPosition(bodyID);
+	RVec3 position = bodyInterface->GetPosition(bodyID);
 	return glm::vec3(position.GetX(), position.GetY(), position.GetZ());
 }
 

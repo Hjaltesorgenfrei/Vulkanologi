@@ -21,20 +21,20 @@ struct Color {
 		return glm::vec3(rand() / (float)RAND_MAX, rand() / (float)RAND_MAX, rand() / (float)RAND_MAX) * 0.5f;
 	}
 
-	// const glm::vec3 RED = glm::vec3(1.0f, 0.0f, 0.0f);
-	// const glm::vec3 BLUE = glm::vec3(0.0f, 0.0f, 1.0f);
-	// const glm::vec3 TEAL = glm::vec3(0.0f, 1.0f, 1.0f);
-	// const glm::vec3 PURPLE = glm::vec3(1.0f, 0.0f, 1.0f);
-	// const glm::vec3 YELLOW = glm::vec3(1.0f, 1.0f, 0.0f);
-	// const glm::vec3 ORANGE = glm::vec3(1.0f, 0.5f, 0.0f);
-	// const glm::vec3 GREEN = glm::vec3(0.0f, 1.0f, 0.0f);
-	// const glm::vec3 PINK = glm::vec3(1.0f, 0.0f, 0.5f);
-	// const glm::vec3 GREY = glm::vec3(0.5f, 0.5f, 0.5f);
-	// const glm::vec3 LIGHT_BLUE = glm::vec3(0.5f, 0.5f, 1.0f);
-	// const glm::vec3 DARK_GREEN = glm::vec3(0.0f, 0.5f, 0.0f);
-	// const glm::vec3 BROWN = glm::vec3(0.5f, 0.25f, 0.0f);
-	// const glm::vec3 WHITE = glm::vec3(1.0f, 1.0f, 1.0f);
-	// const glm::vec3 BLACK = glm::vec3(0.0f, 0.0f, 0.0f);
+	inline static const glm::vec3 RED = glm::vec3(1.0f, 0.0f, 0.0f);
+	inline static const glm::vec3 BLUE = glm::vec3(0.0f, 0.0f, 1.0f);
+	inline static const glm::vec3 TEAL = glm::vec3(0.0f, 1.0f, 1.0f);
+	inline static const glm::vec3 PURPLE = glm::vec3(1.0f, 0.0f, 1.0f);
+	inline static const glm::vec3 YELLOW = glm::vec3(1.0f, 1.0f, 0.0f);
+	inline static const glm::vec3 ORANGE = glm::vec3(1.0f, 0.5f, 0.0f);
+	inline static const glm::vec3 GREEN = glm::vec3(0.0f, 1.0f, 0.0f);
+	inline static const glm::vec3 PINK = glm::vec3(1.0f, 0.0f, 0.5f);
+	inline static const glm::vec3 GREY = glm::vec3(0.5f, 0.5f, 0.5f);
+	inline static const glm::vec3 LIGHT_BLUE = glm::vec3(0.5f, 0.5f, 1.0f);
+	inline static const glm::vec3 DARK_GREEN = glm::vec3(0.0f, 0.5f, 0.0f);
+	inline static const glm::vec3 BROWN = glm::vec3(0.5f, 0.25f, 0.0f);
+	inline static const glm::vec3 WHITE = glm::vec3(1.0f, 1.0f, 1.0f);
+	inline static const glm::vec3 BLACK = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	static glm::vec3 playerColor(int i) {
 		switch (i) {

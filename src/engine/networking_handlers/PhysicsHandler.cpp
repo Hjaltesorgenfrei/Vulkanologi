@@ -16,7 +16,7 @@ const void PhysicsHandler::internalHandle(entt::registry& registry, PhysicsWorld
 	auto entity = idToEntity[state->networkID];
 	auto body = registry.try_get<PhysicsBody>(entity);
 	
-	if (body) {
+	if (body && state->isActive) {
 		world->setPosition(body->bodyID, fromFloat3(state->position));
 		world->setLinearVelocity(body->bodyID, fromFloat3(state->linearVelocity));
 		world->setAngularVelocity(body->bodyID, fromFloat3(state->angularVelocity));

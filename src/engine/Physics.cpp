@@ -649,13 +649,23 @@ void PhysicsWorld::removeBody(IDType bodyID) {
 
 PhysicsBody PhysicsWorld::getBody(IDType bodyID) {
 	return {
-		bodyID,           getMotionType(bodyID),     getPosition(bodyID),        getRotation(bodyID),
-		getScale(bodyID), getLinearVelocity(bodyID), getAngularVelocity(bodyID),
+		bodyID,
+		getMotionType(bodyID),
+		bodyInterface->IsActive(bodyID),
+		getPosition(bodyID),
+		getRotation(bodyID),
+		getScale(bodyID),
+		getLinearVelocity(bodyID),
+		getAngularVelocity(bodyID),
 	};
 }
 
 void PhysicsWorld::getBody(IDType bodyID, PhysicsBody &body) {
 	body.bodyID = bodyID;
+	body.active = bodyInterface->IsActive(bodyID);
+	// TODO: Only update if it is active, but still make sure it starts and ends in the state.
+	// There might be problem with this as it would start inactive and move once before becoming inactive.
+	// Investigation required.
 	body.position = getPosition(bodyID);
 	body.rotation = getRotation(bodyID);
 	body.scale = getScale(bodyID);
@@ -798,10 +808,12 @@ void PhysicsWorld::update(float dt, entt::registry &registry) {
 
 	registry.view<PhysicsBody, InterpolatingBody>().each([this, ratio](entt::entity entity, PhysicsBody &body,
 																	   InterpolatingBody &interpolation) {
+		body.active = interpolation.current.active;
 		body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
 		body.rotation = glm::slerp(interpolation.current.rotation, interpolation.next.rotation, ratio);
 		body.linearVelocity = glm::mix(interpolation.current.linearVelocity, interpolation.next.linearVelocity, ratio);
-		body.angularVelocity = glm::mix(interpolation.current.angularVelocity, interpolation.next.angularVelocity, ratio);
+		body.angularVelocity =
+			glm::mix(interpolation.current.angularVelocity, interpolation.next.angularVelocity, ratio);
 		body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
 	});
 }

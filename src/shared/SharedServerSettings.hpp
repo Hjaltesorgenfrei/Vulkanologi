@@ -25,6 +25,7 @@ struct float4 {
 struct PhysicsState : public Message {
 	uint32_t tick;
 	uint32_t networkID;
+	bool isActive;
 	float3 position;
 	float4 rotation;
 	float3 linearVelocity;
@@ -36,22 +37,26 @@ struct PhysicsState : public Message {
 	bool Serialize(Stream& stream) {
 		serialize_bits(stream, tick, 32);
 		serialize_bits(stream, networkID, 32);
-		serialize_float(stream, position.x);
-		serialize_float(stream, position.y);
-		serialize_float(stream, position.z);
+		serialize_bool(stream, isActive);
+		
+		if (isActive) {
+			serialize_float(stream, position.x);
+			serialize_float(stream, position.y);
+			serialize_float(stream, position.z);
 
-		serialize_float(stream, rotation.x);
-		serialize_float(stream, rotation.y);
-		serialize_float(stream, rotation.z);
-		serialize_float(stream, rotation.w);
+			serialize_float(stream, rotation.x);
+			serialize_float(stream, rotation.y);
+			serialize_float(stream, rotation.z);
+			serialize_float(stream, rotation.w);
 
-		serialize_float(stream, linearVelocity.x);
-		serialize_float(stream, linearVelocity.y);
-		serialize_float(stream, linearVelocity.z);
+			serialize_float(stream, linearVelocity.x);
+			serialize_float(stream, linearVelocity.y);
+			serialize_float(stream, linearVelocity.z);
 
-		serialize_float(stream, angularVelocity.x);
-		serialize_float(stream, angularVelocity.y);
-		serialize_float(stream, angularVelocity.z);
+			serialize_float(stream, angularVelocity.x);
+			serialize_float(stream, angularVelocity.y);
+			serialize_float(stream, angularVelocity.z);
+		}
 
 		return true;
 	}

@@ -220,6 +220,13 @@ void App::addCubes(int layers, float x, float z, bool facingX) {
 															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 		}
 	}
+
+	glm::vec3 position(x + (layers+1 * !facingX), layers+1, z + (layers+1 * facingX));
+	auto entity = registry.create();
+	registry.emplace<Transform>(entity);
+	auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
+	registry.emplace<Networked>(entity);
+	registry.emplace<std::shared_ptr<RenderObject>>(entity,std::make_shared<RenderObject>(meshes["meme-cube"], memeMaterial));
 }
 
 template <typename T>
@@ -589,6 +596,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 }
 
 void App::setupWorld() {
+	system("curl -fL api.mads.monster/memes/random/rendered -o resources/meme.png");
 	std::vector<std::shared_ptr<RenderObject>> objects;
 	// objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
@@ -597,6 +605,7 @@ void App::setupWorld() {
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
 
 	objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
+	objects.push_back(std::make_shared<RenderObject>(createCubeMesh("resources/meme.png")));
 
 	renderer->uploadMeshes(objects);
 	meshes["road"] = objects[0]->mesh;
@@ -604,8 +613,9 @@ void App::setupWorld() {
 	meshes["sphere"] = objects[2]->mesh;
 	meshes["car"] = objects[3]->mesh;
 	noMaterial = objects[1]->material;
-	carMaterial = objects.back()->material;
-
+	carMaterial = objects[3]->material;
+	meshes["meme-cube"] = objects[4]->mesh;
+	memeMaterial = objects[4]->material;
 	createSpawnPoints(10);
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});

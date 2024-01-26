@@ -801,6 +801,7 @@ void PhysicsWorld::update(float dt, entt::registry &registry) {
 		body.position = glm::mix(interpolation.current.position, interpolation.next.position, ratio);
 		body.rotation = glm::slerp(interpolation.current.rotation, interpolation.next.rotation, ratio);
 		body.linearVelocity = glm::mix(interpolation.current.linearVelocity, interpolation.next.linearVelocity, ratio);
+		body.angularVelocity = glm::mix(interpolation.current.angularVelocity, interpolation.next.angularVelocity, ratio);
 		body.scale = glm::mix(interpolation.current.scale, interpolation.next.scale, ratio);
 	});
 }

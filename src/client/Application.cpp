@@ -25,6 +25,14 @@
 
 void App::run(int argc, char* argv[]) {
 	instance = this;
+	srand((unsigned int)time(NULL));
+	
+	int size = (sizeof(messages)/sizeof(*messages));
+	int number = rand() % size;
+	const char* message = messages[number];
+	window =
+		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, message);
+		
 	setupCallBacks();  // We create ImGui in the renderer, so callbacks have to happen before.
 	device = std::make_unique<BehDevice>(window);
 	AssetManager manager(device);

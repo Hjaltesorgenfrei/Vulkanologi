@@ -12,7 +12,10 @@
 
 using namespace yojimbo;
 
-NetworkClientSystem::NetworkClientSystem() {}
+NetworkClientSystem::NetworkClientSystem(std::string ip, uint16_t port) {
+	this->ip = ip;
+	this->port = port;
+}
 
 NetworkClientSystem::~NetworkClientSystem() {
 	client->Disconnect();
@@ -56,7 +59,7 @@ void NetworkClientSystem::init(entt::registry &registry) {
 	adapter = std::make_unique<PhysicsNetworkAdapter>();
 	client = std::make_unique<Client>(GetDefaultAllocator(), Address("0.0.0.0"), config, *adapter, clientTime);
 
-	Address serverAddress("127.0.0.1", ServerPort);
+	Address serverAddress(ip.data(), port);
 
 	client->InsecureConnect(privateKey, clientId, serverAddress);
 }

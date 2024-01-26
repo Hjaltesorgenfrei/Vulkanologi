@@ -12,7 +12,7 @@ typedef uint64_t NetworkID;
 // TODO: Delete this file. Or at least gut it and rework it a bunch
 class NetworkClientSystem : public INetworkSystem {
 public:
-	NetworkClientSystem();
+	NetworkClientSystem(std::string ip = "127.0.0.1", uint16_t port = ServerPort);
 	~NetworkClientSystem();
 
 	virtual void init(entt::registry& registry) override;
@@ -29,6 +29,8 @@ private:
 	uint8_t privateKey[yojimbo::KeyBytes] = {0};
 	yojimbo::ClientServerConfig config;
 	yojimbo::NetworkInfo networkInfo;
+	std::string ip;
+	uint16_t port;
 
 	void onNetworkedConstructed(entt::registry& registry, entt::entity entity);
 	void onNetworkedDestroyed(entt::registry& registry, entt::entity entity);

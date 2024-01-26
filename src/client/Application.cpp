@@ -23,14 +23,15 @@
 #include "NetworkServerSystem.hpp"
 #include "NetworkClientSystem.hpp"
 
-void App::run(bool isClient) {
+void App::run(int argc, char* argv[]) {
 	instance = this;
 	setupCallBacks();  // We create ImGui in the renderer, so callbacks have to happen before.
 	device = std::make_unique<BehDevice>(window);
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	if (isClient) {
+	if (argc > 1) {
+		// TODO: send the ip and port
 		networkSystem = std::make_unique<NetworkClientSystem>();
 	} else {
 		networkSystem = std::make_unique<NetworkServerSystem>();
@@ -870,7 +871,7 @@ App::App() = default;
 int main(int argc, char* argv[]) {
 	App app;
 	try {
-		app.run(argc > 1);
+		app.run(argc, argv);
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;

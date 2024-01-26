@@ -389,7 +389,7 @@ void PhysicsWorld::addSphere(entt::registry &registry, entt::entity entity, glm:
 	addBody(registry, entity, sphere_id);
 }
 
-void PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::vec3 position, glm::vec3 size) {
+IDType PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::vec3 position, glm::vec3 size) {
 	BodyCreationSettings box_settings(new BoxShape(Vec3(size.x, size.y, size.z)),
 									  RVec3(position.x, position.y, position.z), Quat::sIdentity(),
 									  EMotionType::Dynamic, Layers::MOVING);
@@ -402,6 +402,7 @@ void PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::ve
 	setUserData(box_id, entity);
 	bodies.push_back(box_id);
 	addBody(registry, entity, box_id);
+	return box_id;
 }
 
 void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::vec3 positionIn) {
@@ -734,6 +735,14 @@ void PhysicsWorld::setBodyScale(IDType bodyID, glm::vec3 scale) {
 
 void PhysicsWorld::setBodyVelocity(IDType bodyID, glm::vec3 velocity) {
 	bodyInterface->SetLinearVelocity(bodyID, Vec3(velocity.x, velocity.y, velocity.z));
+}
+
+void PhysicsWorld::addForce(IDType bodyID, glm::vec3 force) {
+	bodyInterface->AddForce(bodyID, Vec3(force.x, force.y, force.z));
+}
+
+void PhysicsWorld::addTorque(IDType bodyID, glm::vec3 torque) {
+	bodyInterface->AddTorque(bodyID, Vec3(torque.x, torque.y, torque.z));
 }
 
 void PhysicsWorld::setUserData(IDType bodyID, entt::entity entity) {

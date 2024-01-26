@@ -55,8 +55,14 @@ void BehDevice::createInstance() {
 
 	// Enable validation of best practices
 	if (enableValidationLayers) {
-		vk::ValidationFeatureEnableEXT enables[] = {vk::ValidationFeatureEnableEXT::eBestPractices,
-													vk::ValidationFeatureEnableEXT::eSynchronizationValidation};
+		vk::ValidationFeatureEnableEXT enables[] = {
+			vk::ValidationFeatureEnableEXT::eGpuAssisted,
+			vk::ValidationFeatureEnableEXT::eGpuAssistedReserveBindingSlot,
+			vk::ValidationFeatureEnableEXT::eBestPractices,
+			vk::ValidationFeatureEnableEXT::eDebugPrintf,
+			vk::ValidationFeatureEnableEXT::eSynchronizationValidation,
+		};
+
 		vk::ValidationFeaturesEXT features = {
 			.sType = vk::StructureType::eValidationFeaturesEXT,
 			.enabledValidationFeatureCount = static_cast<uint32_t>(std::size(enables)),

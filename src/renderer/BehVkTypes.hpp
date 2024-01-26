@@ -11,13 +11,13 @@ struct AllocatedBuffer {
 };
 
 template <typename T>
-struct PersistentBuffer : AllocatedBuffer {
+struct PersistentlyMappedBuffer : AllocatedBuffer {
 	T* _data;
 	size_t _count;
 
 	inline T& at(size_t i) {
 		if (i > _count) {
-			throw std::out_of_range("PersistentBuffer index out of range");
+			throw std::out_of_range("PersistentlyMappedBuffer index out of range");
 		}
 		return _data[i];
 	}

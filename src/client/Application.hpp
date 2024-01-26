@@ -8,7 +8,7 @@
 
 #include "Components.hpp"
 #include "DependentSystem.hpp"
-#include "NetworkServerSystem.hpp"
+#include "INetworkSystem.hpp"
 #include "Physics.hpp"
 #include "Renderer.hpp"
 #include "SystemGraph.hpp"
@@ -20,7 +20,7 @@ class App {
 public:
 	App();
 
-	void run();
+	void run(bool isClient);
 
 	App inline static* instance = nullptr;
 
@@ -29,7 +29,7 @@ private:
 		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Rotte Simulator: Live your best life as a rat");
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<BehDevice> device;
-	std::unique_ptr<NetworkServerSystem> networkServerSystem;
+	std::unique_ptr<INetworkSystem> networkSystem;
 	entt::registry registry;
 	std::unordered_set<entt::entity> entities;
 	SystemGraph systemGraph;
@@ -46,12 +46,16 @@ private:
 	double cursorPosX = 0.0, cursorPosY = 0.0;
 	bool cursorShouldReset = true;
 	bool cursorHidden = false;
+	glm::vec3 blackHole = glm::vec3(0.f, 5.f, 0.f);
+	float blackHolePower = 5000000.f;
 	ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();
 	void setupCallBacks();
 	bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
 	void setupWorld();
+	void spawnArena();
+	void spawnRandomCrap();
 	void bezierTesting();
 	void createSpawnPoints(int numberOfSpawns);
 	void setupControllerPlayers();
@@ -64,6 +68,11 @@ private:
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void joystickCallback(int joystickId, int event);
+
+	void addCubes(int layers, float x, float z, bool facingX);
+
+	template <typename T>
+	entt::entity addCubePlayer(T input);
 
 	template <typename T>
 	entt::entity addPlayer(T input);

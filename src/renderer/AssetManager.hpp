@@ -41,8 +41,8 @@ public:
 	}
 
 	template <typename T>
-	[[nodiscard]] std::shared_ptr<PersistentBuffer<T>> allocatePersistentBuffer(size_t count,
-																				vk::BufferUsageFlags bufferUsage);
+	[[nodiscard]] std::shared_ptr<PersistentlyMappedBuffer<T>> allocatePersistentBuffer(
+		size_t count, vk::BufferUsageFlags bufferUsage);
 
 private:
 	std::shared_ptr<BehDevice> device;
@@ -136,8 +136,8 @@ inline std::vector<std::shared_ptr<AllocatedBuffer>> AssetManager::createBuffers
 }
 
 template <typename T>
-inline std::shared_ptr<PersistentBuffer<T>> AssetManager::allocatePersistentBuffer(size_t count,
-																				   vk::BufferUsageFlags bufferUsage) {
+inline std::shared_ptr<PersistentlyMappedBuffer<T>> AssetManager::allocatePersistentBuffer(
+	size_t count, vk::BufferUsageFlags bufferUsage) {
 	VkBufferCreateInfo createInfo{
 		.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
 		.size = count * sizeof(T),
@@ -149,7 +149,7 @@ inline std::shared_ptr<PersistentBuffer<T>> AssetManager::allocatePersistentBuff
 
 	VmaAllocationInfo allocInfo;
 
-	std::shared_ptr<PersistentBuffer<T>> buffer = std::make_shared<PersistentBuffer<T>>();
+	std::shared_ptr<PersistentlyMappedBuffer<T>> buffer = std::make_shared<PersistentlyMappedBuffer<T>>();
 	if (vmaCreateBuffer(device->allocator(), &createInfo, &allocCreateInfo,
 						reinterpret_cast<VkBuffer*>(&buffer->_buffer), &buffer->_allocation,
 						&allocInfo) != VK_SUCCESS) {

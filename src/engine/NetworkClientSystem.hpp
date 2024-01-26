@@ -6,19 +6,25 @@
 #include "INetworkSystem.hpp"
 #include "networking_handlers/Handler.hpp"
 
-class NetworkServerSystem : public INetworkSystem {
+typedef uint64_t NetworkID;
+
+// This file is a nasty nasty dirty copy and should be deleted after the hackathon
+// TODO: Delete this file. Or at least gut it and rework it a bunch
+class NetworkClientSystem : public INetworkSystem {
 public:
-	NetworkServerSystem();
-	~NetworkServerSystem();
+	NetworkClientSystem();
+	~NetworkClientSystem();
 
 	virtual void init(entt::registry& registry) override;
 	virtual void update(entt::registry& registry, float delta) override;
 	const virtual yojimbo::NetworkInfo& getNetworkInfo() override;
 
 private:
-	double serverTime = 0.0;
+	double clientTime = 0.0;
 	double accumulator = 0.0;
 	double tickRateMs = (1.0 / 60.0);
+	int messageCountThisTick = 0;
+	uint64_t clientId = 0;
 	uint64_t tick = 0;
 	uint8_t privateKey[yojimbo::KeyBytes] = {0};
 	yojimbo::ClientServerConfig config;
@@ -32,7 +38,7 @@ private:
 	std::unordered_map<NetworkID, entt::entity> idToEntity;
 	std::unordered_map<entt::entity, NetworkID> entityToId;
 
-	std::unique_ptr<yojimbo::Server> server;
+	std::unique_ptr<yojimbo::Client> client;
 	std::unique_ptr<yojimbo::Adapter> adapter;
 	std::vector<std::shared_ptr<IHandler>> handlers;  // A map is probably better
 };

@@ -18,17 +18,24 @@
 #include "Cube.hpp"
 #include "Renderer.hpp"
 #include "Sphere.hpp"
-#include "systems/Systems.hpp"
 #include "Util.hpp"
+#include "systems/Systems.hpp"
+#include "NetworkServerSystem.hpp"
+#include "NetworkClientSystem.hpp"
 
-void App::run() {
+void App::run(bool isClient) {
 	instance = this;
 	setupCallBacks();  // We create ImGui in the renderer, so callbacks have to happen before.
 	device = std::make_unique<BehDevice>(window);
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	networkServerSystem = std::make_unique<NetworkServerSystem>();
+	if (isClient) {
+		networkSystem = std::make_unique<NetworkClientSystem>();
+	} else {
+		networkSystem = std::make_unique<NetworkServerSystem>();
+	}
+	networkSystem->init(registry);
 	setupWorld();
 	mainLoop();
 }
@@ -43,7 +50,7 @@ void App::setupCallBacks() {
 	glfwSetJoystickCallback(joystickCallback);
 }
 
-void App::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+void App::framebufferResizeCallback(GLFWwindow* window, [[maybe_unused]] int width, [[maybe_unused]] int height) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	app->updateWindowSize = true;
 }
@@ -65,21 +72,20 @@ void App::cursorPosCallback(GLFWwindow* window, double xPosIn, double yPosIn) {
 	}
 }
 
-void App::cursorEnterCallback(GLFWwindow* window, int enter) {
+void App::cursorEnterCallback(GLFWwindow* window, [[maybe_unused]] int enter) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	app->cursorShouldReset = true;
 }
 
 std::vector<Path> rays;
 
-void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
+void App::mouseButtonCallback(GLFWwindow* window, int button, int action, [[maybe_unused]] int mods) {
 	ImGuiIO& io = ImGui::GetIO();
 	if (io.WantCaptureMouse) {
 		return;
 	}
 
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
-	auto& camera = app->getCamera();
 
 	for (auto [entity, input] : app->registry.view<MouseInput>().each()) {
 		input.buttons[button] = action == GLFW_PRESS || action == GLFW_REPEAT;
@@ -128,7 +134,8 @@ void App::mouseButtonCallback(GLFWwindow* window, int button, int action, int mo
 	}
 }
 
-void App::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+void App::keyCallback(GLFWwindow* window, int key, [[maybe_unused]] int scancode, int action,
+					  [[maybe_unused]] int mods) {
 	auto* const app = static_cast<App*>(glfwGetWindowUserPointer(window));
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
@@ -187,6 +194,45 @@ void App::joystickCallback(int joystickId, int event) {
 	}
 }
 
+void App::addCubes(int layers, float x, float z, bool facingX) {
+	for (int i = 0; i < layers; i++) {
+		for (int j = 0; j < layers; j++) {
+			glm::vec3 position(x + (i * !facingX), j, z + (i * facingX));
+			auto entity = registry.create();
+			registry.emplace<Transform>(entity);
+			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
+			registry.emplace<std::shared_ptr<RenderObject>>(entity,
+															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+		}
+	}
+}
+
+template <typename T>
+entt::entity App::addCubePlayer(T input) {
+	int playerId = 0;
+	for (auto [entity, player] : registry.view<Player>().each()) {
+		if (player.id >= playerId) {
+			playerId = player.id + 1;
+		}
+	}
+	std::vector<SpawnPoint> spawnPoints;
+	for (auto [entity, spawnPoint] : registry.view<SpawnPoint>().each()) {
+		spawnPoints.push_back(spawnPoint);
+	}
+	auto entity = registry.create();
+	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+	// TODO: rotate the car to face the spawn point
+	registry.emplace<T>(entity, input);
+	auto color = Color::playerColor(playerId);
+	registry.emplace<Player>(entity, playerId, color);
+	registry.emplace<Transform>(entity);
+	registry.emplace<PlayerCube>(entity);
+	auto body = physicsWorld->addBox(registry, entity, spawnPoint.position, glm::vec3(0.5f, 0.5f, 0.5f));
+	// physicsWorld->setBodyScale(body, glm::vec3(5.f, 5.f, 5.f));
+	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+	return entity;
+}
+
 template <typename T>
 entt::entity App::addPlayer(T input) {
 	int playerId = 0;
@@ -210,6 +256,7 @@ entt::entity App::addPlayer(T input) {
 	registry.emplace<CarStateLastUpdate>(entity);
 	registry.emplace<CarControl>(entity);
 	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
+	registry.emplace<SelectedTag>(entity);
 	return entity;
 }
 
@@ -343,7 +390,8 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
 	return result;
 }
 
-Light light = {.position = glm::vec3(0, -5, 0), .color = glm::vec3(1, 1, 1), .intensity = 1.0f};
+Light light = {
+	.position = glm::vec3(0.45, 0.5, -0.5), .isDirectional = true, .color = glm::vec3(1, 1, 1), .intensity = 1.0f};
 
 int App::drawFrame(float delta) {
 	ImGui_ImplVulkan_NewFrame();
@@ -425,6 +473,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	static int resolution = 10;
 	static int segments = 50;
 
+	ImGui::Begin("Black Hole");
+	ImGui::InputFloat3("Black Hole", glm::value_ptr(blackHole));
+	ImGui::InputFloat("Black Hole Pwer", &blackHolePower);
+	ImGui::End();
+
 	ImGui::Begin("Frame Info");
 	ImGui::Text("Frame Time: %f", averageFrameTime);
 	ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
@@ -448,7 +501,19 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	ImGui::Combo("Rendering Mode", (int*)&renderer->rendererMode, "Shaded\0Wireframe\0");
 	ImGui::End();
 
-	registry.view<Bezier>().each([&](auto entity, Bezier& bezier) {
+	auto networkInfo = networkSystem->getNetworkInfo();
+	ImGui::Begin("Network Info");
+	ImGui::Text("RTT: %fms", networkInfo.RTT);
+	ImGui::Text("Packet Loss: %f%", networkInfo.packetLoss);
+	ImGui::Text("Received Bandwidth: %fkbps", networkInfo.receivedBandwidth);
+	ImGui::Text("Sent Bandwidth: %fkbps", networkInfo.sentBandwidth);
+	ImGui::Text("Acked Bandwidth: %fkbps", networkInfo.ackedBandwidth);
+	ImGui::Text("Number of Reliable Packets Acked: %f", networkInfo.numPacketsAcked);
+	ImGui::Text("Number of Reliable Packets Received: %f", networkInfo.numPacketsReceived);
+	ImGui::Text("Number of Reliable Packets Sent: %f", networkInfo.numPacketsSent);
+	ImGui::End();
+
+	registry.view<Bezier>().each([&](Bezier& bezier) {
 		bezier.recomputeIfDirty();
 		frameInfo.paths.emplace_back(bezier);
 		for (const auto point : bezier.getPoints()) {
@@ -476,10 +541,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	}
 
 	frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
-
+	ImGui::Begin("Selected Object");
 	for (auto entity : registry.view<SelectedTag>()) {
 		drawDebugForSelectedEntity(entity, frameInfo);
 	}
+	ImGui::End();
 }
 
 void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo) {
@@ -492,15 +558,16 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 	}
 
 	if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
-		auto transform = body->getTransform();
+		ImGui::InputFloat3("Position", glm::value_ptr(body->position));
+		auto bodyTransform = body->getTransform();
 		glm::mat4 delta(1.0f);
 
-		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&transform, &delta)) {
+		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&bodyTransform, &delta)) {
 			physicsWorld->setBodyPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
-		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&transform, &delta)) {
+		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&bodyTransform, &delta)) {
 			physicsWorld->setBodyRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
 		} else if (currentGizmoOperation == ImGuizmo::SCALE &&
-				   drawImGuizmo(&transform, &delta)) {  // TODO: Broken and crashes.
+				   drawImGuizmo(&bodyTransform, &delta)) {  // TODO: Broken and crashes.
 			physicsWorld->setBodyScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
 		}
 	}
@@ -527,7 +594,10 @@ void App::setupWorld() {
 	createSpawnPoints(10);
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});
-	// registry.emplace<Camera>(keyboardPlayer);
+	registry.emplace<Camera>(keyboardPlayer);
+
+	// Create player cube for debug
+	// auto keyboardPlayer = addCubePlayer(KeyboardInput{});
 
 	auto debugCamera = registry.create();
 	registry.emplace<Camera>(debugCamera);
@@ -537,15 +607,17 @@ void App::setupWorld() {
 
 	setupControllerPlayers();
 
-	for (int i = 0; i < 4; i++) {
-		auto entity = registry.create();
-		entities.insert(entity);
-		physicsWorld->addBox(registry, entity, glm::vec3(0, 5, 0), glm::vec3(1, 1, 1));
-		registry.emplace<Transform>(entity);
-		registry.emplace<std::shared_ptr<RenderObject>>(entity, objects[i]);
-	}
+	spawnArena();
 
-	// Arena
+	addCubes(6, 20.f, 10.f, false);
+
+	setupSystems(systemGraph);
+	systemGraph.init(registry);
+	systemGraph.update(registry, 0.0f);
+	physicsWorld->update(0.0f, registry);
+}
+
+void App::spawnArena() {
 	auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/map.obj"));
 	for (auto& vertex : arena->mesh->_vertices) {
 		vertex.materialIndex = 0;
@@ -564,36 +636,10 @@ void App::setupWorld() {
 	for (auto index : arena->mesh->_indices) {
 		indices.push_back(index);
 	}
-	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -10, 0), glm::vec3(2, 2, 2));
+	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -1, 0), glm::vec3(2, 2, 2));
+}
 
-	setupSystems(systemGraph);
-	systemGraph.init(registry);
-	systemGraph.update(registry, 0.0f);
-	physicsWorld->update(0.0f, registry);
-
-	auto beziers = registry.view<Bezier>();
-	for (auto bezier : beziers) {
-		// auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-		// auto& bezierComponent = registry.get<Bezier>(bezier);
-		// // SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
-		// // registry.emplace<SplineMesh>(bezier, splineMesh);
-		// bezierComponent.recomputeIfDirty();
-		// road->mesh = deformMesh(bezierComponent, road->mesh);
-		// registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-		// registry.emplace<Transform>(bezier);
-		// // Make a bullet3 polygonal mesh
-		// std::vector<btVector3> vertices;
-		// for (auto index : road->mesh->_indices) {
-		//     vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
-		//     road->mesh->_vertices[index].pos.z));
-		// }
-
-		// auto body = physicsWorld->createWorldGeometry(vertices);
-		// body->setUserIndex((int)bezier);
-		// registry.emplace<RigidBody>(bezier, body);
-		// renderer->uploadMeshes({road});
-	}
-
+void App::spawnRandomCrap() {
 	auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
 	renderer->uploadMeshes({rat});
 	auto ratEntity = registry.create();
@@ -614,40 +660,62 @@ void App::setupWorld() {
 
 	// Swipers
 	loadSwipers();
-	float offset = 80;
 	for (int i = 0; i < swiperNames.size(); i++) {
 		addSwiper(Axis::Z, -0.005f, i);
 	}
 }
 
 void App::bezierTesting() {
-	for (int i = 0; i < 2; i++) {
-		// auto entity = registry.create();
-		// entities.insert(entity);
-		// // Create a ghost object using btGhostObject, same way i need to do control points
-		// btGhostObject* ghostObject = new btGhostObject();
-		// ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
-		// 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
-		// btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
-		// ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-		// ghostObject->setUserIndex((int)entity);
-		// physicsWorld->addSensor(ghostObject);
-		// registry.emplace<Transform>(entity);
-		// registry.emplace<Sensor>(entity, ghostObject);
-		// registry.emplace<ControlPointPtr>(entity);
-	}
+	// auto beziers = registry.view<Bezier>();
+	// for (auto bezier : beziers) {
+	// 	auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+	// 	auto& bezierComponent = registry.get<Bezier>(bezier);
+	// 	// SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
+	// 	// registry.emplace<SplineMesh>(bezier, splineMesh);
+	// 	bezierComponent.recomputeIfDirty();
+	// 	road->mesh = deformMesh(bezierComponent, road->mesh);
+	// 	registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+	// 	registry.emplace<Transform>(bezier);
+	// 	// Make a bullet3 polygonal mesh
+	// 	std::vector<btVector3> vertices;
+	// 	for (auto index : road->mesh->_indices) {
+	// 	    vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
+	// 	    road->mesh->_vertices[index].pos.z));
+	// 	}
 
-	std::vector<std::shared_ptr<ControlPoint>> controlPoints;
+	// 	auto body = physicsWorld->createWorldGeometry(vertices);
+	// 	body->setUserIndex((int)bezier);
+	// 	registry.emplace<RigidBody>(bezier, body);
+	// 	renderer->uploadMeshes({road});
+	// }
 
-	registry.view<ControlPointPtr>().each(
-		[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
+	// for (int i = 0; i < 2; i++) {
+	// 	auto entity = registry.create();
+	// 	entities.insert(entity);
+	// 	// Create a ghost object using btGhostObject, same way i need to do control points
+	// 	btGhostObject* ghostObject = new btGhostObject();
+	// 	ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
+	// 	10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
+	// 	btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
+	// 	ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	// 	ghostObject->setUserIndex((int)entity);
+	// 	physicsWorld->addSensor(ghostObject);
+	// 	registry.emplace<Transform>(entity);
+	// 	registry.emplace<Sensor>(entity, ghostObject);
+	// 	registry.emplace<ControlPointPtr>(entity);
+	// }
 
-	{
-		auto entity = registry.create();
-		entities.insert(entity);
-		Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
-		registry.emplace<Bezier>(entity, bezier);
-	}
+	// std::vector<std::shared_ptr<ControlPoint>> controlPoints;
+
+	// registry.view<ControlPointPtr>().each(
+	// 	[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
+
+	// {
+	// 	auto entity = registry.create();
+	// 	entities.insert(entity);
+	// 	Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
+	// 	registry.emplace<Bezier>(entity, bezier);
+	// }
 }
 
 void App::createSpawnPoints(int numberOfSpawns) {
@@ -707,7 +775,24 @@ void App::mainLoop() {
 		cursorDeltaY = 0.0;
 
 		systemGraph.update(registry, delta.count());
-		networkServerSystem->update(registry, delta.count() / 1000.f);
+		// Hacking about with box to look like glenn's example
+		float deltaTime = delta.count() / 1000.f;
+
+		bool spacePressed = false;
+
+		for (auto [entity, input] : registry.view<KeyboardInput>().each()) {
+			spacePressed = input.keys[GLFW_KEY_K];
+		}
+		if (spacePressed) {
+			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
+				auto direction = glm::normalize(blackHole - body.position);
+				auto directionalPower = direction * deltaTime * blackHolePower;
+				physicsWorld->addForce(body.bodyID, directionalPower);
+			}
+		}
+
+		// Stop hacking here
+		networkSystem->update(registry, delta.count() / 1000.f);
 
 		if (updateWindowSize) {
 			renderer->recreateSwapchain();
@@ -771,7 +856,7 @@ std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object) {
 
 Camera& App::getCamera() {
 	Camera* cameraResult = nullptr;
-	registry.view<Camera, ActiveCameraTag>().each([&](auto entity, auto& camera) { cameraResult = &camera; });
+	registry.view<Camera, ActiveCameraTag>().each([&](auto& camera) { cameraResult = &camera; });
 
 	if (cameraResult == nullptr) {
 		throw std::runtime_error("No camera found");
@@ -782,10 +867,10 @@ Camera& App::getCamera() {
 
 App::App() = default;
 
-int main() {
+int main(int argc, char* argv[]) {
 	App app;
 	try {
-		app.run();
+		app.run(argc > 1);
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		return EXIT_FAILURE;

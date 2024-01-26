@@ -249,6 +249,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Decide if Keyboard/Mouse Input should be a component or just a singleton.
   - There is only ever gonna be one.
   - But it does make some stuff simple.
+- [ ] Create a `World` struct that keeps the world and can be passed around to access stuff entities and physics.
+- [ ] Make something that is in front of renderer, so we dont include a file which has a million imports.
+- [ ] When the client is in, delete shared. It is unneeded and slows down compile.
 
 ### Descriptor Layout Idea
 
@@ -437,8 +440,70 @@ Instead it should be possible to save the shape in a component and draw each of 
 As most thing consists of simple geometry it should be possible to use instancing to draw these.
 Mesh colliders and height maps might need to be uploaded and use the mesh handle explained earlier.
 Moving the physics shapes could then be done with the transform.
+<https://github.com/BoomingTech/Piccolo> has Jolt Physics debug view.
 
 ### New System base class
 
 The old system of heavy templates seems cool, but it is harder to extend.
 Merely having a base class which returns functions which are still type sets would be preferred i think.
+
+### Using std::coroutine for async operations
+
+std::coroutine have `co_await` which make it possible to suspend functions, allowing for possibly "cleaner" code.
+An example of an use of this can be seen here: <https://www.reddit.com/r/cpp/comments/15n88a2/comment/jvlppb1/>
+I am working on a generic coroutine library in the background to try and get something cool working which can support that syntax.
+It should work something like this:
+
+```cpp
+task<Buffer> create_buffer_from(const void *data, size_t size, VkBufferUsageFlags usage)
+{
+    auto staging = create_staging_buffer_from(data, size);
+    auto device = create_device_buffer(size, usage);
+    auto command_buffer = begin_command_buffer();
+    copy(command_buffer, staging, device, size);
+    co_await command_buffer.execute_async();
+    co_return device;
+}
+
+void Renderer::uploadMeshes(entt::registry& registry) {
+  TaskList tasks{};
+  auto task_generator = [](std::shared_ptr<AwaitingMesh> mesh, auto meshId) -> Task {
+      auto uploadedVertexBuffer = co_await create_buffer_from(mesh->_vertices, ..., vk::BufferUsageFlagBits::eVertexBuffer);
+      auto uploadedIndexBuffer = co_await create_buffer_from(mesh->_indices, ..., vk::BufferUsageFlagBits::eIndexBuffer);
+      createMesh(meshId, uploadedVertexBuffer, uploadedIndexBuffer); // Sets the status
+    };
+  for (const auto entity : entities) {
+    auto mesh = registry.remove<AwaitingMesh>(entity);
+    auto meshId = getMeshId(mesh.path);
+    registry.add<Mesh>(entity, {meshId});
+    if (getStatus(meshID) != UPLOADING && != UPLOADED) // needs to be synchronized somehow
+      tasks.add_task(task_generator(mesh.ptr, meshId));
+  }
+  scheduler->schedule_tasks(tasks); // Are executed at some point, no guarentee for when.
+  // While a meshId is getting uploaded it cant be used for rendering. So when it is ready pop it in.
+}
+```
+
+This really just needs a way co_await fences to be possible.
+
+#### Need to keep this in mind through
+
+Host Synchronization:
+Host access to queue must be externally synchronized
+Host access to fence must be externally synchronized
+-<https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/vkQueueSubmit.html>
+
+So need some kind of barrier there, but there can be quite a lot of queues, so spreading it out might be a good idea.
+The GTX 1080ti has a total of 26 queues over three families (16, 2, 8) which would fit for transfer.
+The queue family with only 2 queues is the transfer only family and might be preferred as it should be faster.
+A counting semaphore and ringbuffer might be a good idea, or something similar.
+
+### After discussion with vulkan Discord
+
+This might seem fun, but also wildly complicated and probably unnecessary.
+A single thread living in the background and waking to upload via a single transfer queue is much simpler and still allows for rendering to continue.
+The above idea with IDs would probably still fit well as it would allow for just taking in a string and mapping it to an ID, which does not need any sync.
+A map of ids to uploaded meshes would then be kept internally and ignore the ones not ready yet.
+If two maps are kept as storage for new meshes uploaded, sync would also only have to be once per frame when the maps are swapped.
+By keeping uploads on a single thread it should also simplify batching a lot of uploads together in a single command buffer, before submitting it.
+Overall this would require much less work, be less prone to hard to diagnose problems and probably fast enough as the streaming requirements of my engine is likely to be low.

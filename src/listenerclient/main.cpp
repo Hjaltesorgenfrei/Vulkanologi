@@ -33,6 +33,8 @@
 #include <yojimbo.h>
 
 #include <glm/glm.hpp>
+#include <iostream>
+#include <string>
 
 #include "SharedServerSettings.hpp"
 
@@ -44,24 +46,25 @@ void interrupt_handler(int /*dummy*/) {
 	quit = 1;
 }
 
-void printNetworkInfo(Client& client) {
+void printNetworkInfo(Client &client) {
 	NetworkInfo info;
 	client.GetNetworkInfo(info);
 	printf("client: sent: %lld, received: %lld, acked: %lld, lost: %f, rtt: %f ms\n", info.numPacketsSent,
 		   info.numPacketsReceived, info.numPacketsAcked, info.packetLoss, info.RTT);
 }
 
-int ClientMain(int argc, char* argv[]) {
+int ClientMain(int argc, char *argv[]) {
 	printf("\nconnecting client (insecure)\n");
 
 	double time = 100.0;
 
 	uint64_t clientId = 0;
-	yojimbo_random_bytes((uint8_t*)&clientId, 8);
+	yojimbo_random_bytes((uint8_t *)&clientId, 8);
 	printf("client id is %.16" PRIx64 "\n", clientId);
 	PhysicsNetworkAdapter adapter;
 	ClientServerConfig config;
 	config.channel[0].type = CHANNEL_TYPE_UNRELIABLE_UNORDERED;
+	config.channel[1].type = CHANNEL_TYPE_RELIABLE_ORDERED;
 
 	Client client(GetDefaultAllocator(), Address("0.0.0.0"), config, adapter, time);
 
@@ -97,16 +100,13 @@ int ClientMain(int argc, char* argv[]) {
 
 		while (auto message = client.ReceiveMessage(0)) {
 			if (message->GetType() == PHYSICS_STATE_MESSAGE) {
-				auto physicsState = (PhysicsState*)message;
-				printf("tick: %d, entities: %d\n", physicsState->tick, physicsState->entities);
-				const int blockSize = physicsState->GetBlockSize();
-				const uint8_t* blockData = physicsState->GetBlockData();
-				for (uint32_t i = 0; i < physicsState->entities; i++) {
-					glm::vec3 position;
-					memcpy(&position, blockData, sizeof(glm::vec3));
-					blockData += sizeof(glm::vec3);
-					printf("entity %d: position: (%f, %f, %f)\n", i, position.x, position.y, position.z);
-				}
+				auto physicsState = (PhysicsState *)message;
+			}
+			if (message->GetType() == CREATE_GAME_OBJECT_MESSAGE) {
+				auto spawnMessage = (CreateGameObject *)message;
+				std::string path(spawnMessage->meshPath);
+				std::cout << "Physics: " << (spawnMessage->hasPhysics ? "true" : "false") << ", " << path << "\n";
+				std::cout << "size: " << spawnMessage->physicsSettings.size << "\n";
 			}
 			client.ReleaseMessage(message);
 		}
@@ -127,7 +127,7 @@ int ClientMain(int argc, char* argv[]) {
 	return 0;
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	if (!InitializeYojimbo()) {
 		printf("error: failed to initialize Yojimbo!\n");
 		return 1;

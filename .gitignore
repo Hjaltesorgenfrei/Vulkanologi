@@ -19,6 +19,9 @@ build.ninja
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Visual studio out folder
+/out/
+
 # Compiled Shaders
 
 *.spv

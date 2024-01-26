@@ -808,9 +808,6 @@ void App::mainLoop() {
 		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody>().each()) {
 			spacePressed = input.keys[GLFW_KEY_K];
 			blackHole = body.position + glm::vec3(0.f, 5.f, 0.f);
-			if (input.keys[GLFW_KEY_SPACE]) {
-				physicsWorld->addForce(body.bodyID, glm::vec3(0.f, 1.f, 0.f) * deltaTime * blackHolePower);
-			}
 		}
 		if (spacePressed) {
 			for (auto [entity, body] : registry.view<PhysicsBody>(entt::exclude<KeyboardInput>).each()) {

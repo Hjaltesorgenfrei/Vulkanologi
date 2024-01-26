@@ -6,6 +6,7 @@ UseTab: ForContinuationAndIndentation
 BreakBeforeBraces: Attach
 AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
+SortIncludes: false
 AllowShortFunctionsOnASingleLine: Inline
 Cpp11BracedListStyle: true
 EmptyLineBeforeAccessModifier: LogicalBlock

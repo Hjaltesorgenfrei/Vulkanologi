@@ -1,7 +1,7 @@
 #pragma once
+#include <ImGuizmo.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
-#include <ImGuizmo.h>
 
 #include <entt/entt.hpp>
 #include <unordered_map>
@@ -16,19 +16,17 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const char* messages[11] = {
-	"Rotte Simulator: Life is like a rat",
-	"Rotte Simmelator: Rotte is love, Rotte is life",
-	"Simulator Rotte: I wish i were a rat",
-	"Rotte Simulator: Kan rotter danse tango?",
-	"Rotte Simulator: Min rotte den danser tango",
-	"Rote Simmulator: Nu med flere rotter!!111!1!1!!",
-	"Rotte Simultor: Smager en smugle af citron",
-	"Rotte Simulator: Prøv minecraft!",
-	"Rotte Simulator: Prøv terraria!!",
-	"Rotte Simulator: Nu med 0.01% mindre asbest!",
-	"Rotte Simulator: Live your best life as a rat"
-};
+const char* messages[11] = {"Rotte Simulator: Life is like a rat",
+							"Rotte Simmelator: Rotte is love, Rotte is life",
+							"Simulator Rotte: I wish i were a rat",
+							"Rotte Simulator: Kan rotter danse tango?",
+							"Rotte Simulator: Min rotte den danser tango",
+							"Rote Simmulator: Nu med flere rotter!!111!1!1!!",
+							"Rotte Simultor: Smager en smugle af citron",
+							"Rotte Simulator: Prøv minecraft!",
+							"Rotte Simulator: Prøv terraria!!",
+							"Rotte Simulator: Nu med 0.01% mindre asbest!",
+							"Rotte Simulator: Live your best life as a rat"};
 
 class App {
 public:
@@ -61,7 +59,7 @@ private:
 	bool cursorShouldReset = true;
 	bool cursorHidden = false;
 	glm::vec3 blackHole = glm::vec3(0.f, 5.f, 0.f);
-	float blackHolePower = 5000000.f;
+	float blackHolePower = 2500000.f;
 	ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
 
 	void mainLoop();

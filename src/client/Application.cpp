@@ -210,7 +210,7 @@ void App::joystickCallback(int joystickId, int event) {
 void App::addCubes(int layers, float x, float z, bool facingX) {
 	for (int i = 0; i < layers; i++) {
 		for (int j = 0; j < layers; j++) {
-			glm::vec3 position(x + (i * 5) , 1, z + (j * 5));
+			glm::vec3 position(x + (i * 5), 1, z + (j * 5));
 			auto entity = registry.create();
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -220,12 +220,13 @@ void App::addCubes(int layers, float x, float z, bool facingX) {
 		}
 	}
 
-	glm::vec3 position(x + (layers+1 * !facingX), layers+1, z + (layers+1 * facingX));
+	glm::vec3 position(x + (layers + 1 * !facingX), layers + 1, z + (layers + 1 * facingX));
 	auto entity = registry.create();
 	registry.emplace<Transform>(entity);
 	auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
 	registry.emplace<Networked>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(entity,std::make_shared<RenderObject>(meshes["meme-cube"], memeMaterial));
+	registry.emplace<std::shared_ptr<RenderObject>>(entity,
+													std::make_shared<RenderObject>(meshes["meme-cube"], memeMaterial));
 }
 
 template <typename T>
@@ -595,7 +596,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 }
 
 void App::setupWorld() {
-	system("curl -fL api.mads.monster/memes/random/rendered -o resources/meme.png");
+	// system("curl -fL api.mads.monster/memes/random/rendered -o resources/meme.png");
 	std::vector<std::shared_ptr<RenderObject>> objects;
 	// objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
@@ -806,7 +807,7 @@ void App::mainLoop() {
 
 		for (auto [entity, input, body] : registry.view<KeyboardInput, PhysicsBody>().each()) {
 			spacePressed = input.keys[GLFW_KEY_K];
-			blackHole = body.position;
+			blackHole = body.position + glm::vec3(0.f, 5.f, 0.f);
 			if (input.keys[GLFW_KEY_SPACE]) {
 				physicsWorld->addForce(body.bodyID, glm::vec3(0.f, 1.f, 0.f) * deltaTime * blackHolePower);
 			}
@@ -817,6 +818,9 @@ void App::mainLoop() {
 				if (glm::length(direction) > 15.f) continue;
 				auto directionalPower = glm::normalize(direction) * deltaTime * blackHolePower;
 				physicsWorld->addForce(body.bodyID, directionalPower);
+				physicsWorld->addTorque(
+					body.bodyID, glm::vec3(deltaTime * blackHolePower * rand(), deltaTime * blackHolePower * rand(),
+										   deltaTime * blackHolePower * rand()));
 			}
 		}
 

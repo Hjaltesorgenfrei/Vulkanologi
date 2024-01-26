@@ -278,45 +278,38 @@ bindImages would also validate that the length is less than the max set in descr
 ### Handles
 
 To simplify handling of resources it's probably easier if the interface of the renderer has Handles as return values.
-So uploading a mesh returns a `MeshHandle` and similarly for a Materials.
+So uploading a mesh returns a `Mesh` and similarly for a Materials.
+By listening to events where the struct is removed it should also be possible to reference count the meshes.
+This would allow for the renderer to clean up unused meshes and materials.
 
 ```cpp
-struct MeshHandle {
-  uint64_t handle;
+struct Mesh {
+  const uint64_t handle;
 };
 ```
 
-A builder could then be used to get these materials, as there is probably going to be quite a few ways to do it.
-But this might require that the result of the build is a pair of `MeshHandle` and `Optional<MaterialHandle>`.
-Do not really know how nice that would be.
+The handle would probably do nothing until the mesh or material has been uploaded.
+Loading a obj into cpu memory should return a load result inside the renderer, a struct containing the information.
 
 ```cpp
-auto [mesh, material] = 
-  MeshBuilder::begin(renderer)
-    .loadObj("filename.obj") // Maybe this is just load Mesh? Then delegate to the correct loader
-    .loadMtl() // tinyObj loads the materials if referenced in the obj file
-    .upload(); // upload to the GPU either now or later. 
+struct MeshLoadResult {
+  std::vector<Vertex> vertices;
+  std::vector<indices> indices;
+  std::vector<std::string> materialPaths;
+  uint32_t materialCount;
+};
 ```
 
-When the ECS system gets added these handles could then be held together in a Mesh Component.
+The communication, between the engine and renderer, of which materials was contained within the mesh should be done somehow.
+Because it might be wanted to reuse the materials or swap them.
+Alternatively this should be in a `AssetSystem` or something like that.
+Then the amount of methods needed to query the names of assets and the like would be less of a problem.
 
-Using would also avoid callbacks as the renderer would just ignore meshes and materials that have not been uploaded yet, as the ECS view will not take them.
-This would simplify the interaction model.
+Checking that a Mesh and it's material has the same amount of material indices would probably be a good idea.
+If now some sort of error should be given.
 
-Maybe the engine returns futures, this could then be checked for results in the ECS and swapped for the result when ready.
-
-```cpp
-std::future<UploadedMesh> uploadMesh();
-
-registry.view<std::future<UploadedMesh>>.each([&](auto entity, auto& result) {
-    if(result.valid()) {
-      registry.emplace<UploadedMesh>(entity, result.get());
-      registry.remove<std::future<UploadedMesh>>(entity); // This is safe according to the documentation
-    }
-  });
-```
-
-The future wait could probably even templated and added as a list of Functions as to make it easy to extend.
+A possibility is also using a `struct PendingMesh { std::string path };`
+The renderer could listen to this event and swap it, but it might be less clear then just using a call.
 
 ### Physics multithreading idea
 

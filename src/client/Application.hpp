@@ -12,7 +12,6 @@
 #include "Physics.hpp"
 #include "Renderer.hpp"
 #include "SystemGraph.hpp"
-#include <vector>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -39,11 +38,7 @@ public:
 	App inline static* instance = nullptr;
 
 private:
-	int size = (sizeof(messages)/sizeof(*messages));
-	int number = rand() % size;
-	const char* message = messages[number];
-	std::shared_ptr<WindowWrapper> window =
-		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, message);
+	std::shared_ptr<WindowWrapper> window;
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<BehDevice> device;
 	std::unique_ptr<INetworkSystem> networkSystem;

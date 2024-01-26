@@ -25,19 +25,22 @@
 
 void App::run(int argc, char* argv[]) {
 	instance = this;
+	srand((unsigned int)time(NULL));
+	
+	int size = (sizeof(messages)/sizeof(*messages));
+	int number = rand() % size;
+	const char* message = messages[number];
+	
+	window =
+		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, message);
 	setupCallBacks();  // We create ImGui in the renderer, so callbacks have to happen before.
 	device = std::make_unique<BehDevice>(window);
 	AssetManager manager(device);
 	renderer = std::make_unique<Renderer>(window, device, manager);
 	physicsWorld = std::make_unique<PhysicsWorld>(registry);
-	if (argc == 3) {
-		// We probably have an ip and port here.
-		std::string ip = std::string(argv[1]);
-		uint16_t port = static_cast<uint16_t>(std::stoi(argv[2]));
-		networkSystem = std::make_unique<NetworkClientSystem>(ip, port);
-	} else if (argc == 2) {
-		std::string ip = std::string(argv[1]);
-		networkSystem = std::make_unique<NetworkClientSystem>(ip);
+	if (argc > 1) {
+		// TODO: send the ip and port
+		networkSystem = std::make_unique<NetworkClientSystem>();
 	} else {
 		networkSystem = std::make_unique<NetworkServerSystem>();
 	}

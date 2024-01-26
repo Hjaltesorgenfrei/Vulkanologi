@@ -723,7 +723,7 @@ void PhysicsWorld::setPosition(IDType bodyID, glm::vec3 position) {
 }
 
 void PhysicsWorld::setRotation(IDType bodyID, glm::quat rotation) {
-	bodyInterface->SetRotation(bodyID, Quat(rotation.x, rotation.y, rotation.z, rotation.w), EActivation::Activate);
+	bodyInterface->SetRotation(bodyID, Quat(rotation.w, rotation.x, rotation.y, rotation.z), EActivation::Activate);
 }
 
 void PhysicsWorld::setScale(IDType bodyID, glm::vec3 scale) {

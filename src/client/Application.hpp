@@ -12,9 +12,23 @@
 #include "Physics.hpp"
 #include "Renderer.hpp"
 #include "SystemGraph.hpp"
+#include <vector>
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
+
+const char* messages[10] = {
+	"Rotte Simulator: Life is like a rat",
+	"Rotte Simmelator: Rotte is love, Rotte is life",
+	"Simulator Rotte: I wish i were a rat",
+	"Rotte Simulator: Kan rotter danse tango?",
+	"Rotte Simulator: Min rotte den danser tango",
+	"Rote Simmulator: Nu med flere rotter!!111!1!1!!",
+	"Rotte Simultor: Smager en smugle af citron",
+	"Rotte Simulator: Prøv minecraft!",
+	"Rotte Simulator: Prøv terraria!!",
+	"Rotte Simulator: Nu med 0.01% mindre asbest!"
+};
 
 class App {
 public:
@@ -25,8 +39,11 @@ public:
 	App inline static* instance = nullptr;
 
 private:
+	int size = (sizeof(messages)/sizeof(*messages));
+	int number = rand() % size;
+	const char* message = messages[number];
 	std::shared_ptr<WindowWrapper> window =
-		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, "Rotte Simulator: Live your best life as a rat");
+		std::make_shared<WindowWrapper>(WIDTH, HEIGHT, message);
 	std::unique_ptr<Renderer> renderer;
 	std::shared_ptr<BehDevice> device;
 	std::unique_ptr<INetworkSystem> networkSystem;

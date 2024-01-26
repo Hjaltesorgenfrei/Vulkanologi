@@ -9,6 +9,7 @@
 class IHandler {
 public:
 	virtual const bool canHandle(yojimbo::Message* message) = 0;
+	virtual void update(entt::registry& registry, PhysicsWorld* world, std::unordered_map<NetworkID, entt::entity>& idToEntity) {};
 	virtual const TestMessageType messageType() = 0;
 	virtual const void handle(entt::registry& registry, PhysicsWorld* world,
 							  std::unordered_map<NetworkID, entt::entity>& idToEntity, yojimbo::Message* message) = 0;

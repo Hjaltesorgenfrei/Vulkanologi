@@ -74,7 +74,7 @@ void NetworkClientSystem::update(entt::registry &registry, PhysicsWorld* world, 
 		if (client->IsDisconnected()) return;
 
 		client->SendPackets();
-
+		
 		client->ReceivePackets();
 		messageCountThisTick = 0;
 		for (int clientId = 0; clientId < MaxClients; clientId++) {

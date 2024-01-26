@@ -78,22 +78,26 @@ void NetworkServerSystem::update(entt::registry &registry, PhysicsWorld *world, 
 				PhysicsState *message = (PhysicsState *)server->CreateMessage(clientId, PHYSICS_STATE_MESSAGE);
 				message->tick = tick;
 				message->networkID = networked.id;
-				message->position.x = body.position.x;
-				message->position.y = body.position.y;
-				message->position.z = body.position.z;
+				message->isActive = body.active;
+				if (body.active) {
+					message->position.x = body.position.x;
+					message->position.y = body.position.y;
+					message->position.z = body.position.z;
 
-				message->rotation.x = body.rotation.x;
-				message->rotation.y = body.rotation.y;
-				message->rotation.z = body.rotation.z;
-				message->rotation.w = body.rotation.w;
+					message->rotation.x = body.rotation.x;
+					message->rotation.y = body.rotation.y;
+					message->rotation.z = body.rotation.z;
+					message->rotation.w = body.rotation.w;
 
-				message->linearVelocity.x = body.linearVelocity.x;
-				message->linearVelocity.y = body.linearVelocity.y;
-				message->linearVelocity.z = body.linearVelocity.z;
+					message->linearVelocity.x = body.linearVelocity.x;
+					message->linearVelocity.y = body.linearVelocity.y;
+					message->linearVelocity.z = body.linearVelocity.z;
 
-				message->angularVelocity.x = body.angularVelocity.x;
-				message->angularVelocity.y = body.angularVelocity.y;
-				message->angularVelocity.z = body.angularVelocity.z;
+					message->angularVelocity.x = body.angularVelocity.x;
+					message->angularVelocity.y = body.angularVelocity.y;
+					message->angularVelocity.z = body.angularVelocity.z;
+				}
+
 				server->SendMessage(clientId, 0, message);
 			}
 

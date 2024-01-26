@@ -24,6 +24,7 @@ enum class MotionType : uint8_t {
 struct PhysicsBody {
 	IDType bodyID;
 	MotionType physicsType;
+	bool active;
 	glm::vec3 position;
 	glm::quat rotation;
 	glm::vec3 scale;

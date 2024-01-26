@@ -11,7 +11,7 @@ const std::vector<glm::vec2> texCoords = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0
 
 const glm::vec3 white = {1.0f, 1.0f, 1.0f};
 
-std::shared_ptr<Mesh> createCubeMesh() {
+std::shared_ptr<Mesh> createCubeMesh(std::string texturePath) {
 	auto mesh = std::make_shared<Mesh>();
 
 	std::vector<Vertex> vertices = {{cubePositions[2], white, cubeNormals[0], texCoords[0], 0},
@@ -58,7 +58,7 @@ std::shared_ptr<Mesh> createCubeMesh() {
 
 	mesh->_vertices = vertices;
 	mesh->_indices = indices;
-	mesh->_texturePaths = {"./resources/white.png"};
+	mesh->_texturePaths = {texturePath};
 
 	return mesh;
 }

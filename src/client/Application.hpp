@@ -50,6 +50,7 @@ private:
 	std::vector<std::string> swiperNames;
 	Material carMaterial;
 	Material noMaterial;
+	Material memeMaterial;
 
 	std::unique_ptr<PhysicsWorld> physicsWorld;
 

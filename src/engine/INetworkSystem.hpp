@@ -2,6 +2,7 @@
 
 #include <entt/entt.hpp>
 #include <yojimbo.h>
+#include "Physics.hpp"
 
 typedef uint64_t NetworkID;
 
@@ -10,6 +11,6 @@ typedef uint64_t NetworkID;
 class INetworkSystem {
 public:
 	virtual void init(entt::registry& registry) = 0;
-	virtual void update(entt::registry& registry, float delta) = 0;
+	virtual void update(entt::registry& registry, PhysicsWorld* world, float delta) = 0;
 	const virtual yojimbo::NetworkInfo& getNetworkInfo() = 0;
 };

@@ -12,7 +12,7 @@ public:
 	~NetworkServerSystem();
 
 	virtual void init(entt::registry& registry) override;
-	virtual void update(entt::registry& registry, float delta) override;
+	virtual void update(entt::registry& registry, PhysicsWorld* world, float delta) override;
 	const virtual yojimbo::NetworkInfo& getNetworkInfo() override;
 
 private:

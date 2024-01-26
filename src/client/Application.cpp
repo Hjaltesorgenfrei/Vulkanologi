@@ -202,6 +202,7 @@ void App::addCubes(int layers, float x, float z, bool facingX) {
 			auto entity = registry.create();
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
+			registry.emplace<Networked>(entity);
 			registry.emplace<std::shared_ptr<RenderObject>>(entity,
 															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 		}
@@ -596,6 +597,7 @@ void App::setupWorld() {
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});
 	registry.emplace<Camera>(keyboardPlayer);
+	registry.emplace<Networked>(keyboardPlayer);
 
 	// Create player cube for debug
 	// auto keyboardPlayer = addCubePlayer(KeyboardInput{});
@@ -605,7 +607,6 @@ void App::setupWorld() {
 	registry.emplace<ActiveCameraTag>(debugCamera);
 	registry.emplace<KeyboardInput>(debugCamera);
 	registry.emplace<MouseInput>(debugCamera);
-
 	setupControllerPlayers();
 
 	spawnArena();
@@ -793,7 +794,7 @@ void App::mainLoop() {
 		}
 
 		// Stop hacking here
-		networkSystem->update(registry, delta.count() / 1000.f);
+		networkSystem->update(registry, physicsWorld.get(), delta.count() / 1000.f);
 
 		if (updateWindowSize) {
 			renderer->recreateSwapchain();

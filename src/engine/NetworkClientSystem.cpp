@@ -64,7 +64,7 @@ void NetworkClientSystem::init(entt::registry &registry) {
 	client->InsecureConnect(privateKey, clientId, serverAddress);
 }
 
-void NetworkClientSystem::update(entt::registry &registry, float delta) {
+void NetworkClientSystem::update(entt::registry &registry, PhysicsWorld* world, float delta) {
 	clientTime += delta;
 	accumulator += delta;
 
@@ -79,10 +79,15 @@ void NetworkClientSystem::update(entt::registry &registry, float delta) {
 		messageCountThisTick = 0;
 		for (int clientId = 0; clientId < MaxClients; clientId++) {
 			while (auto message = client->ReceiveMessage(0)) {
+				bool handled = false;
 				for (auto h : handlers) {
 					if (h->canHandle(message)) {
-						h->handle(registry, message);
+						h->handle(registry, world, idToEntity, message);
+						handled = true;
 					}
+				}
+				if (!handled) {
+					std::cout << "Could not handle message with type: " << message->GetType() << "\n";
 				}
 				client->ReleaseMessage(message);
 				messageCountThisTick++;

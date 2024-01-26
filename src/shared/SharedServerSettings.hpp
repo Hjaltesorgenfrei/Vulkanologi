@@ -24,6 +24,7 @@ struct float4 {
 
 struct PhysicsState : public Message {
 	uint32_t tick;
+	uint32_t networkID;
 	float3 position;
 	float4 rotation;
 	float3 velocity;
@@ -33,6 +34,7 @@ struct PhysicsState : public Message {
 	template <typename Stream>
 	bool Serialize(Stream& stream) {
 		serialize_bits(stream, tick, 32);
+		serialize_bits(stream, networkID, 32);
 		serialize_float(stream, position.x);
 		serialize_float(stream, position.y);
 		serialize_float(stream, position.z);

@@ -60,7 +60,7 @@ void NetworkServerSystem::init(entt::registry &registry) {
 	registry.on_destroy<Networked>().connect<&NetworkServerSystem::onNetworkedDestroyed>(this);
 }
 
-void NetworkServerSystem::update(entt::registry &registry, float delta) {
+void NetworkServerSystem::update(entt::registry &registry, PhysicsWorld *world, float delta) {
 	serverTime += delta;
 	accumulator += delta;
 
@@ -74,9 +74,10 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 				continue;
 			}
 
-			for (auto [entity, body] : registry.view<PhysicsBody>().each()) {
+			for (auto [entity, body, networked] : registry.view<PhysicsBody, Networked>().each()) {
 				PhysicsState *message = (PhysicsState *)server->CreateMessage(clientId, PHYSICS_STATE_MESSAGE);
 				message->tick = tick;
+				message->networkID = networked.id;
 				message->position.x = body.position.x;
 				message->position.y = body.position.y;
 				message->position.z = body.position.z;
@@ -114,7 +115,7 @@ void NetworkServerSystem::update(entt::registry &registry, float delta) {
 			while (auto message = server->ReceiveMessage(clientId, 0)) {
 				for (auto h : handlers) {
 					if (h->canHandle(message)) {
-						h->handle(registry, message);
+						h->handle(registry, world, idToEntity, message);
 					}
 				}
 				server->ReleaseMessage(clientId, message);

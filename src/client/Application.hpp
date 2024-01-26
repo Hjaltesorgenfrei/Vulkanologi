@@ -16,7 +16,7 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-const char* messages[10] = {
+const char* messages[11] = {
 	"Rotte Simulator: Life is like a rat",
 	"Rotte Simmelator: Rotte is love, Rotte is life",
 	"Simulator Rotte: I wish i were a rat",
@@ -26,7 +26,8 @@ const char* messages[10] = {
 	"Rotte Simultor: Smager en smugle af citron",
 	"Rotte Simulator: Prøv minecraft!",
 	"Rotte Simulator: Prøv terraria!!",
-	"Rotte Simulator: Nu med 0.01% mindre asbest!"
+	"Rotte Simulator: Nu med 0.01% mindre asbest!",
+	"Rotte Simulator: Live your best life as a rat"
 };
 
 class App {

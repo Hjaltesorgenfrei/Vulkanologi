@@ -49,7 +49,6 @@ add_executable(vulkanologi
 add_subdirectory(shared)
 add_subdirectory(renderer)
 add_subdirectory(listenerclient)
-add_subdirectory(server)
 add_subdirectory(engine)
 
 target_link_libraries(vulkanologi engine)

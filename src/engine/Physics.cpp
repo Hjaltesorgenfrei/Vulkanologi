@@ -15,6 +15,7 @@
 #include <Jolt/Core/TempAllocator.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
+#include <Jolt/Physics/Body/BodyManager.h>
 #include <Jolt/Physics/Collision/CastResult.h>
 #include <Jolt/Physics/Collision/RayCast.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
@@ -635,9 +636,11 @@ void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDista
 }
 
 std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
+#ifdef JPH_DEBUG_RENDERER
 	BodyManager::DrawSettings settings;
 	settings.mDrawBoundingBox = true;
 	physicsSystem->DrawBodies(settings, recorder);
+#endif  // JPH_DEBUG_RENDERER
 	recorder->EndFrame();
 	return {};
 }

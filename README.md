@@ -253,6 +253,9 @@ Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing
 - [ ] Make something that is in front of renderer, so we dont include a file which has a million imports.
 - [ ] When the client is in, delete shared. It is unneeded and slows down compile.
 - [ ] Try making a voice chat for fun. PortAudio might work for this.
+- [ ] Objects deformed along beziers only look correct for the first.
+  - Likely a problem in `Bezier::recompute`
+    - evenTsAlongCubic does not consider there might be mutiple control points.
 
 ### Descriptor Layout Idea
 

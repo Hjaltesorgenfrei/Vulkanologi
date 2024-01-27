@@ -19,13 +19,21 @@ public:
 
 	void setPoint(Point point) { _point = point; }
 
+	void setPosition(glm::vec3 position) {
+		_point.position = position;
+		dirty = true;
+	}
+
+	void setForward(glm::vec3 forward) {
+		_forward = forward;
+		dirty = true;
+	}
+
 	glm::vec3 forward() const { return glm::vec3(transform * glm::vec4(_forward, 0.0f)); }
 
 	glm::vec3 forwardWorld() const { return point().position + forward(); }
 
 	glm::vec3 backwardWorld() const { return point().position - forward(); }
-
-	void setForward(glm::vec3 forward) { _forward = forward; }
 
 	void update(glm::mat4 transform) {
 		if (transform != this->transform) {
@@ -34,6 +42,7 @@ public:
 		}
 	}
 
+	// TODO: Might be better to just have position, rotation and scale seperate.
 	glm::mat4 transform = glm::mat4(1.0f);
 
 	friend class Bezier;

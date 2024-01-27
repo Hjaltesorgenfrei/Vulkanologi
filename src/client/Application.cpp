@@ -636,6 +636,8 @@ void App::setupWorld() {
 
 	addCubes(8, -20.f, -10.f, false);
 
+	bezierTesting();
+
 	setupSystems(systemGraph);
 	systemGraph.init(registry);
 	systemGraph.update(registry, 0.0f);
@@ -691,56 +693,54 @@ void App::spawnRandomCrap() {
 }
 
 void App::bezierTesting() {
-	// auto beziers = registry.view<Bezier>();
-	// for (auto bezier : beziers) {
-	// 	auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-	// 	auto& bezierComponent = registry.get<Bezier>(bezier);
-	// 	// SplineMesh splineMesh = {Mesh::LoadFromObj("resources/road.obj")};
-	// 	// registry.emplace<SplineMesh>(bezier, splineMesh);
-	// 	bezierComponent.recomputeIfDirty();
-	// 	road->mesh = deformMesh(bezierComponent, road->mesh);
-	// 	registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-	// 	registry.emplace<Transform>(bezier);
-	// 	// Make a bullet3 polygonal mesh
-	// 	std::vector<btVector3> vertices;
-	// 	for (auto index : road->mesh->_indices) {
-	// 	    vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
-	// 	    road->mesh->_vertices[index].pos.z));
-	// 	}
+	for (int i = 0; i < 3; i++) {
+		auto entity = registry.create();
+		entities.insert(entity);
+		// Create a ghost object using btGhostObject, same way i need to do control points
+		// btGhostObject* ghostObject = new btGhostObject();
+		// ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
+		// 10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
+		// btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
+		// ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+		// ghostObject->setUserIndex((int)entity);
+		// physicsWorld->addSensor(ghostObject);
+		registry.emplace<Transform>(entity);
+		// registry.emplace<Sensor>(entity, ghostObject);
+		auto p = registry.emplace<ControlPointPtr>(entity);
+		p.controlPoint->setPosition(glm::vec3(i * -10.f, i * 4.f, i * 2.f));
+	}
 
-	// 	auto body = physicsWorld->createWorldGeometry(vertices);
-	// 	body->setUserIndex((int)bezier);
-	// 	registry.emplace<RigidBody>(bezier, body);
-	// 	renderer->uploadMeshes({road});
-	// }
+	std::vector<std::shared_ptr<ControlPoint>> controlPoints;
 
-	// for (int i = 0; i < 2; i++) {
-	// 	auto entity = registry.create();
-	// 	entities.insert(entity);
-	// 	// Create a ghost object using btGhostObject, same way i need to do control points
-	// 	btGhostObject* ghostObject = new btGhostObject();
-	// 	ghostObject->setWorldTransform(btTransform(btQuaternion(0, 0, 0, 1), btVector3(static_cast<btScalar>(-i *
-	// 	10), static_cast<btScalar>(i * 4) - 1, static_cast<btScalar>(i * 2)))); btConvexShape* sphere = new
-	// 	btSphereShape(0.1f); ghostObject->setCollisionShape(sphere);
-	// 	ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
-	// 	ghostObject->setUserIndex((int)entity);
-	// 	physicsWorld->addSensor(ghostObject);
-	// 	registry.emplace<Transform>(entity);
-	// 	registry.emplace<Sensor>(entity, ghostObject);
-	// 	registry.emplace<ControlPointPtr>(entity);
-	// }
+	registry.view<ControlPointPtr>().each(
+		[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
+	{
+		auto entity = registry.create();
+		entities.insert(entity);
+		Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
+		registry.emplace<Bezier>(entity, bezier);
+	}
 
-	// std::vector<std::shared_ptr<ControlPoint>> controlPoints;
+	auto beziers = registry.view<Bezier>();
+	for (auto bezier : beziers) {
+		auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+		auto& bezierComponent = registry.get<Bezier>(bezier);
+		bezierComponent.recomputeIfDirty();
+		road->mesh = deformMesh(bezierComponent, road->mesh);
+		registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+		registry.emplace<Transform>(bezier);
+		// Make a bullet3 polygonal mesh
+		// std::vector<btVector3> vertices;
+		// for (auto index : road->mesh->_indices) {
+		// 	vertices.push_back(btVector3(road->mesh->_vertices[index].pos.x, road->mesh->_vertices[index].pos.y,
+		// 								 road->mesh->_vertices[index].pos.z));
+		// }
 
-	// registry.view<ControlPointPtr>().each(
-	// 	[&](auto entity, auto& controlPoint) { controlPoints.push_back(controlPoint.controlPoint); });
-
-	// {
-	// 	auto entity = registry.create();
-	// 	entities.insert(entity);
-	// 	Bezier bezier(controlPoints, glm::vec3{1.f, 0.f, 0.f});
-	// 	registry.emplace<Bezier>(entity, bezier);
-	// }
+		// auto body = physicsWorld->createWorldGeometry(vertices);
+		// body->setUserIndex((int)bezier);
+		// registry.emplace<RigidBody>(bezier, body);
+		renderer->uploadMeshes({road});
+	}
 }
 
 void App::createSpawnPoints(int numberOfSpawns) {

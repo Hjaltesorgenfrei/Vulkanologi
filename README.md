@@ -21,6 +21,16 @@ and [Brendan Galea's YouTube series](https://www.youtube.com/c/BrendanGalea).
 Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/).
 ["Low poly race track"](https://skfb.ly/ooYNR) by Quarks Studios is licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
+## Priority List
+
+Remove tasks and tick them in the todo as they get done.
+
+1. Jitter Buffer
+2. Car Settings in debug menu
+3. Car Feel, get help here
+4. Client actions on server
+5. Player-Player collision
+
 ## TODO
 
 - [x] Finish chapters of Vulkan-Tutorial

@@ -19,6 +19,7 @@ On arch install `sudo pacman -S vulkan-devel shaderc`
 Based upon [Vulkan Tutorial](https://vulkan-tutorial.com), inspiration drawn from [Vulkan Guide](https://vkguide.dev/)
 and [Brendan Galea's YouTube series](https://www.youtube.com/c/BrendanGalea).
 Some ideas were also taken from [Zeux's blog](https://zeux.io/2020/02/27/writing-an-efficient-vulkan-renderer/).
+["Low poly race track"](https://skfb.ly/ooYNR) by Quarks Studios is licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/).
 
 ## TODO
 

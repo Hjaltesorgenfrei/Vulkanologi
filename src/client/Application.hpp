@@ -81,7 +81,7 @@ private:
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void joystickCallback(int joystickId, int event);
 
-	void addCubes(int layers, float x, float z, bool facingX);
+	void addCubes(int layers, float x, float z);
 
 	template <typename T>
 	entt::entity addCubePlayer(T input);

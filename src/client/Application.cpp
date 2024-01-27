@@ -207,10 +207,10 @@ void App::joystickCallback(int joystickId, int event) {
 	}
 }
 
-void App::addCubes(int layers, float x, float z, bool facingX) {
+void App::addCubes(int layers, float x, float z) {
 	for (int i = 0; i < layers; i++) {
 		for (int j = 0; j < layers; j++) {
-			glm::vec3 position(x + (i * 5), 1, z + (j * 5));
+			glm::vec3 position(x + (i * 4), 3, z + (j * 4));
 			auto entity = registry.create();
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -219,14 +219,6 @@ void App::addCubes(int layers, float x, float z, bool facingX) {
 															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 		}
 	}
-
-	glm::vec3 position(x + (layers + 1 * !facingX), layers + 1, z + (layers + 1 * facingX));
-	auto entity = registry.create();
-	registry.emplace<Transform>(entity);
-	auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
-	registry.emplace<Networked>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(entity,
-													std::make_shared<RenderObject>(meshes["meme-cube"], memeMaterial));
 }
 
 template <typename T>
@@ -596,15 +588,12 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 }
 
 void App::setupWorld() {
-	// system("curl -fL api.mads.monster/memes/random/rendered -o resources/meme.png");
 	std::vector<std::shared_ptr<RenderObject>> objects;
 	// objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
 	objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
 	objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
-
-	objects.back()->transformMatrix.model = glm::translate(glm::mat4(1), glm::vec3(5, 0, 0));
 	objects.push_back(std::make_shared<RenderObject>(createCubeMesh("resources/meme.png")));
 
 	renderer->uploadMeshes(objects);
@@ -614,8 +603,6 @@ void App::setupWorld() {
 	meshes["car"] = objects[3]->mesh;
 	noMaterial = objects[1]->material;
 	carMaterial = objects[3]->material;
-	meshes["meme-cube"] = objects[4]->mesh;
-	memeMaterial = objects[4]->material;
 	createSpawnPoints(10);
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});
@@ -627,14 +614,14 @@ void App::setupWorld() {
 
 	auto debugCamera = registry.create();
 	registry.emplace<Camera>(debugCamera);
-	registry.emplace<ActiveCameraTag>(debugCamera);
+	registry.emplace<ActiveCameraTag>(keyboardPlayer);
 	registry.emplace<KeyboardInput>(debugCamera);
 	registry.emplace<MouseInput>(debugCamera);
 	setupControllerPlayers();
 
 	spawnArena();
 
-	addCubes(8, -20.f, -10.f, false);
+	addCubes(8, 24.f, -16.f);
 
 	bezierTesting();
 
@@ -645,7 +632,7 @@ void App::setupWorld() {
 }
 
 void App::spawnArena() {
-	auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/map.obj"));
+	auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/track.obj"));
 	for (auto& vertex : arena->mesh->_vertices) {
 		vertex.materialIndex = 0;
 	}
@@ -663,7 +650,7 @@ void App::spawnArena() {
 	for (auto index : arena->mesh->_indices) {
 		indices.push_back(index);
 	}
-	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -1, 0), glm::vec3(2, 2, 2));
+	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -1, 30), glm::vec3(1, 1, 1));
 }
 
 void App::spawnRandomCrap() {

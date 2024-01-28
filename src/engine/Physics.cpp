@@ -407,14 +407,30 @@ IDType PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::
 }
 
 void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::vec3 positionIn) {
-	const float wheel_radius = 0.3f;
-	const float wheel_width = 0.1f;
-	const float half_vehicle_length = 2.0f;
-	const float half_vehicle_width = 0.9f;
-	const float half_vehicle_height = 0.2f;
+	CarSettings defaultSettings = registry.emplace<CarSettings>(entity);
 
-	float sInitialRollAngle = 0;
-	float sMaxRollAngle = DegreesToRadians(60.0f);
+	// Create vehicle body
+	Body *mCarBody;
+	RVec3 position(positionIn.x, positionIn.y, positionIn.z);
+	RefConst<Shape> car_shape = OffsetCenterOfMassShapeSettings(Vec3(0, -defaultSettings.halfVehicleHeight, 0),
+																new BoxShape(Vec3(defaultSettings.halfVehicleWidth,
+																				  defaultSettings.halfVehicleHeight,
+																				  defaultSettings.halfVehicleLength)))
+									.Create()
+									.Get();
+	BodyCreationSettings car_body_settings(car_shape, position, Quat::sRotation(Vec3::sAxisZ(), 0),
+										   EMotionType::Dynamic, Layers::MOVING);
+	car_body_settings.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
+	car_body_settings.mMassPropertiesOverride.mMass = 1500.0f;
+	mCarBody = bodyInterface->CreateBody(car_body_settings);
+	bodyInterface->AddBody(mCarBody->GetID(), EActivation::Activate);
+	addBody(registry, entity, mCarBody->GetID());
+	updateCarFromSettings(registry, entity);
+}
+
+void PhysicsWorld::updateCarFromSettings(entt::registry &registry, entt::entity entity) {
+	registry.remove<CarPhysics>(entity);
+
 	float sMaxSteeringAngle = DegreesToRadians(30.0f);
 	int sCollisionMode = 2;
 	bool sFourWheelDrive = false;
@@ -440,30 +456,15 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 	float sRearSuspensionFrequency = 1.5f;
 	float sRearSuspensionDamping = 0.5f;
 
-	Body *mCarBody;                         ///< The vehicle
-	VehicleConstraint *mVehicleConstraint;  ///< The vehicle constraint
+	auto &settings = registry.get<CarSettings>(entity);
 
 	// Create collision testers
 	auto collisionTester = new VehicleCollisionTesterCastCylinder(Layers::MOVING);
 
-	// Create vehicle body
-	RVec3 position(positionIn.x, positionIn.y, positionIn.z);
-	RefConst<Shape> car_shape = OffsetCenterOfMassShapeSettings(
-									Vec3(0, -half_vehicle_height, 0),
-									new BoxShape(Vec3(half_vehicle_width, half_vehicle_height, half_vehicle_length)))
-									.Create()
-									.Get();
-	BodyCreationSettings car_body_settings(car_shape, position, Quat::sRotation(Vec3::sAxisZ(), sInitialRollAngle),
-										   EMotionType::Dynamic, Layers::MOVING);
-	car_body_settings.mOverrideMassProperties = EOverrideMassProperties::CalculateInertia;
-	car_body_settings.mMassPropertiesOverride.mMass = 1500.0f;
-	mCarBody = bodyInterface->CreateBody(car_body_settings);
-	bodyInterface->AddBody(mCarBody->GetID(), EActivation::Activate);
-
 	// Create vehicle constraint
 	VehicleConstraintSettings vehicle;
 	vehicle.mDrawConstraintSize = 0.1f;
-	vehicle.mMaxPitchRollAngle = sMaxRollAngle;
+	vehicle.mMaxPitchRollAngle = DegreesToRadians(settings.maxRollAngle);
 
 	// Suspension direction
 	Vec3 front_suspension_dir =
@@ -480,7 +481,9 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 
 	// Wheels, left front
 	WheelSettingsWV *w1 = new WheelSettingsWV;
-	w1->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	// TODO: What are these positions magic values??? 0.9f, 2.0f
+	w1->mPosition = Vec3(settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
+						 settings.halfVehicleLength - 2.0f * settings.wheelRadius);
 	w1->mSuspensionDirection = front_suspension_dir;
 	w1->mSteeringAxis = front_steering_axis;
 	w1->mWheelUp = front_wheel_up;
@@ -494,7 +497,8 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 
 	// Right front
 	WheelSettingsWV *w2 = new WheelSettingsWV;
-	w2->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, half_vehicle_length - 2.0f * wheel_radius);
+	w2->mPosition = Vec3(-settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
+						 settings.halfVehicleLength - 2.0f * settings.wheelRadius);
 	w2->mSuspensionDirection = flip_x * front_suspension_dir;
 	w2->mSteeringAxis = flip_x * front_steering_axis;
 	w2->mWheelUp = flip_x * front_wheel_up;
@@ -508,7 +512,8 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 
 	// Left rear
 	WheelSettingsWV *w3 = new WheelSettingsWV;
-	w3->mPosition = Vec3(half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w3->mPosition = Vec3(settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
+						 -settings.halfVehicleLength + 2.0f * settings.wheelRadius);
 	w3->mSuspensionDirection = rear_suspension_dir;
 	w3->mSteeringAxis = rear_steering_axis;
 	w3->mWheelUp = rear_wheel_up;
@@ -521,7 +526,8 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 
 	// Right rear
 	WheelSettingsWV *w4 = new WheelSettingsWV;
-	w4->mPosition = Vec3(-half_vehicle_width, -0.9f * half_vehicle_height, -half_vehicle_length + 2.0f * wheel_radius);
+	w4->mPosition = Vec3(-settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
+						 -settings.halfVehicleLength + 2.0f * settings.wheelRadius);
 	w4->mSuspensionDirection = flip_x * rear_suspension_dir;
 	w4->mSteeringAxis = flip_x * rear_steering_axis;
 	w4->mWheelUp = flip_x * rear_wheel_up;
@@ -535,12 +541,14 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 	vehicle.mWheels = {w1, w2, w3, w4};
 
 	for (WheelSettings *w : vehicle.mWheels) {
-		w->mRadius = wheel_radius;
-		w->mWidth = wheel_width;
+		w->mRadius = settings.wheelRadius;
+		w->mWidth = settings.wheelWidth;
 	}
 
 	WheeledVehicleControllerSettings *controller = new WheeledVehicleControllerSettings;
 	vehicle.mController = controller;
+	controller->mEngine.mMaxTorque = settings.sMaxEngineTorque;
+	controller->mTransmission.mClutchStrength = settings.sClutchStrength;
 
 	// Differential
 	controller->mDifferentials.resize(sFourWheelDrive ? 2 : 1);
@@ -563,12 +571,17 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 		vehicle.mAntiRollBars[1].mRightWheel = 3;
 	}
 
-	mVehicleConstraint = new VehicleConstraint(*mCarBody, vehicle);
-	mVehicleConstraint->SetVehicleCollisionTester(collisionTester);
-	physicsSystem->AddConstraint(mVehicleConstraint);
-	physicsSystem->AddStepListener(mVehicleConstraint);
-	addBody(registry, entity, mCarBody->GetID());
-	registry.emplace<CarPhysics>(entity, CarPhysics{mVehicleConstraint});
+	auto pBody = registry.get<PhysicsBody>(entity);
+
+	auto &body_interface = physicsSystem->GetBodyLockInterfaceNoLock();
+	BodyLockWrite lock(body_interface, pBody.bodyID);
+	auto &carBody = lock.GetBody();
+
+	auto vehicleConstraint = new VehicleConstraint(carBody, vehicle);
+	vehicleConstraint->SetVehicleCollisionTester(collisionTester);
+	physicsSystem->AddConstraint(vehicleConstraint);
+	physicsSystem->AddStepListener(vehicleConstraint);
+	registry.emplace<CarPhysics>(entity, CarPhysics{vehicleConstraint});
 }
 
 void PhysicsWorld::addMesh(entt::registry &registry, entt::entity entity, std::vector<glm::vec3> &vertices,
@@ -640,8 +653,8 @@ std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
 	BodyManager::DrawSettings settings;
 	settings.mDrawBoundingBox = true;
 	physicsSystem->DrawBodies(settings, recorder);
-#endif  // JPH_DEBUG_RENDERER
 	recorder->EndFrame();
+#endif  // JPH_DEBUG_RENDERER
 	return {};
 }
 

@@ -20,55 +20,15 @@ inline glm::quat toGlm(JPH::Quat quat) {
 
 void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl,
 					   CarPhysics &car, CarStateLastUpdate &lastState) const {
-	float sMaxEngineTorque = 500.0f;
-	float sClutchStrength = 10.0f;
-	bool sLimitedSlipDifferentials = true;
-
 	using namespace JPH;
 
 	WheeledVehicleController *controller = static_cast<WheeledVehicleController *>(car.constraint->GetController());
 
-	// Update vehicle statistics
-	controller->GetEngine().mMaxTorque = sMaxEngineTorque;
-	controller->GetTransmission().mClutchStrength = sClutchStrength;
-
-	// Set slip ratios to the same for everything
-	float limited_slip_ratio = sLimitedSlipDifferentials ? 1.4f : FLT_MAX;
-	controller->SetDifferentialLimitedSlipRatio(limited_slip_ratio);
-	for (VehicleDifferentialSettings &d : controller->GetDifferentials()) d.mLimitedSlipRatio = limited_slip_ratio;
-
-	// Pass the input on to the constraint
-	// TODO: swap steering direction
 	auto right = -carControl.desiredSteering;
 	auto forward = carControl.desiredAcceleration;
 	auto brake = carControl.desiredBrake;
 
 	controller->SetDriverInput(forward, right, brake, 0.f);
-
-	// auto currentSteering = car.vehicle->getSteeringValue(0);
-	// auto currentAcceleration = car.vehicle->getWheelInfo(2).m_engineForce;
-	// auto currentBrake = car.vehicle->getWheelInfo(2).m_brake;
-
-	// float desiredSteering = std::clamp(steering, -car.maxSteering, car.maxSteering);
-	// float desiredAcceleration = std::clamp(acceleration, -(car.maxAcceleration * 0.5f), car.maxAcceleration);
-	// float desiredBrake = std::clamp(brake, 0.0f, car.maxBrake);
-
-	// car.steering = glm::mix(currentSteering, desiredSteering, 0.02f * delta);
-	// car.acceleration = glm::mix(currentAcceleration, desiredAcceleration, 0.04f * delta);
-	// car.brake = glm::mix(currentBrake, desiredBrake, 0.03f * delta);
-
-	// car.vehicle->applyEngineForce(car.acceleration, 2);
-	// car.vehicle->applyEngineForce(car.acceleration, 3);
-	// car.vehicle->setSteeringValue(car.steering, 0);
-	// car.vehicle->setSteeringValue(car.steering, 1);
-	// car.vehicle->setBrake(car.brake, 0);
-	// car.vehicle->setBrake(car.brake, 1);
-	// car.vehicle->setBrake(car.brake, 2);
-	// car.vehicle->setBrake(car.brake, 3);
-
-	// lastState.speed = car.vehicle->getCurrentSpeedKmHour();
-	// lastState.direction = toGlm(car.vehicle->getForwardVector());
-	// lastState.position = toGlm(car.vehicle->getChassisWorldTransform().getOrigin());
 }
 
 void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input,

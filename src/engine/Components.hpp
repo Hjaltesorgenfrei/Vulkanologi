@@ -68,7 +68,6 @@ struct Car {
 	float acceleration = 0.0f;
 	float brake = 0.0f;
 	float maxSteering = 0.5f;
-	float maxAcceleration = 3000.0f;
 	float maxBrake = 200.0f;
 };
 
@@ -83,6 +82,22 @@ struct CarStateLastUpdate {
 	float speed;
 	glm::vec3 direction;
 	glm::vec3 position;
+};
+
+struct CarSettings {
+	bool settingsChanged = false;  // If this value changes the car should be recreated
+
+	float sMaxEngineTorque = 500.0f;
+	float sClutchStrength = 10.0f;
+	bool sLimitedSlipDifferentials = true;
+	float halfVehicleLength = 2.0f;
+	float halfVehicleWidth = 0.9f;
+	float halfVehicleHeight = 0.2f;
+
+	float wheelRadius = 0.3f;
+	float wheelWidth = 0.1f;
+
+	float maxRollAngle = 60.0f;
 };
 
 struct Player {

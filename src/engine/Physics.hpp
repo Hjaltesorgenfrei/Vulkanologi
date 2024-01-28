@@ -43,7 +43,9 @@ public:
 	void addMesh(entt::registry& registry, entt::entity entity, std::vector<glm::vec3>& vertices,
 				 std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), glm::vec3 scale = glm::vec3(1.f),
 				 MotionType motionType = MotionType::Static);
+
 	void addCar(entt::registry& registry, entt::entity entity, glm::vec3 position);
+	void updateCarFromSettings(entt::registry& registry, entt::entity entity);
 
 	void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance,
 				 std::function<void(entt::entity entity)> callback);

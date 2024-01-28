@@ -585,6 +585,20 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 			physicsWorld->setScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
 		}
 	}
+
+	if (auto carSettings = registry.try_get<CarSettings>(selectedEntity)) {
+		drawDebugForCarSettings(selectedEntity, carSettings);
+	}
+}
+
+void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings) {
+	bool changed = false;
+	ImGui::Begin("Car Settings");
+	changed = ImGui::InputFloat("Max Torgue", &carSettings->sMaxEngineTorque);
+	ImGui::End();
+	if (changed) {
+		physicsWorld->updateCarFromSettings(registry, entity);
+	}
 }
 
 void App::setupWorld() {

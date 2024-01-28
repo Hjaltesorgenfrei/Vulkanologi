@@ -98,4 +98,5 @@ private:
 	void drawFrameDebugInfo(float delta, FrameInfo& frameInfo);
 	// void drawRigidBodyDebugInfo(btRigidBody* rigidBody);
 	void drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo);
+	void drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings);
 };

@@ -267,6 +267,7 @@ Remove tasks and tick them in the todo as they get done.
 - [ ] Objects deformed along beziers only look correct for the first.
   - Likely a problem in `Bezier::recompute`
     - evenTsAlongCubic does not consider there might be mutiple control points.
+- [ ] Use ConvexShapes for cars as they are largely convex and should support dynamic collision.
 
 ### Descriptor Layout Idea
 

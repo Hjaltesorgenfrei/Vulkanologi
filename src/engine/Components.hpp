@@ -84,12 +84,16 @@ struct CarStateLastUpdate {
 	glm::vec3 position;
 };
 
+// TODO: Organize the values better. And add the rest of the values.
 struct CarSettings {
-	bool settingsChanged = false;  // If this value changes the car should be recreated
+	float maxEngineTorque = 500.0f;
+	float maxSteeringAngle = 30.0f;
 
-	float sMaxEngineTorque = 500.0f;
-	float sClutchStrength = 10.0f;
-	bool sLimitedSlipDifferentials = true;
+	bool limitedSlipDifferentials = true;
+	bool fourWheelDrive = false;
+	bool antiRollbar = true;
+
+	float clutchStrength = 10.0f;
 	float halfVehicleLength = 2.0f;
 	float halfVehicleWidth = 0.9f;
 	float halfVehicleHeight = 0.2f;
@@ -98,6 +102,22 @@ struct CarSettings {
 	float wheelWidth = 0.1f;
 
 	float maxRollAngle = 60.0f;
+
+	// TODO: Figure out what this name should be, is it steering?
+	struct Suspension {
+		float casterAngle = 0.0f;
+		float kingPinAngle = 0.0f;
+		float camber = 0.0f;
+		float toe = 0.0f;
+
+		// TODO: This values should maybe be a part of a suspension struct instead.
+		float suspensionForwardAngle = 0.0f;
+		float suspensionSidewaysAngle = 0.0f;
+		float suspensionMinLength = 0.3f;
+		float suspensionMaxLength = 0.5f;
+		float suspensionFrequency = 1.5f;
+		float suspensionDamping = 0.5f;
+	} front, rear;
 };
 
 struct Player {

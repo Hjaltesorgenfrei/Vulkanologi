@@ -429,32 +429,8 @@ void PhysicsWorld::addCar(entt::registry &registry, entt::entity entity, glm::ve
 }
 
 void PhysicsWorld::updateCarFromSettings(entt::registry &registry, entt::entity entity) {
+	// Remove the old car settings
 	registry.remove<CarPhysics>(entity);
-
-	float sMaxSteeringAngle = DegreesToRadians(30.0f);
-	int sCollisionMode = 2;
-	bool sFourWheelDrive = false;
-	bool sAntiRollbar = true;
-	float sFrontCasterAngle = 0.0f;
-	float sFrontKingPinAngle = 0.0f;
-	float sFrontCamber = 0.0f;
-	float sFrontToe = 0.0f;
-	float sFrontSuspensionForwardAngle = 0.0f;
-	float sFrontSuspensionSidewaysAngle = 0.0f;
-	float sFrontSuspensionMinLength = 0.3f;
-	float sFrontSuspensionMaxLength = 0.5f;
-	float sFrontSuspensionFrequency = 1.5f;
-	float sFrontSuspensionDamping = 0.5f;
-	float sRearSuspensionForwardAngle = 0.0f;
-	float sRearSuspensionSidewaysAngle = 0.0f;
-	float sRearCasterAngle = 0.0f;
-	float sRearKingPinAngle = 0.0f;
-	float sRearCamber = 0.0f;
-	float sRearToe = 0.0f;
-	float sRearSuspensionMinLength = 0.3f;
-	float sRearSuspensionMaxLength = 0.5f;
-	float sRearSuspensionFrequency = 1.5f;
-	float sRearSuspensionDamping = 0.5f;
 
 	auto &settings = registry.get<CarSettings>(entity);
 
@@ -468,93 +444,97 @@ void PhysicsWorld::updateCarFromSettings(entt::registry &registry, entt::entity 
 
 	// Suspension direction
 	Vec3 front_suspension_dir =
-		Vec3(Tan(sFrontSuspensionSidewaysAngle), -1, Tan(sFrontSuspensionForwardAngle)).Normalized();
-	Vec3 front_steering_axis = Vec3(-Tan(sFrontKingPinAngle), 1, -Tan(sFrontCasterAngle)).Normalized();
-	Vec3 front_wheel_up = Vec3(Sin(sFrontCamber), Cos(sFrontCamber), 0);
-	Vec3 front_wheel_forward = Vec3(-Sin(sFrontToe), 0, Cos(sFrontToe));
+		Vec3(Tan(settings.front.suspensionSidewaysAngle), -1, Tan(settings.front.suspensionForwardAngle)).Normalized();
+	Vec3 front_steering_axis =
+		Vec3(-Tan(settings.front.kingPinAngle), 1, -Tan(settings.front.casterAngle)).Normalized();
+	Vec3 front_wheel_up = Vec3(Sin(settings.front.camber), Cos(settings.front.camber), 0);
+	Vec3 front_wheel_forward = Vec3(-Sin(settings.front.toe), 0, Cos(settings.front.toe));
 	Vec3 rear_suspension_dir =
-		Vec3(Tan(sRearSuspensionSidewaysAngle), -1, Tan(sRearSuspensionForwardAngle)).Normalized();
-	Vec3 rear_steering_axis = Vec3(-Tan(sRearKingPinAngle), 1, -Tan(sRearCasterAngle)).Normalized();
-	Vec3 rear_wheel_up = Vec3(Sin(sRearCamber), Cos(sRearCamber), 0);
-	Vec3 rear_wheel_forward = Vec3(-Sin(sRearToe), 0, Cos(sRearToe));
+		Vec3(Tan(settings.rear.suspensionSidewaysAngle), -1, Tan(settings.rear.suspensionForwardAngle)).Normalized();
+	Vec3 rear_steering_axis = Vec3(-Tan(settings.rear.kingPinAngle), 1, -Tan(settings.rear.casterAngle)).Normalized();
+	Vec3 rear_wheel_up = Vec3(Sin(settings.rear.camber), Cos(settings.rear.camber), 0);
+	Vec3 rear_wheel_forward = Vec3(-Sin(settings.rear.toe), 0, Cos(settings.rear.toe));
 	Vec3 flip_x(-1, 1, 1);
 
 	// Wheels, left front
 	WheelSettingsWV *w1 = new WheelSettingsWV;
+
+	// Clamp the values to avoid crashing Jolt
+	float wheelRadius = std::clamp(0.001f, settings.wheelRadius, FLT_MAX);
 	// TODO: What are these positions magic values??? 0.9f, 2.0f
 	w1->mPosition = Vec3(settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
-						 settings.halfVehicleLength - 2.0f * settings.wheelRadius);
+						 settings.halfVehicleLength - 2.0f * wheelRadius);
 	w1->mSuspensionDirection = front_suspension_dir;
 	w1->mSteeringAxis = front_steering_axis;
 	w1->mWheelUp = front_wheel_up;
 	w1->mWheelForward = front_wheel_forward;
-	w1->mSuspensionMinLength = sFrontSuspensionMinLength;
-	w1->mSuspensionMaxLength = sFrontSuspensionMaxLength;
-	w1->mSuspensionSpring.mFrequency = sFrontSuspensionFrequency;
-	w1->mSuspensionSpring.mDamping = sFrontSuspensionDamping;
-	w1->mMaxSteerAngle = sMaxSteeringAngle;
+	w1->mSuspensionMinLength = settings.front.suspensionMinLength;
+	w1->mSuspensionMaxLength = settings.front.suspensionMaxLength;
+	w1->mSuspensionSpring.mFrequency = settings.front.suspensionFrequency;
+	w1->mSuspensionSpring.mDamping = settings.front.suspensionDamping;
+	w1->mMaxSteerAngle = DegreesToRadians(settings.maxSteeringAngle);
 	w1->mMaxHandBrakeTorque = 0.0f;  // Front wheel doesn't have hand brake
 
 	// Right front
 	WheelSettingsWV *w2 = new WheelSettingsWV;
 	w2->mPosition = Vec3(-settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
-						 settings.halfVehicleLength - 2.0f * settings.wheelRadius);
+						 settings.halfVehicleLength - 2.0f * wheelRadius);
 	w2->mSuspensionDirection = flip_x * front_suspension_dir;
 	w2->mSteeringAxis = flip_x * front_steering_axis;
 	w2->mWheelUp = flip_x * front_wheel_up;
 	w2->mWheelForward = flip_x * front_wheel_forward;
-	w2->mSuspensionMinLength = sFrontSuspensionMinLength;
-	w2->mSuspensionMaxLength = sFrontSuspensionMaxLength;
-	w2->mSuspensionSpring.mFrequency = sFrontSuspensionFrequency;
-	w2->mSuspensionSpring.mDamping = sFrontSuspensionDamping;
-	w2->mMaxSteerAngle = sMaxSteeringAngle;
+	w2->mSuspensionMinLength = settings.front.suspensionMinLength;
+	w2->mSuspensionMaxLength = settings.front.suspensionMaxLength;
+	w2->mSuspensionSpring.mFrequency = settings.front.suspensionFrequency;
+	w2->mSuspensionSpring.mDamping = settings.front.suspensionDamping;
+	w2->mMaxSteerAngle = DegreesToRadians(settings.maxSteeringAngle);
 	w2->mMaxHandBrakeTorque = 0.0f;  // Front wheel doesn't have hand brake
 
 	// Left rear
 	WheelSettingsWV *w3 = new WheelSettingsWV;
 	w3->mPosition = Vec3(settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
-						 -settings.halfVehicleLength + 2.0f * settings.wheelRadius);
+						 -settings.halfVehicleLength + 2.0f * wheelRadius);
 	w3->mSuspensionDirection = rear_suspension_dir;
 	w3->mSteeringAxis = rear_steering_axis;
 	w3->mWheelUp = rear_wheel_up;
 	w3->mWheelForward = rear_wheel_forward;
-	w3->mSuspensionMinLength = sRearSuspensionMinLength;
-	w3->mSuspensionMaxLength = sRearSuspensionMaxLength;
-	w3->mSuspensionSpring.mFrequency = sRearSuspensionFrequency;
-	w3->mSuspensionSpring.mDamping = sRearSuspensionDamping;
+	w3->mSuspensionMinLength = settings.rear.suspensionMinLength;
+	w3->mSuspensionMaxLength = settings.rear.suspensionMaxLength;
+	w3->mSuspensionSpring.mFrequency = settings.rear.suspensionFrequency;
+	w3->mSuspensionSpring.mDamping = settings.rear.suspensionDamping;
 	w3->mMaxSteerAngle = 0.0f;
 
 	// Right rear
 	WheelSettingsWV *w4 = new WheelSettingsWV;
 	w4->mPosition = Vec3(-settings.halfVehicleWidth, -0.9f * settings.halfVehicleHeight,
-						 -settings.halfVehicleLength + 2.0f * settings.wheelRadius);
+						 -settings.halfVehicleLength + 2.0f * wheelRadius);
 	w4->mSuspensionDirection = flip_x * rear_suspension_dir;
 	w4->mSteeringAxis = flip_x * rear_steering_axis;
 	w4->mWheelUp = flip_x * rear_wheel_up;
 	w4->mWheelForward = flip_x * rear_wheel_forward;
-	w4->mSuspensionMinLength = sRearSuspensionMinLength;
-	w4->mSuspensionMaxLength = sRearSuspensionMaxLength;
-	w4->mSuspensionSpring.mFrequency = sRearSuspensionFrequency;
-	w4->mSuspensionSpring.mDamping = sRearSuspensionDamping;
+	w4->mSuspensionMinLength = settings.rear.suspensionMinLength;
+	w4->mSuspensionMaxLength = settings.rear.suspensionMaxLength;
+	w4->mSuspensionSpring.mFrequency = settings.rear.suspensionFrequency;
+	w4->mSuspensionSpring.mDamping = settings.rear.suspensionDamping;
 	w4->mMaxSteerAngle = 0.0f;
 
 	vehicle.mWheels = {w1, w2, w3, w4};
 
 	for (WheelSettings *w : vehicle.mWheels) {
-		w->mRadius = settings.wheelRadius;
-		w->mWidth = settings.wheelWidth;
+		w->mRadius = wheelRadius;
+		w->mWidth = std::clamp(0.001f, settings.wheelWidth, FLT_MAX);
 	}
 
 	WheeledVehicleControllerSettings *controller = new WheeledVehicleControllerSettings;
 	vehicle.mController = controller;
-	controller->mEngine.mMaxTorque = settings.sMaxEngineTorque;
-	controller->mTransmission.mClutchStrength = settings.sClutchStrength;
+	controller->mEngine.mMaxTorque = settings.maxEngineTorque;
+	controller->mTransmission.mClutchStrength = settings.clutchStrength;
 
 	// Differential
-	controller->mDifferentials.resize(sFourWheelDrive ? 2 : 1);
+	controller->mDifferentials.resize(settings.fourWheelDrive ? 2 : 1);
 	controller->mDifferentials[0].mLeftWheel = 0;
 	controller->mDifferentials[0].mRightWheel = 1;
-	if (sFourWheelDrive) {
+	if (settings.fourWheelDrive) {
 		controller->mDifferentials[1].mLeftWheel = 2;
 		controller->mDifferentials[1].mRightWheel = 3;
 
@@ -563,7 +543,7 @@ void PhysicsWorld::updateCarFromSettings(entt::registry &registry, entt::entity 
 	}
 
 	// Anti rollbars
-	if (sAntiRollbar) {
+	if (settings.antiRollbar) {
 		vehicle.mAntiRollBars.resize(2);
 		vehicle.mAntiRollBars[0].mLeftWheel = 0;
 		vehicle.mAntiRollBars[0].mRightWheel = 1;

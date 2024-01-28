@@ -594,7 +594,8 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings) {
 	bool changed = false;
 	ImGui::Begin("Car Settings");
-	changed = ImGui::InputFloat("Max Torgue", &carSettings->sMaxEngineTorque);
+	changed = ImGui::InputFloat("Max Torgue", &carSettings->maxEngineTorque);
+	changed = ImGui::InputFloat("Wheel Radius", &carSettings->wheelRadius);
 	ImGui::End();
 	if (changed) {
 		physicsWorld->updateCarFromSettings(registry, entity);

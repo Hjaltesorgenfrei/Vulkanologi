@@ -618,7 +618,6 @@ void App::setupWorld() {
 	objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
 	objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
 	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
-	objects.push_back(std::make_shared<RenderObject>(createCubeMesh("resources/meme.png")));
 
 	renderer->uploadMeshes(objects);
 	meshes["road"] = objects[0]->mesh;

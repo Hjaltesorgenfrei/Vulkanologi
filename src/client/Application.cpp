@@ -265,7 +265,13 @@ entt::entity App::addPlayer(T input) {
 	}
 	auto entity = registry.create();
 	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-	physicsWorld->addCar(registry, entity, spawnPoint.position);
+	std::vector<glm::vec3> vertices;
+	for (auto v : meshes["car"]->_vertices) {
+		vertices.emplace_back(v.pos);
+	}
+	physicsWorld->addConvexHullFromMesh(registry, entity, vertices, spawnPoint.position, glm::vec3(1.f),
+										MotionType::Dynamic);
+	physicsWorld->createCarFromSettings(registry, entity);
 	// TODO: rotate the car to face the spawn point
 	registry.emplace<T>(entity, input);
 	auto color = Color::playerColor(playerId);
@@ -603,11 +609,11 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings) {
 	bool changed = false;
 	ImGui::Begin("Car Settings");
-	changed = ImGui::InputFloat("Max Torgue", &carSettings->maxEngineTorque);
-	changed = ImGui::InputFloat("Wheel Radius", &carSettings->wheelRadius);
+	changed |= ImGui::InputFloat("Max Torgue", &carSettings->maxEngineTorque);
+	changed |= ImGui::InputFloat("Wheel Radius", &carSettings->wheelRadius);
 	ImGui::End();
 	if (changed) {
-		physicsWorld->updateCarFromSettings(registry, entity);
+		physicsWorld->createCarFromSettings(registry, entity);
 	}
 }
 

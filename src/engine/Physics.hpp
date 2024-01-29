@@ -40,12 +40,14 @@ public:
 	void addSphere(entt::registry& registry, entt::entity entity, glm::vec3 position, float radius,
 				   bool isSensor = false);
 	IDType addBox(entt::registry& registry, entt::entity entity, glm::vec3 position, glm::vec3 size);
+	void addConvexHullFromMesh(entt::registry& registry, entt::entity entity, std::vector<glm::vec3>& vertices,
+							   glm::vec3 position, glm::vec3 scale, MotionType motionType);
 	void addMesh(entt::registry& registry, entt::entity entity, std::vector<glm::vec3>& vertices,
 				 std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), glm::vec3 scale = glm::vec3(1.f),
 				 MotionType motionType = MotionType::Static);
 
-	void addCar(entt::registry& registry, entt::entity entity, glm::vec3 position);
-	void updateCarFromSettings(entt::registry& registry, entt::entity entity);
+	void upsertCarFromSettings(entt::registry& registry,
+							   entt::entity entity);  // A PhysicsBody should exist before on entity
 
 	void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance,
 				 std::function<void(entt::entity entity)> callback);

@@ -14,7 +14,7 @@ if(NOT WIN32)
     target_compile_definitions(renderer PRIVATE -DVK_USE_PLATFORM_XLIB_KHR)
 endif()
 
-target_compile_definitions(renderer PUBLIC VULKAN_HPP_NO_STRUCT_CONSTRUCTORS)
+target_compile_definitions(renderer PUBLIC VULKAN_HPP_NO_STRUCT_CONSTRUCTORS IMGUI_DEFINE_MATH_OPERATORS)
 target_precompile_headers(renderer PUBLIC ${Vulkan_INCLUDE_DIRS}/vulkan/vulkan.hpp ${GLM_INCLUDE_DIR}/glm/glm.hpp)
 target_precompile_headers(renderer PUBLIC ${SOURCE_DIR}/BehDevice.hpp ${SOURCE_DIR}/WindowWrapper.hpp)
 

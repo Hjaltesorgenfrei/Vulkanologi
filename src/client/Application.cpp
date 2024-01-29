@@ -22,8 +22,12 @@
 #include "Sphere.hpp"
 #include "Util.hpp"
 #include "systems/Systems.hpp"
+#include "imgui/ImGuiCurve.hpp"
+
+static ImVec2 points[20] = {};
 
 void App::run(int argc, char* argv[]) {
+	points[0].x = ImGui::CurveTerminator;
 	instance = this;
 	srand((unsigned int)time(NULL));
 
@@ -525,6 +529,11 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	ImGui::Text("Number of Reliable Packets Acked: %f", networkInfo.numPacketsAcked);
 	ImGui::Text("Number of Reliable Packets Received: %f", networkInfo.numPacketsReceived);
 	ImGui::Text("Number of Reliable Packets Sent: %f", networkInfo.numPacketsSent);
+	ImGui::End();
+
+	ImGui::Begin("Bezier Editor");
+	static int selectionIdx = -1;
+	ImGui::Curve("Test", ImVec2(400.f, 200.f), 20, points, &selectionIdx);
 	ImGui::End();
 
 	registry.view<Bezier>().each([&](Bezier& bezier) {

@@ -34,3 +34,6 @@ set(yojimbo_TAG 407bb33403bfad8c01daef0dee7df4c66e386600)
 
 set(libsodium_GITHUB robinlinden/libsodium-cmake)
 set(libsodium_TAG f568ff02f1bed155ea598c0e803ef3c9db2703d2)
+
+set(vulkanheaders_GITHUB KhronosGroup/Vulkan-Headers)
+set(vulkanheaders_TAG ea45703effcb01df0856628286f8a890dd313ecd)

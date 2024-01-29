@@ -6,12 +6,6 @@ include("${CMAKE_CURRENT_LIST_DIR}/version.cmake")
 # Add Vulkan
 find_package(Vulkan REQUIRED)
 
-CPMAddPackage(
-    NAME vulkanheaders
-    GITHUB_REPOSITORY ${vulkanheaders_GITHUB}
-    GIT_TAG ${vulkanheaders_TAG}
-)
-
 # GLFW
 CPMAddPackage(
     NAME glfw

@@ -640,11 +640,15 @@ void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDista
 
 std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
 #ifdef JPH_DEBUG_RENDERER
+	((PhysicsDebugDrawer *)debugRenderer.get())->clear();
 	BodyManager::DrawSettings settings;
-	settings.mDrawBoundingBox = true;
+	settings.mDrawBoundingBox = false;
+	settings.mDrawVelocity = true;
 	physicsSystem->DrawBodies(settings, debugRenderer.get());
-#endif
+	return ((PhysicsDebugDrawer *)debugRenderer.get())->lines();
+#else
 	return {};
+#endif
 }
 
 void PhysicsWorld::removeBody(IDType bodyID) {

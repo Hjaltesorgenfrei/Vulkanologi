@@ -563,9 +563,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	});
 
 	auto physicsPaths = physicsWorld->debugDraw();
-	for (int i = 0; i < physicsPaths.size(); i += 2) {
-		frameInfo.paths.push_back(
-			LinePath(physicsPaths[i].first, physicsPaths[i + 1].first, physicsPaths[i + 1].second));
+	for (int i = 0; i < physicsPaths.size(); i++) {
+		frameInfo.paths.push_back(LinePath(physicsPaths[i].first, physicsPaths[i].second, Color::ORANGE));
 	}
 
 	frameInfo.paths.insert(frameInfo.paths.end(), rays.begin(), rays.end());
@@ -642,7 +641,7 @@ void App::setupWorld() {
 
 	auto debugCamera = registry.create();
 	registry.emplace<Camera>(debugCamera);
-	registry.emplace<ActiveCameraTag>(keyboardPlayer);
+	registry.emplace<ActiveCameraTag>(debugCamera);
 	registry.emplace<KeyboardInput>(debugCamera);
 	registry.emplace<MouseInput>(debugCamera);
 	setupControllerPlayers();

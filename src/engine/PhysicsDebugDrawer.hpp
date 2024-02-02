@@ -3,6 +3,7 @@
 #include <Jolt/Jolt.h>
 #include <Jolt/Renderer/DebugRenderer.h>
 #include <Jolt/Math/Real.h>
+#include <glm/glm.hpp>
 /*
 Physics.cpp(301, 22): pure virtual function "JPH::DebugRenderer::DrawTriangle" has no overrider
 Physics.cpp(301, 22): pure virtual function "JPH::DebugRenderer::CreateTriangleBatch(const JPH::DebugRenderer::Triangle
@@ -20,6 +21,9 @@ JPH::DebugRenderer::EDrawMode::Solid)" has no overrider Physics.cpp(301, 22): pu
 using namespace JPH;
 
 class PhysicsDebugDrawer : public DebugRenderer {
+	std::vector<std::pair<glm::vec3, glm::vec3>> _lines;
+	int geometry = 0, triangle = 0, text = 0;
+
 public:
 	PhysicsDebugDrawer();
 	void DrawLine(RVec3Arg inFrom, RVec3Arg inTo, ColorArg inColor) override;
@@ -33,4 +37,6 @@ public:
 					  EDrawMode inDrawMode = EDrawMode::Solid);
 	void DrawText3D(RVec3Arg inPosition, const string_view &inString, ColorArg inColor = Color::sWhite,
 					float inHeight = 0.5f);
+	std::vector<std::pair<glm::vec3, glm::vec3>> lines();
+	void clear();
 };

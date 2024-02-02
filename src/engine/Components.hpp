@@ -77,13 +77,6 @@ struct CarControl {
 	float desiredBrake = 0.0f;
 };
 
-// Struct to store speed, direction and position of a car for the last frame.
-struct CarStateLastUpdate {
-	float speed;
-	glm::vec3 direction;
-	glm::vec3 position;
-};
-
 // TODO: Organize the values better. And add the rest of the values.
 // TODO: Add a short description of each value and its unit
 struct CarSettings {

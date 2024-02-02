@@ -19,7 +19,7 @@ inline glm::quat toGlm(JPH::Quat quat) {
 }
 
 void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl,
-					   CarPhysics &car, CarStateLastUpdate &lastState) const {
+					   CarPhysics &car) const {
 	using namespace JPH;
 
 	WheeledVehicleController *controller = static_cast<WheeledVehicleController *>(car.constraint->GetController());
@@ -32,7 +32,7 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
 }
 
 void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input,
-							   CarStateLastUpdate const &lastState, CarControl &carControl) const {
+							   CarControl &carControl) const {
 	carControl.desiredAcceleration = 0.0f;
 	carControl.desiredBrake = 0.0f;
 
@@ -52,19 +52,13 @@ void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::enti
 		carControl.desiredAcceleration = 0.0f;
 	}
 
-	if (lastState.speed >= 15.0f && input.keys[GLFW_KEY_DOWN]) {
-		carControl.desiredBrake = 1.0f;
-	} else if (lastState.speed <= -15.0f && input.keys[GLFW_KEY_UP]) {
-		carControl.desiredBrake = 1.0f;
-	}
-
 	if (input.keys[GLFW_KEY_SPACE]) {
 		carControl.desiredBrake = 1.0f;
 	}
 }
 
 void CarJoystickSystem::update(entt::registry &registry, float delta, entt::entity ent, GamepadInput const &input,
-							   CarStateLastUpdate const &lastState, CarControl &carControl) const {
+							   CarControl &carControl) const {
 	carControl.desiredAcceleration = 0.0f;
 	carControl.desiredBrake = 0.0f;
 
@@ -73,12 +67,6 @@ void CarJoystickSystem::update(entt::registry &registry, float delta, entt::enti
 	carControl.desiredAcceleration += input.rightTrigger * 1.0f;
 	carControl.desiredAcceleration += -input.leftTrigger * 1.0f;
 	carControl.desiredAcceleration = std::clamp(carControl.desiredAcceleration, -1.0f, 1.0f);
-
-	if (lastState.speed >= 15.0f) {
-		carControl.desiredBrake = input.leftTrigger * 1.0f;
-	} else if (lastState.speed <= -15.0f) {
-		carControl.desiredBrake = input.rightTrigger * 1.0f;
-	}
 
 	// TODO: Right now you have to stop completely before you can reverse. fix this
 }

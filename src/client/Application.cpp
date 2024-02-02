@@ -277,7 +277,6 @@ entt::entity App::addPlayer(T input) {
 	auto color = Color::playerColor(playerId);
 	registry.emplace<Player>(entity, playerId, color);
 	registry.emplace<Transform>(entity);
-	registry.emplace<CarStateLastUpdate>(entity);
 	registry.emplace<CarControl>(entity);
 	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
 	registry.emplace<SelectedTag>(entity);

@@ -268,6 +268,10 @@ Remove tasks and tick them in the todo as they get done.
   - Likely a problem in `Bezier::recompute`
     - evenTsAlongCubic does not consider there might be mutiple control points.
 - [ ] Use ConvexShapes for cars as they are largely convex and should support dynamic collision.
+- [ ] Use a layered scenes, where they point to the lower layer.
+  - It can call down with draw and update calls. Which would allow for overlays and pausing.
+  - Needs scenes in general to switch between what is loaded
+  - Prefabs/Prototypes should be held in a different registry if they are used.
 
 ### Descriptor Layout Idea
 

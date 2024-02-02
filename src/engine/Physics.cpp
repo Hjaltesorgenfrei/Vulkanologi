@@ -31,7 +31,6 @@
 #include <Jolt/Physics/Vehicle/VehicleConstraint.h>
 #include <Jolt/Physics/Vehicle/WheeledVehicleController.h>
 #include <Jolt/RegisterTypes.h>
-#include <Jolt/Renderer/DebugRendererRecorder.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -45,6 +44,7 @@
 #include <thread>
 
 #include "Components.hpp"
+#include "PhysicsDebugDrawer.hpp"
 
 // Disable common warnings triggered by Jolt, you can use JPH_SUPPRESS_WARNING_PUSH / JPH_SUPPRESS_WARNING_POP to store
 // and restore the warning state
@@ -213,10 +213,6 @@ public:
 	}
 };
 
-DebugRendererRecorder *recorder;
-ofstream renderer_file("performance_test.jor", ofstream::out | ofstream::binary | ofstream::trunc);
-StreamOutWrapper renderer_stream(renderer_file);
-
 PhysicsWorld::PhysicsWorld(entt::registry &registry) {
 	// Register allocation hook
 	RegisterDefaultAllocator();
@@ -300,9 +296,9 @@ PhysicsWorld::PhysicsWorld(entt::registry &registry) {
 	// every frame or when e.g. streaming in a new level section as it is an expensive operation. Instead insert all new
 	// objects in batches instead of 1 at a time to keep the broad phase efficient.
 	physicsSystem->OptimizeBroadPhase();
-	recorder = new DebugRendererRecorder(renderer_stream);
 	bodyInterface = &physicsSystem->GetBodyInterface();
 
+	debugRenderer = std::make_unique<PhysicsDebugDrawer>();
 	// Setup up destructors for components
 	registry.on_destroy<PhysicsBody>().connect<&PhysicsWorld::onPhysicsBodyDestroyed>(this);
 	registry.on_destroy<CarPhysics>().connect<&PhysicsWorld::onCarPhysicsDestroyed>(this);
@@ -431,7 +427,8 @@ void PhysicsWorld::createCarFromSettings(entt::registry &registry, entt::entity 
 
 	// Suspension direction
 	Vec3 front_suspension_dir =
-		Vec3(Tan(settings->front.suspensionSidewaysAngle), -1, Tan(settings->front.suspensionForwardAngle)).Normalized();
+		Vec3(Tan(settings->front.suspensionSidewaysAngle), -1, Tan(settings->front.suspensionForwardAngle))
+			.Normalized();
 	Vec3 front_steering_axis =
 		Vec3(-Tan(settings->front.kingPinAngle), 1, -Tan(settings->front.casterAngle)).Normalized();
 	Vec3 front_wheel_up = Vec3(Sin(settings->front.camber), Cos(settings->front.camber), 0);
@@ -645,9 +642,8 @@ std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
 #ifdef JPH_DEBUG_RENDERER
 	BodyManager::DrawSettings settings;
 	settings.mDrawBoundingBox = true;
-	physicsSystem->DrawBodies(settings, recorder);
-	recorder->EndFrame();
-#endif  // JPH_DEBUG_RENDERER
+	physicsSystem->DrawBodies(settings, debugRenderer.get());
+#endif
 	return {};
 }
 

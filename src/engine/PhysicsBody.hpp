@@ -13,6 +13,7 @@ class Body;
 class VehicleConstraint;
 }  // namespace JPH
 
+// TODO: Change this to a 64bit id instead and map in the physics world.
 typedef JPH::BodyID IDType;
 
 enum class MotionType : uint8_t {

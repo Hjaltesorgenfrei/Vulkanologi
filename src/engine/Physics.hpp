@@ -3,9 +3,6 @@
 #ifndef PHYSICS_H
 #define PHYSICS_H
 
-#include <Jolt/Jolt.h>
-#include <Jolt/Physics/Body/BodyID.h>
-
 #include <entt/entt.hpp>
 #include <functional>
 #include <glm/glm.hpp>
@@ -21,6 +18,7 @@ class TempAllocator;
 class ContactListener;
 class BodyActivationListener;
 class BodyInterface;
+class DebugRenderer;
 }  // namespace JPH
 
 // TODO: These might be able to swapped with name space interfaces instead which would be a bit cleaner as we can hide
@@ -80,6 +78,7 @@ private:
 	float accumulator = 0.0f;
 
 	JPH::BodyInterface* bodyInterface = nullptr;
+	std::unique_ptr<JPH::DebugRenderer> debugRenderer = nullptr;
 
 	void addBody(entt::registry& registry, entt::entity entity, IDType bodyID);
 

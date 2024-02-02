@@ -7,8 +7,8 @@
 
 struct ISystem {
 	virtual const std::string_view name() = 0;
-	virtual constexpr std::unordered_set<std::type_index> reads() = 0;
-	virtual constexpr std::unordered_set<std::type_index> writes() = 0;
+	virtual const std::unordered_set<std::type_index> reads() = 0;
+	virtual const std::unordered_set<std::type_index> writes() = 0;
 	// Tagged Maybe
 	// Writes for next Frame
 	virtual void update(entt::registry &registry, float delta) const = 0;
@@ -34,12 +34,12 @@ struct System<Self, Reads<Read...>, Writes<Write...>, Others<Other...>> : virtua
 		return std::string_view(name.begin() + 6, name.end());
 	}
 
-	virtual constexpr std::unordered_set<std::type_index> reads() {
+	virtual const std::unordered_set<std::type_index> reads() {
 		static auto set = std::unordered_set<std::type_index>{typeid(Read)...};
 		return set;
 	}
 
-	virtual constexpr std::unordered_set<std::type_index> writes() {
+	virtual const std::unordered_set<std::type_index> writes() {
 		static auto set = std::unordered_set<std::type_index>{typeid(Write)...};
 		return set;
 	}

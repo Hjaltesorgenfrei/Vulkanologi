@@ -2,7 +2,6 @@
 
 Ideas and todos i have for systems and implementations
 
-
 ## Descriptor Layout Idea
 
 The DescriptorSet setup could work by creating DescriptorSetLayouts before.

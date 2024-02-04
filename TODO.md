@@ -28,6 +28,7 @@ Remove tasks and tick them in the todo as they get done.
 ## Gameplay Related
 
 - [ ] Car Feel, get help here
+  - [ ] Torque / Weight is a bit weird right now, as the weight depends on size of the model.
 - [ ] Camera controls
   - [ ] Switch between cameras
 

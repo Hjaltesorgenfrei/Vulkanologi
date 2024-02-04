@@ -12,6 +12,13 @@ Remove tasks and tick them in the todo as they get done.
 4. Client can affect state
 5. Player-Player collision
 
+## Code Articeture
+
+- [ ] Create a `World` struct that keeps the world and can be passed around to access stuff entities and physics.
+  - PhysicsWorld
+  - CurrentFrame
+  - Network to send messages
+
 ## Rendering
 
 - [ ] Shadows
@@ -307,7 +314,6 @@ Remove tasks and tick them in the todo as they get done.
 - [ ] Decide if Keyboard/Mouse Input should be a component or just a singleton.
   - There is only ever gonna be one.
   - But it does make some stuff simple.
-- [ ] Create a `World` struct that keeps the world and can be passed around to access stuff entities and physics.
 - [ ] Make something that is in front of renderer, so we dont include a file which has a million imports.
 - [ ] When the client is in, delete shared. It is unneeded and slows down compile.
 - [ ] Try making a voice chat for fun. PortAudio might work for this.

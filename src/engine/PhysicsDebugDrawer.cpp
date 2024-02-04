@@ -6,6 +6,7 @@ PhysicsDebugDrawer::PhysicsDebugDrawer() {
 
 // TODO: Implement these functions in a efficient manner
 // DebugRendererRecorder has some implementation i can probably steal quite a bit of.
+// Also the color should probably be saved xD
 void PhysicsDebugDrawer::DrawLine(RVec3Arg inFrom, RVec3Arg inTo, ColorArg inColor) {
 	_lines.emplace_back(glm::vec3(inFrom.GetX(), inFrom.GetY(), inFrom.GetZ()),
 						glm::vec3(inTo.GetX(), inTo.GetY(), inTo.GetZ()));
@@ -13,7 +14,9 @@ void PhysicsDebugDrawer::DrawLine(RVec3Arg inFrom, RVec3Arg inTo, ColorArg inCol
 
 void PhysicsDebugDrawer::DrawTriangle(RVec3Arg inV1, RVec3Arg inV2, RVec3Arg inV3, ColorArg inColor,
 									  ECastShadow inCastShadow) {
-	triangle++;
+	DrawLine(inV1, inV2, inColor);
+	DrawLine(inV2, inV3, inColor);
+	DrawLine(inV3, inV1, inColor);
 }
 
 DebugRenderer::Batch PhysicsDebugDrawer::CreateTriangleBatch(const Triangle* inTriangles, int inTriangleCount) {
@@ -30,6 +33,7 @@ DebugRenderer::Batch PhysicsDebugDrawer::CreateTriangleBatch(const Vertex* inVer
 void PhysicsDebugDrawer::DrawGeometry(RMat44Arg inModelMatrix, const AABox& inWorldSpaceBounds, float inLODScaleSq,
 									  ColorArg inModelColor, const GeometryRef& inGeometry, ECullMode inCullMode,
 									  ECastShadow inCastShadow, EDrawMode inDrawMode) {
+	// Needs CreateTriangleBatch to implemented
 	geometry++;
 }
 

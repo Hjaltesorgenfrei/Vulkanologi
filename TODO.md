@@ -36,6 +36,8 @@ Remove tasks and tick them in the todo as they get done.
 
 - [ ] Car Feel, get help here
   - [ ] Torque / Weight is a bit weird right now, as the weight depends on size of the model.
+  - [ ] Car wheels should be placed by model, maybe using the names of the meshes. Like fl, fr, rl, & rr.
+  - [ ] Size and width of the wheel should also be determined by the model
 - [ ] Camera controls
   - [ ] Switch between cameras
 

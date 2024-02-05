@@ -1,8 +1,4 @@
 #pragma once
-
-#ifndef COMPONENTS_H
-#define COMPONENTS_H
-
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
@@ -92,6 +88,12 @@ struct CarSettings {
 	float halfVehicleWidth = 0.9f;
 	float halfVehicleHeight = 0.2f;
 
+	struct Wheeloffset {
+		float Length = 0.9f;
+		float Height = 0.0f;
+		float Width = 0.0f;
+	} frontWheelOffset, rearWheelOffset;
+
 	float wheelRadius = 0.3f;
 	float wheelWidth = 0.1f;
 
@@ -154,5 +156,3 @@ struct SensorTag {};
 struct ActiveCameraTag {};
 
 struct PlayerCube {};
-
-#endif

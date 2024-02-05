@@ -608,7 +608,9 @@ void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings)
 	bool changed = false;
 	ImGui::Begin("Car Settings");
 	changed |= ImGui::InputFloat("Max Torgue", &carSettings->maxEngineTorque);
-	changed |= ImGui::InputFloat("Wheel Radius", &carSettings->wheelRadius);
+	changed |= ImGui::DragFloat("Wheel Radius", &carSettings->wheelRadius, 0.05f, 0.f, 3.f);
+	changed |= ImGui::DragFloat3("Front Wheel Offset", (float*)&carSettings->frontWheelOffset, 0.05f, -2.f, 5.f);
+	changed |= ImGui::DragFloat3("Rear Wheel Offset", (float*)&carSettings->rearWheelOffset, 0.05f, -2.f, 5.f);
 	ImGui::End();
 	if (changed) {
 		physicsWorld->createCarFromSettings(registry, entity);

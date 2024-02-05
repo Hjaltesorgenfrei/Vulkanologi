@@ -18,6 +18,7 @@ Remove tasks and tick them in the todo as they get done.
   - PhysicsWorld
   - CurrentFrame
   - Network to send messages
+- [ ] Save and load struct from json
 
 ## Rendering
 

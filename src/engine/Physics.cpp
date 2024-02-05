@@ -646,6 +646,7 @@ std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
 	settings.mDrawBoundingBox = false;
 	settings.mDrawVelocity = true;
 	physicsSystem->DrawBodies(settings, debugRenderer);
+	physicsSystem->DrawConstraints(debugRenderer);
 	return ((PhysicsDebugDrawer *)debugRenderer)->lines();
 #else
 	return {};

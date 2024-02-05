@@ -78,7 +78,7 @@ private:
 	float accumulator = 0.0f;
 
 	JPH::BodyInterface* bodyInterface = nullptr;
-	std::unique_ptr<JPH::DebugRenderer> debugRenderer = nullptr;
+	JPH::DebugRenderer* debugRenderer = nullptr;
 
 	void addBody(entt::registry& registry, entt::entity entity, IDType bodyID);
 

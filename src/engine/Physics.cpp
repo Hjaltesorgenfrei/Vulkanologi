@@ -298,7 +298,7 @@ PhysicsWorld::PhysicsWorld(entt::registry &registry) {
 	physicsSystem->OptimizeBroadPhase();
 	bodyInterface = &physicsSystem->GetBodyInterface();
 
-	debugRenderer = std::make_unique<PhysicsDebugDrawer>();
+	debugRenderer = new PhysicsDebugDrawer();
 	// Setup up destructors for components
 	registry.on_destroy<PhysicsBody>().connect<&PhysicsWorld::onPhysicsBodyDestroyed>(this);
 	registry.on_destroy<CarPhysics>().connect<&PhysicsWorld::onCarPhysicsDestroyed>(this);
@@ -324,6 +324,7 @@ void PhysicsWorld::onCarPhysicsDestroyed(entt::registry &registry, entt::entity 
 }
 
 PhysicsWorld::~PhysicsWorld() {
+	delete debugRenderer;
 	for (auto id : bodies) {
 		bodyInterface->RemoveBody(id);
 		bodyInterface->DestroyBody(id);
@@ -640,12 +641,12 @@ void PhysicsWorld::rayPick(glm::vec3 origin, glm::vec3 direction, float maxDista
 
 std::vector<std::pair<glm::vec3, glm::vec3>> PhysicsWorld::debugDraw() {
 #ifdef JPH_DEBUG_RENDERER
-	((PhysicsDebugDrawer *)debugRenderer.get())->clear();
+	((PhysicsDebugDrawer *)debugRenderer)->clear();
 	BodyManager::DrawSettings settings;
 	settings.mDrawBoundingBox = false;
 	settings.mDrawVelocity = true;
-	physicsSystem->DrawBodies(settings, debugRenderer.get());
-	return ((PhysicsDebugDrawer *)debugRenderer.get())->lines();
+	physicsSystem->DrawBodies(settings, debugRenderer);
+	return ((PhysicsDebugDrawer *)debugRenderer)->lines();
 #else
 	return {};
 #endif

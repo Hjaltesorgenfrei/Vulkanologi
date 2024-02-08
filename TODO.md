@@ -19,6 +19,7 @@ Remove tasks and tick them in the todo as they get done.
   - CurrentFrame
   - Network to send messages
 - [ ] Save and load struct from json
+- [ ] Restructure Mesh handling as described in [Design.md](./DESIGN.md)
 
 ## Rendering
 

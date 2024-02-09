@@ -632,6 +632,22 @@ void App::setupWorld() {
 	meshes["car"] = objects[3]->mesh;
 	noMaterial = objects[1]->material;
 	carMaterial = objects[3]->material;
+
+	// Get all files in "resources/kenney/racing" and load them
+	std::vector<std::string> files;
+	for (const auto& entry : std::filesystem::directory_iterator("resources/kenney/racing")) {
+		if (entry.path().extension() == ".obj") {
+			files.push_back(entry.path().string());
+		}
+	}
+	for (const auto& file : files) {
+		auto mesh = std::make_shared<RenderObject>(Mesh::LoadFromObj(file.c_str()));
+		renderer->uploadMeshes({mesh});
+		auto name = file.substr(file.find_last_of("/\\") + 1); // Get the name of the file
+		name = name.substr(0, name.find_last_of(".")); // Remove extension
+		meshes[name] = mesh->mesh;
+	}
+
 	createSpawnPoints(10);
 
 	auto keyboardPlayer = addPlayer(KeyboardInput{});

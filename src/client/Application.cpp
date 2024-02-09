@@ -501,7 +501,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 		if (ImGui::Button(mesh.first.c_str())) {
 			auto entity = registry.create();
 			registry.emplace<Transform>(entity);
-			registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh.second));
+			registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh.second, noMaterial));
 		}
 	}
 	ImGui::End();
@@ -912,8 +912,9 @@ bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix) {
 	proj[1][1] *= -1;  // ImGuizmo Expects the opposite
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+	glm::vec3 snap(1.f, 0.25f, 1.f);
 	return ImGuizmo::Manipulate(value_ptr(camera.camera.viewMatrix()), value_ptr(proj), currentGizmoOperation,
-								ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix));
+								ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix), value_ptr(snap));
 }
 
 // TODO: Enable this by inspection with debug window.

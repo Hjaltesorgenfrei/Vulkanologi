@@ -5,6 +5,8 @@
 #include <tiny_obj_loader.h>
 
 #include <glm/gtx/hash.hpp>
+#include <iostream>
+#include <string>
 
 namespace std {
 template <>
@@ -47,9 +49,24 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
 	std::vector<tinyobj::shape_t> shapes;
 	std::vector<tinyobj::material_t> materials;
 	std::string warn, err;
+	// Get path from filename
+	std::string fileDir = filename;
+	size_t lastSlash = fileDir.find_last_of("/\\");
+	if (lastSlash != std::string::npos) {
+		fileDir = fileDir.substr(0, lastSlash + 1);
+	} else {
+		fileDir = "./";
+	} 
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, "./resources")) {
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, fileDir.c_str())) {
 		throw std::runtime_error("RenderData failed to load!\n" + warn + err);
+	}
+
+	if (!warn.empty()) {
+		std::cout << "WARN: " << warn << " File: " << filename << std::endl;
+	}
+	if (!err.empty()) {
+		std::cerr << "ERR: " << err << " File: " << filename << std::endl;
 	}
 
 	std::unordered_map<Vertex, uint32_t> uniqueVertices{};
@@ -105,7 +122,7 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
 		if (material.diffuse_texname.empty()) {
 			continue;
 		}
-		mesh->_texturePaths.push_back("./resources/" + material.diffuse_texname);
+		mesh->_texturePaths.push_back(fileDir + material.diffuse_texname);
 	}
 
 	return mesh;

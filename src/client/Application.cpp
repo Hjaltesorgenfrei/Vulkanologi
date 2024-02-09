@@ -219,8 +219,8 @@ void App::addCubes(int layers, float x, float z) {
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
 			registry.emplace<Networked>(entity);
-			registry.emplace<std::shared_ptr<RenderObject>>(entity,
-															std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+			registry.emplace<std::shared_ptr<RenderObject>>(
+				entity, std::make_shared<RenderObject>(meshes["raceCarGreen"], noMaterial));
 		}
 	}
 }
@@ -496,6 +496,16 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	static int resolution = 10;
 	static int segments = 50;
 
+	ImGui::Begin("Spawn Object");
+	for (auto mesh : meshes) {
+		if (ImGui::Button(mesh.first.c_str())) {
+			auto entity = registry.create();
+			registry.emplace<Transform>(entity);
+			registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh.second));
+		}
+	}
+	ImGui::End();
+
 	ImGui::Begin("Black Hole");
 	ImGui::InputFloat3("Black Hole", glm::value_ptr(blackHole));
 	ImGui::InputFloat("Black Hole Pwer", &blackHolePower);
@@ -643,8 +653,8 @@ void App::setupWorld() {
 	for (const auto& file : files) {
 		auto mesh = std::make_shared<RenderObject>(Mesh::LoadFromObj(file.c_str()));
 		renderer->uploadMeshes({mesh});
-		auto name = file.substr(file.find_last_of("/\\") + 1); // Get the name of the file
-		name = name.substr(0, name.find_last_of(".")); // Remove extension
+		auto name = file.substr(file.find_last_of("/\\") + 1);  // Get the name of the file
+		name = name.substr(0, name.find_last_of("."));          // Remove extension
 		meshes[name] = mesh->mesh;
 	}
 

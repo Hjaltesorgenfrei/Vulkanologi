@@ -320,6 +320,9 @@ void PhysicsWorld::onPhysicsBodyDestroyed(entt::registry &registry, entt::entity
 void PhysicsWorld::onCarPhysicsDestroyed(entt::registry &registry, entt::entity entity) {
 	if (auto body = registry.try_get<CarPhysics>(entity)) {
 		removeCar(body->constraint);
+		for (auto e : body->wheels) {
+			registry.emplace<MarkForDeletionTag>(e);
+		}
 	}
 }
 
@@ -405,8 +408,9 @@ IDType PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::
 	return box_id;
 }
 
-void PhysicsWorld::createCarFromSettings(entt::registry &registry, entt::entity entity) {
+CarPhysics PhysicsWorld::createCarFromSettings(entt::registry &registry, entt::entity entity) {
 	// Remove the old car settings
+	// Becomes a bit of a problem when im setting the wheels each frame...
 	registry.remove<CarPhysics>(entity);
 
 	auto settings = registry.try_get<CarSettings>(entity);
@@ -546,7 +550,14 @@ void PhysicsWorld::createCarFromSettings(entt::registry &registry, entt::entity 
 	vehicleConstraint->SetVehicleCollisionTester(collisionTester);
 	physicsSystem->AddConstraint(vehicleConstraint);
 	physicsSystem->AddStepListener(vehicleConstraint);
-	registry.emplace<CarPhysics>(entity, CarPhysics{vehicleConstraint});
+	auto &car = registry.emplace<CarPhysics>(entity, CarPhysics{vehicleConstraint});
+	for (int i = 0; i < 4; i++) {
+		auto wheel = registry.create();
+		registry.emplace<WheelIndex>(wheel, i);
+		registry.emplace<Transform>(wheel);
+		car.wheels.push_back(wheel);
+	}
+	return car;
 }
 
 void PhysicsWorld::addConvexHullFromMesh(entt::registry &registry, entt::entity entity,

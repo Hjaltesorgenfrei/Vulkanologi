@@ -9,13 +9,21 @@
 #include <Jolt/Physics/Vehicle/WheeledVehicleController.h>
 
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
+// TODO: Move these to a utility class
 inline glm::vec3 toGlm(JPH::RVec3 vec) {
 	return glm::vec3(vec.GetX(), vec.GetY(), vec.GetZ());
 }
 
 inline glm::quat toGlm(JPH::Quat quat) {
 	return glm::quat(quat.GetX(), quat.GetY(), quat.GetZ(), quat.GetW());
+}
+
+inline glm::mat4 toGlm(JPH::Mat44 mat4) {
+	glm::mat4 result;
+	mat4.StoreFloat4x4((JPH::Float4 *)glm::value_ptr(result));
+	return result;
 }
 
 void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl,
@@ -29,6 +37,12 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
 	auto brake = carControl.desiredBrake;
 
 	controller->SetDriverInput(forward, right, brake, 0.f);
+
+	for (auto wheel : car.wheels) {
+		auto [transform, wheelIndex] = registry.get<Transform, WheelIndex>(wheel);
+		transform.modelMatrix =
+			toGlm(car.constraint->GetWheelWorldTransform(wheelIndex.index, Vec3::sAxisX(), Vec3::sAxisY()));
+	}
 }
 
 void CarKeyboardSystem::update(entt::registry &registry, float delta, entt::entity ent, KeyboardInput const &input,

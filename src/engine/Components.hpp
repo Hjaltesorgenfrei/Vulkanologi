@@ -90,11 +90,11 @@ struct CarSettings {
 
 	struct Wheeloffset {
 		float Length = 0.9f;
-		float Height = 0.0f;
+		float Height = -0.3f;
 		float Width = 0.0f;
 	} frontWheelOffset, rearWheelOffset;
 
-	float wheelRadius = 0.3f;
+	float wheelRadius = 0.4f;
 	float wheelWidth = 0.1f;
 
 	float maxRollAngle = 60.0f;

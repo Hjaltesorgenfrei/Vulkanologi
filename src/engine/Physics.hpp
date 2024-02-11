@@ -44,8 +44,8 @@ public:
 				 std::vector<uint32_t>& indices, glm::vec3 position = glm::vec3(0), glm::vec3 scale = glm::vec3(1.f),
 				 MotionType motionType = MotionType::Static);
 
-	void createCarFromSettings(entt::registry& registry,
-							   entt::entity entity);  // A PhysicsBody should exist before on entity
+	CarPhysics createCarFromSettings(entt::registry& registry,
+									 entt::entity entity);  // A PhysicsBody should exist before on entity
 
 	void rayPick(glm::vec3 origin, glm::vec3 direction, float maxDistance,
 				 std::function<void(entt::entity entity)> callback);

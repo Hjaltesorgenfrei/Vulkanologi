@@ -271,7 +271,11 @@ entt::entity App::addPlayer(T input) {
 	}
 	physicsWorld->addConvexHullFromMesh(registry, entity, vertices, spawnPoint.position, glm::vec3(1.f),
 										MotionType::Dynamic);
-	physicsWorld->createCarFromSettings(registry, entity);
+	auto car = physicsWorld->createCarFromSettings(registry, entity);
+	for (auto wheel : car.wheels) {
+		registry.emplace<std::shared_ptr<RenderObject>>(wheel,
+														std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+	}
 	// TODO: rotate the car to face the spawn point
 	registry.emplace<T>(entity, input);
 	auto color = Color::playerColor(playerId);
@@ -624,6 +628,12 @@ void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings)
 	ImGui::End();
 	if (changed) {
 		physicsWorld->createCarFromSettings(registry, entity);
+		auto car = physicsWorld->createCarFromSettings(registry, entity);
+		for (auto wheel : car.wheels) {
+			auto p = registry.emplace<std::shared_ptr<RenderObject>>(
+				wheel, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+			p->transformMatrix.color = glm::vec4(Color::DARK_GREEN, 1.f);
+		}
 	}
 }
 

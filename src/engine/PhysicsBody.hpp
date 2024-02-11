@@ -35,8 +35,14 @@ struct PhysicsBody {
 	glm::mat4 getTransform() const;
 };
 
+struct WheelIndex {
+	int index = 0;
+	// Maybe add an enum with its location
+};
+
 struct CarPhysics {
 	JPH::VehicleConstraint* constraint;
+	std::vector<entt::entity> wheels;
 };
 
 #endif

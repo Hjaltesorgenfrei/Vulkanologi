@@ -410,7 +410,7 @@ IDType PhysicsWorld::addBox(entt::registry &registry, entt::entity entity, glm::
 
 CarPhysics PhysicsWorld::createCarFromSettings(entt::registry &registry, entt::entity entity) {
 	// Remove the old car settings
-	// Becomes a bit of a problem when im setting the wheels each frame...
+	// Becomes a bit of a problem when im setting the wheels transform each frame...
 	registry.remove<CarPhysics>(entity);
 
 	auto settings = registry.try_get<CarSettings>(entity);

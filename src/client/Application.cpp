@@ -266,11 +266,12 @@ entt::entity App::addPlayer(T input) {
 	auto entity = registry.create();
 	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
 	std::vector<glm::vec3> vertices;
-	for (auto v : meshes["car"]->_vertices) {
+	for (auto v : meshes["raceCarOrange"]->_vertices) {
 		vertices.emplace_back(v.pos);
 	}
 	physicsWorld->addConvexHullFromMesh(registry, entity, vertices, spawnPoint.position, glm::vec3(1.f),
 										MotionType::Dynamic);
+	auto settings = &registry.emplace<CarSettings>(entity);
 	auto car = physicsWorld->createCarFromSettings(registry, entity);
 	for (auto wheel : car.wheels) {
 		registry.emplace<std::shared_ptr<RenderObject>>(wheel,
@@ -282,7 +283,8 @@ entt::entity App::addPlayer(T input) {
 	registry.emplace<Player>(entity, playerId, color);
 	registry.emplace<Transform>(entity);
 	registry.emplace<CarControl>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["car"], carMaterial));
+	registry.emplace<std::shared_ptr<RenderObject>>(
+		entity, std::make_shared<RenderObject>(meshes["raceCarOrange"], noMaterial));
 	registry.emplace<SelectedTag>(entity);
 	return entity;
 }
@@ -505,9 +507,9 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	static const char* currentItem = meshes.begin()->first.c_str();
 	if (ImGui::BeginCombo("##combo", currentItem)) {
 		for (const auto& mesh : meshes) {
-			// bool isSelected = strncmp(currentItem, mesh.first.c_str(), 50) == 0;
+			bool isSelected = strncmp(currentItem, mesh.first.c_str(), 50) == 0;
 			if (ImGui::Selectable(mesh.first.c_str(), false)) currentItem = mesh.first.c_str();
-			// if (isSelected) ImGui::SetItemDefaultFocus();
+			if (isSelected) ImGui::SetItemDefaultFocus();
 		}
 		ImGui::EndCombo();
 	}
@@ -525,7 +527,7 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 		for (auto index : mesh->_indices) {
 			indices.push_back(index);
 		}
-		physicsWorld->addMesh(registry, entity, vertices, indices);
+		physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0.f), glm::vec3(4.f, 1.f, 4.f));
 	}
 	ImGui::End();
 
@@ -622,12 +624,14 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 		auto bodyTransform = body->getTransform();
 		glm::mat4 delta(1.0f);
 
-		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&bodyTransform, &delta)) {
+		if (currentGizmoOperation == ImGuizmo::TRANSLATE &&
+			drawImGuizmo(&bodyTransform, &delta, glm::vec3(1.f, 0.25f, 1.f))) {
 			physicsWorld->setPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
-		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&bodyTransform, &delta)) {
+		} else if (currentGizmoOperation == ImGuizmo::ROTATE &&
+				   drawImGuizmo(&bodyTransform, &delta, glm::vec3(90.f, 90.f, 90.f))) {
 			physicsWorld->setRotation(body->bodyID, body->rotation * glm::toQuat(delta));
 		} else if (currentGizmoOperation == ImGuizmo::SCALE &&
-				   drawImGuizmo(&bodyTransform, &delta)) {  // TODO: Broken and crashes.
+				   drawImGuizmo(&bodyTransform, &delta, glm::vec3(.1f, .1f, .1f))) {  // TODO: Broken and crashes.
 			physicsWorld->setScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));
 		}
 	}
@@ -931,7 +935,7 @@ void App::setupControllerPlayers() {
 	}
 }
 
-bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix) {
+bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix, glm::vec3 snap) {
 	using namespace glm;
 	auto& camera = getCamera();
 	ImGuizmo::BeginFrame();
@@ -941,7 +945,6 @@ bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix) {
 	proj[1][1] *= -1;  // ImGuizmo Expects the opposite
 	ImGuiIO& io = ImGui::GetIO();
 	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-	glm::vec3 snap(1.f, 0.25f, 1.f);
 	return ImGuizmo::Manipulate(value_ptr(camera.camera.viewMatrix()), value_ptr(proj), currentGizmoOperation,
 								ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix), value_ptr(snap));
 }

@@ -63,7 +63,7 @@ private:
 
 	void mainLoop();
 	void setupCallBacks();
-	bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix);
+	bool drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix, glm::vec3 snap);
 	void setupWorld();
 	void spawnArena();
 	void spawnRandomCrap();

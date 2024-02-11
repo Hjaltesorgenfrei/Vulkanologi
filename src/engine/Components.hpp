@@ -76,7 +76,7 @@ struct CarControl {
 // TODO: Organize the values better. And add the rest of the values.
 // TODO: Add a short description of each value and its unit
 struct CarSettings {
-	float maxEngineTorque = 50000.0f;
+	float maxEngineTorque = 70.0f;
 	float maxSteeringAngle = 30.0f;
 
 	bool limitedSlipDifferentials = true;

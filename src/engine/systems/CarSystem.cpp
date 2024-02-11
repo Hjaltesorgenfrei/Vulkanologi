@@ -27,7 +27,7 @@ inline glm::mat4 toGlm(JPH::Mat44 mat4) {
 }
 
 void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl,
-					   CarPhysics &car) const {
+					   CarSettings const &settings, CarPhysics &car) const {
 	using namespace JPH;
 
 	WheeledVehicleController *controller = static_cast<WheeledVehicleController *>(car.constraint->GetController());
@@ -42,6 +42,8 @@ void CarSystem::update(entt::registry &registry, float delta, entt::entity ent, 
 		auto [transform, wheelIndex] = registry.get<Transform, WheelIndex>(wheel);
 		transform.modelMatrix =
 			toGlm(car.constraint->GetWheelWorldTransform(wheelIndex.index, Vec3::sAxisX(), Vec3::sAxisY()));
+		transform.modelMatrix = glm::scale(transform.modelMatrix,
+										   glm::vec3(settings.wheelWidth, settings.wheelRadius, settings.wheelRadius));
 	}
 }
 

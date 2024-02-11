@@ -56,7 +56,7 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
 		fileDir = fileDir.substr(0, lastSlash + 1);
 	} else {
 		fileDir = "./";
-	} 
+	}
 
 	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, fileDir.c_str())) {
 		throw std::runtime_error("RenderData failed to load!\n" + warn + err);

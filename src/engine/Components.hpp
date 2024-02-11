@@ -89,9 +89,9 @@ struct CarSettings {
 	float halfVehicleHeight = 0.2f;
 
 	struct Wheeloffset {
-		float Length = 0.9f;
-		float Height = -0.3f;
 		float Width = 0.0f;
+		float Height = -0.3f;
+		float Length = 0.9f;
 	} frontWheelOffset, rearWheelOffset;
 
 	float wheelRadius = 0.4f;
@@ -109,8 +109,8 @@ struct CarSettings {
 		// TODO: This values should maybe be a part of a suspension struct instead.
 		float suspensionForwardAngle = 0.0f;
 		float suspensionSidewaysAngle = 0.0f;
-		float suspensionMinLength = 0.3f;
-		float suspensionMaxLength = 0.5f;
+		float suspensionMinLength = 0.05f;
+		float suspensionMaxLength = 0.1f;
 		float suspensionFrequency = 1.5f;
 		float suspensionDamping = 0.5f;
 	} front, rear;

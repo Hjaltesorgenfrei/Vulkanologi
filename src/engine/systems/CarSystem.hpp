@@ -3,9 +3,9 @@
 #include "../DependentSystem.hpp"
 #include "../PhysicsBody.hpp"
 
-struct CarSystem : System<CarSystem, Reads<CarControl>, Writes<CarPhysics>, Others<>> {
+struct CarSystem : System<CarSystem, Reads<CarControl, CarSettings>, Writes<CarPhysics>, Others<>> {
 	void update(entt::registry &registry, float delta, entt::entity ent, CarControl const &carControl,
-				CarPhysics &car) const;
+				CarSettings const &settings, CarPhysics &car) const;
 };
 
 struct CarKeyboardSystem : System<CarKeyboardSystem, Reads<KeyboardInput>, Writes<CarControl>, Others<>> {

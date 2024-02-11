@@ -23,6 +23,7 @@
 #include "Util.hpp"
 #include "systems/Systems.hpp"
 #include "imgui/ImGuiCurve.hpp"
+#include "LoadCar.hpp"
 
 static ImVec2 points[20] = {};
 
@@ -271,11 +272,12 @@ entt::entity App::addPlayer(T input) {
 	}
 	physicsWorld->addConvexHullFromMesh(registry, entity, vertices, spawnPoint.position, glm::vec3(1.f),
 										MotionType::Dynamic);
-	auto settings = &registry.emplace<CarSettings>(entity);
+	auto& settings = registry.emplace<CarSettings>(entity);
+	LoadCar("resources/kenney/racing/raceCarOrange.obj", settings);
 	auto car = physicsWorld->createCarFromSettings(registry, entity);
 	for (auto wheel : car.wheels) {
-		registry.emplace<std::shared_ptr<RenderObject>>(wheel,
-														std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+		auto& r = registry.emplace<std::shared_ptr<RenderObject>>(
+			wheel, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
 	}
 	// TODO: rotate the car to face the spawn point
 	registry.emplace<T>(entity, input);

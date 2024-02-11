@@ -13,7 +13,6 @@
                 "JPH_DEBUG_RENDERER",
                 "VULKAN_HPP_NO_STRUCT_CONSTRUCTORS"
             ],
-            "windowsSdkVersion": "10.0.22000.0",
             "compilerPath": "cl.exe",
             "cStandard": "c17",
             "intelliSenseMode": "windows-msvc-x64"

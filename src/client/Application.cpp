@@ -625,7 +625,7 @@ void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& fra
 		if (currentGizmoOperation == ImGuizmo::TRANSLATE && drawImGuizmo(&bodyTransform, &delta)) {
 			physicsWorld->setPosition(body->bodyID, delta * glm::vec4(body->position, 1.f));
 		} else if (currentGizmoOperation == ImGuizmo::ROTATE && drawImGuizmo(&bodyTransform, &delta)) {
-			physicsWorld->setRotation(body->bodyID, glm::toQuat(delta) * body->rotation);
+			physicsWorld->setRotation(body->bodyID, body->rotation * glm::toQuat(delta));
 		} else if (currentGizmoOperation == ImGuizmo::SCALE &&
 				   drawImGuizmo(&bodyTransform, &delta)) {  // TODO: Broken and crashes.
 			physicsWorld->setScale(body->bodyID, delta * glm::vec4(body->scale, 1.f));

@@ -16,10 +16,10 @@ struct float3 {
 };
 
 struct float4 {
+	float w;
 	float x;
 	float y;
 	float z;
-	float w;
 };
 
 struct PhysicsState : public Message {
@@ -38,7 +38,7 @@ struct PhysicsState : public Message {
 		serialize_bits(stream, tick, 32);
 		serialize_bits(stream, networkID, 32);
 		serialize_bool(stream, isActive);
-		
+
 		if (isActive) {
 			serialize_float(stream, position.x);
 			serialize_float(stream, position.y);

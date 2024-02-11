@@ -500,13 +500,32 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	static int resolution = 10;
 	static int segments = 50;
 
+	// Probably use something like: https://github.com/khlorz/imgui-combo-filter
 	ImGui::Begin("Spawn Object");
-	for (auto mesh : meshes) {
-		if (ImGui::Button(mesh.first.c_str())) {
-			auto entity = registry.create();
-			registry.emplace<Transform>(entity);
-			registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh.second, noMaterial));
+	static const char* currentItem = meshes.begin()->first.c_str();
+	if (ImGui::BeginCombo("##combo", currentItem)) {
+		for (const auto& mesh : meshes) {
+			// bool isSelected = strncmp(currentItem, mesh.first.c_str(), 50) == 0;
+			if (ImGui::Selectable(mesh.first.c_str(), false)) currentItem = mesh.first.c_str();
+			// if (isSelected) ImGui::SetItemDefaultFocus();
 		}
+		ImGui::EndCombo();
+	}
+	if (ImGui::Button("Spawn")) {
+		auto& mesh = meshes[std::string(currentItem)];
+		auto entity = registry.create();
+		registry.emplace<Transform>(entity);
+		registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
+		// TODO: Fix this, this is nasty and dirty and ugly and slow
+		auto vertices = std::vector<glm::vec3>();
+		auto indices = std::vector<uint32_t>();
+		for (auto vertex : mesh->_vertices) {
+			vertices.push_back(vertex.pos);
+		}
+		for (auto index : mesh->_indices) {
+			indices.push_back(index);
+		}
+		physicsWorld->addMesh(registry, entity, vertices, indices);
 	}
 	ImGui::End();
 

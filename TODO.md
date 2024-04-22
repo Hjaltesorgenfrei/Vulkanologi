@@ -42,6 +42,7 @@ Remove tasks and tick them in the todo as they get done.
   - [ ] Size and width of the wheel should also be determined by the model
 - [ ] Camera controls
   - [ ] Switch between cameras
+- [ ] Undo / Redo. Maybe just undo and rebuilt the stack.
 
 ## Debugging
 

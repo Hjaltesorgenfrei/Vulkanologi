@@ -249,3 +249,5 @@ A map of ids to uploaded meshes would then be kept internally and ignore the one
 If two maps are kept as storage for new meshes uploaded, sync would also only have to be once per frame when the maps are swapped.
 By keeping uploads on a single thread it should also simplify batching a lot of uploads together in a single command buffer, before submitting it.
 Overall this would require much less work, be less prone to hard to diagnose problems and probably fast enough as the streaming requirements of my engine is likely to be low.
+
+Using a [collector](https://github.com/skypjack/entt/wiki/Crash-Course:-entity-component-system#they-call-me-reactive-system) could also work for updating what should be kept in memory on the gpu. As it simplifies updates.

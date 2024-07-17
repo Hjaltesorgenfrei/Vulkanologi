@@ -6,7 +6,7 @@ Create a game that can be released on steam and sold.
 
 Remove tasks and tick them in the todo as they get done.
 
-1. Jitter Buffer
+1. Jitter Buffer for networking
 2. Car Settings in debug menu
 3. Car Feel, get help here
 4. Client can affect state
@@ -89,6 +89,11 @@ Remove tasks and tick them in the todo as they get done.
 - [ ] Join friends
 - [ ] Serialize yojimbo messages to steam network messages.
 - [ ] Use `ISteamNetworkingSockets::CreateListenSocketP2P`
+
+## Dependencies
+
+- [ ] Check if KTX can use the CMakeList created by them instead of maintaining my own.
+  - [ ] If this is not possible maybe use some globs instead.
 
 ## Unsorted and maybe outdated
 

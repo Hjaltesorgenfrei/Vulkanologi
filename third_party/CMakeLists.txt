@@ -93,15 +93,15 @@ CPMAddPackage(
 
 set(KTX_SOURCES
     ${ktx_SOURCE_DIR}/lib/checkheader.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/createdfd.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/colourspaces.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/dfd.h
-    ${ktx_SOURCE_DIR}/lib/dfdutils/dfd2vk.inl
-    ${ktx_SOURCE_DIR}/lib/dfdutils/interpretdfd.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/printdfd.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/queries.c
-    ${ktx_SOURCE_DIR}/lib/dfdutils/vk2dfd.c
-    ${ktx_SOURCE_DIR}/lib/etcdec.cxx
+    ${ktx_SOURCE_DIR}/external/dfdutils/createdfd.c
+    ${ktx_SOURCE_DIR}/external/dfdutils/colourspaces.c
+    ${ktx_SOURCE_DIR}/external/dfdutils/dfd.h
+    ${ktx_SOURCE_DIR}/external/dfdutils/dfd2vk.inl
+    ${ktx_SOURCE_DIR}/external/dfdutils/interpretdfd.c
+    ${ktx_SOURCE_DIR}/external/dfdutils/printdfd.c
+    ${ktx_SOURCE_DIR}/external/dfdutils/queries.c
+    ${ktx_SOURCE_DIR}/external/dfdutils/vk2dfd.c
+    ${ktx_SOURCE_DIR}/external/etcdec/etcdec.cxx
     ${ktx_SOURCE_DIR}/lib/etcunpack.cxx
     ${ktx_SOURCE_DIR}/lib/filestream.c
     ${ktx_SOURCE_DIR}/lib/filestream.h
@@ -116,19 +116,20 @@ set(KTX_SOURCES
     ${ktx_SOURCE_DIR}/lib/uthash.h
     ${ktx_SOURCE_DIR}/lib/texture.c
     ${ktx_SOURCE_DIR}/lib/texture.h
+    ${ktx_SOURCE_DIR}/lib/vkformat_typesize.c
 
     # Basis Universal
     ${ktx_SOURCE_DIR}/lib/basis_sgd.h
     ${ktx_SOURCE_DIR}/lib/basis_transcode.cpp
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_containers.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_containers_impl.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_file_headers.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder_internal.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder_uastc.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder.cpp
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu_transcoder.h
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder/basisu.h
-    ${ktx_SOURCE_DIR}/lib/basisu/zstd/zstd.c
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_containers.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_containers_impl.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_file_headers.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_transcoder_internal.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_transcoder_uastc.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_transcoder.cpp
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu_transcoder.h
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder/basisu.h
+    ${ktx_SOURCE_DIR}/external/basisu/zstd/zstd.c
 
     # KT1
     ${ktx_SOURCE_DIR}/lib/texture1.c
@@ -155,8 +156,9 @@ set(KTX_INCLUDE_DIRS
     ${ktx_SOURCE_DIR}/include
     ${ktx_SOURCE_DIR}/lib
     ${ktx_SOURCE_DIR}/utils
-    ${ktx_SOURCE_DIR}/lib/basisu/zstd
-    ${ktx_SOURCE_DIR}/lib/basisu/transcoder
+    ${ktx_SOURCE_DIR}/external/basisu/zstd
+    ${ktx_SOURCE_DIR}/external/basisu/transcoder
+    ${ktx_SOURCE_DIR}/external
     ${ktx_SOURCE_DIR}/other_include
 )
 

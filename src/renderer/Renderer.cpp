@@ -275,8 +275,9 @@ void Renderer::initImgui() {
 	init_info.MinImageCount = device->swapChainSupport().capabilities.minImageCount;
 	init_info.ImageCount = swapChainImageCount;
 	init_info.MSAASamples = static_cast<VkSampleCountFlagBits>(device->msaaSamples());
+	init_info.RenderPass = renderPass;
 
-	ImGui_ImplVulkan_Init(&init_info, renderPass);
+	ImGui_ImplVulkan_Init(&init_info);
 
 	// execute a gpu command to upload imgui font textures
 	device->immediateSubmit([&](auto cmd) { ImGui_ImplVulkan_CreateFontsTexture(); });

@@ -57,6 +57,6 @@
     {
         "name": "libsodium",
 	    "github": "robinlinden/libsodium-cmake",
-        "tag": "f568ff02f1bed155ea598c0e803ef3c9db2703d2"
+        "branch": "master"
     }
 ]

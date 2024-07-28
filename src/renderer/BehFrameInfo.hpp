@@ -10,7 +10,7 @@
 
 struct FrameInfo {
 	BehCamera camera;
-	std::vector<std::shared_ptr<RenderObject>> objects{};
+	std::vector<RenderObjectNew> objects{};
 	std::vector<Path> paths{};
 	// Only support 1 light so far.
 	std::vector<Light> lights{};

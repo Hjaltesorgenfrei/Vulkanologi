@@ -16,6 +16,8 @@
 #include "BehVkTypes.hpp"
 #include "Deletionqueue.hpp"
 #include "WindowWrapper.hpp"
+#include "MeshHandle.hpp"
+#include "Mesh.hpp"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -33,7 +35,8 @@ public:
 	Renderer(const Renderer&) = delete;
 
 	int drawFrame(FrameInfo& frameInfo);
-	void uploadMeshes(const std::vector<std::shared_ptr<RenderObject>>& objects);
+	MeshHandle uploadMesh(std::string path);
+	Material uploadMaterial(std::string path);
 	Material createMaterial(std::vector<std::string>& texturePaths);
 	void recreateSwapchain();
 	uint64_t getMemoryUsage();
@@ -117,9 +120,12 @@ private:
 	std::vector<std::shared_ptr<AllocatedBuffer>> shaderStorageBuffers;
 	std::vector<vk::DescriptorSet> computeDescriptorSets;
 
-	std::shared_ptr<RenderObject> skyBox;
-
+	Material skyBox;
 	bool displaySkybox = true;
+
+	std::shared_ptr<Mesh> cubeMesh;
+
+	std::unordered_map<MeshHandle, std::shared_ptr<Mesh>> meshMap;
 
 	size_t currentFrame = 0;
 

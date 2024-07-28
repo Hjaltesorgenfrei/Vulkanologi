@@ -29,6 +29,7 @@ int PARTICLE_COUNT = 256 * 4;
 #include "Cube.hpp"
 #include "GlobalUbo.hpp"
 #include "Particle.hpp"
+#include "MeshHandle.hpp"
 
 Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDevice> device, AssetManager &assetManager)
 	: window(window), device{device}, assetManager(assetManager) {
@@ -58,11 +59,9 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
 		createComputeDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
-		skyBox = std::make_shared<RenderObject>();
-		skyBox->mesh = createCubeMesh();
-		skyBox->mesh->_texturePaths = {"resources/cubemap_yokohama_rgba.ktx"};
-		std::vector<std::shared_ptr<RenderObject>> reee = {skyBox};
-		uploadMeshes(reee);
+		cubeMesh = createCubeMesh();
+		// TODO: Move skybox to client, probably.
+		skyBox = uploadMaterial("resources/cubemap_yokohama_rgba.ktx");
 	} catch (const std::exception &e) {
 		cleanup();
 		std::cerr << "Renderer failed to initialize!" << std::endl;
@@ -73,35 +72,6 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
 
 Renderer::~Renderer() {
 	cleanup();
-}
-
-Material Renderer::createMaterial(std::vector<std::string> &texturePaths) {
-	std::vector<std::shared_ptr<UploadedTexture>> textures;
-	for (const auto &filename : texturePaths) {
-		textures.push_back(assetManager.getTexture(filename));
-	}
-
-	std::vector<vk::DescriptorImageInfo> imageInfos;
-	for (const auto &texture : textures) {
-		vk::DescriptorImageInfo imageInfo{
-			.sampler = texture->textureSampler,
-			.imageView = texture->textureImageView,
-			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
-		};
-		imageInfos.push_back(imageInfo);
-	}
-
-	Material material{};
-
-	auto textureResult = DescriptorSetBuilder::begin(materialDescriptorSetLayout, &descriptorAllocator)
-							 .bindImages(0, imageInfos, vk::DescriptorType::eCombinedImageSampler)
-							 .build(material.textureSet);
-
-	if (!textureResult) {
-		throw std::runtime_error("Failed to create Material");
-	}
-
-	return material;
 }
 
 void Renderer::createSwapChain() {
@@ -716,21 +686,60 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &objects) {
-	for (const auto &model : objects) {
-		if (model->mesh->_texturePaths.empty()) {
-			// Use the default texture
-			model->mesh->_texturePaths.emplace_back("resources/no_texture.png");
-			for (auto &vertice : model->mesh->_vertices) {
-				vertice.materialIndex = 0;  // We are only uploading one texture, so we dont want to index out of it
-			}
-		}
-		model->mesh->_vertexBuffer =
-			assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
-		model->mesh->_indexBuffer =
-			assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
-		model->material = createMaterial(model->mesh->_texturePaths);
+// void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &objects) {
+// 	for (const auto &model : objects) {
+// 		if (model->mesh->_texturePaths.empty()) {
+// 			// Use the default texture
+// 			model->mesh->_texturePaths.emplace_back("resources/no_texture.png");
+// 			for (auto &vertice : model->mesh->_vertices) {
+// 				vertice.materialIndex = 0;  // We are only uploading one texture, so we dont want to index out of it
+// 			}
+// 		}
+// 		model->mesh->_vertexBuffer =
+// 			assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+// 		model->mesh->_indexBuffer =
+// 			assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
+// 		model->material = createMaterial(model->mesh->_texturePaths);
+// 	}
+// }
+
+MeshHandle Renderer::uploadMesh(std::string path) {
+	// TODO: Move to asset manager
+	auto model = Mesh::LoadFromObj(path);
+	model->_vertexBuffer = assetManager.createBuffer<Vertex>(model->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+	model->_indexBuffer = assetManager.createBuffer<uint32_t>(model->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
+	auto handle = MeshHandle();
+	meshMap[handle] = model;
+	return handle;
+}
+
+Material Renderer::uploadMaterial(std::string path) {
+	std::vector<std::shared_ptr<UploadedTexture>> textures;
+	for (const auto &filename : Mesh::MaterialPathsFromObj(path)) {
+		textures.push_back(assetManager.getTexture(filename));
 	}
+
+	std::vector<vk::DescriptorImageInfo> imageInfos;
+	for (const auto &texture : textures) {
+		vk::DescriptorImageInfo imageInfo{
+			.sampler = texture->textureSampler,
+			.imageView = texture->textureImageView,
+			.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+		};
+		imageInfos.push_back(imageInfo);
+	}
+
+	Material material{};
+
+	auto textureResult = DescriptorSetBuilder::begin(materialDescriptorSetLayout, &descriptorAllocator)
+							 .bindImages(0, imageInfos, vk::DescriptorType::eCombinedImageSampler)
+							 .build(material.textureSet);
+
+	if (!textureResult) {
+		throw std::runtime_error("Failed to create Material");
+	}
+
+	return material;
 }
 
 void Renderer::createUniformBuffers() {
@@ -921,14 +930,14 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skyboxPipelineLayout, 0, 1,
 											 &descriptorSets[currentFrame], 0, nullptr);
 
-			vk::Buffer vertexBuffers[] = {skyBox->mesh->_vertexBuffer->_buffer};
+			vk::Buffer vertexBuffers[] = {cubeMesh->_vertexBuffer->_buffer};
 			vk::DeviceSize offsets[] = {0};
 			commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-			commandBuffer.bindIndexBuffer(skyBox->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
+			commandBuffer.bindIndexBuffer(cubeMesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
 			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, skyboxPipelineLayout, 1, 1,
-											 &skyBox->material.textureSet, 0, nullptr);
+											 &skyBox.textureSet, 0, nullptr);
 
 			MeshPushConstants constants{frameInfo.camera.viewMatrix(), {}};
 			// Cancel out translation for skybox
@@ -937,7 +946,7 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 										vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
 										sizeof(MeshPushConstants), &constants);
 
-			commandBuffer.drawIndexed(static_cast<uint32_t>(skyBox->mesh->_indices.size()), 1, 0, 0, 0);
+			commandBuffer.drawIndexed(static_cast<uint32_t>(cubeMesh->_indices.size()), 1, 0, 0, 0);
 		}
 
 		if (rendererMode == NORMAL) {
@@ -949,21 +958,22 @@ void Renderer::recordCommandBuffer(vk::CommandBuffer &commandBuffer, size_t inde
 										 &descriptorSets[currentFrame], 0, nullptr);
 
 		for (const auto &model : frameInfo.objects) {
-			vk::Buffer vertexBuffers[] = {model->mesh->_vertexBuffer->_buffer};
+			auto mesh = meshMap[model.mesh];
+			vk::Buffer vertexBuffers[] = {mesh->_vertexBuffer->_buffer};
 			vk::DeviceSize offsets[] = {0};
 			commandBuffer.bindVertexBuffers(0, 1, vertexBuffers, offsets);
 
-			commandBuffer.bindIndexBuffer(model->mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
+			commandBuffer.bindIndexBuffer(mesh->_indexBuffer->_buffer, 0, vk::IndexType::eUint32);
 
 			commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, graphicsPipelineLayout, 1, 1,
-											 &model->material.textureSet, 0, nullptr);
+											 &model.material.textureSet, 0, nullptr);
 
-			MeshPushConstants constants = model->transformMatrix;
+			MeshPushConstants constants = model.transformMatrix;
 			commandBuffer.pushConstants(graphicsPipelineLayout,
 										vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
 										sizeof(MeshPushConstants), &constants);
 
-			commandBuffer.drawIndexed(static_cast<uint32_t>(model->mesh->_indices.size()), 1, 0, 0, 0);
+			commandBuffer.drawIndexed(static_cast<uint32_t>(mesh->_indices.size()), 1, 0, 0, 0);
 		}
 
 		// Point lights

@@ -44,7 +44,7 @@ private:
 	entt::registry registry;
 	std::unordered_set<entt::entity> entities;
 	SystemGraph systemGraph;
-	std::unordered_map<std::string, std::shared_ptr<Mesh>> meshes;
+	std::unordered_map<std::string, MeshHandle> meshes;
 	std::vector<std::string> swiperNames;
 	Material carMaterial;
 	Material noMaterial;
@@ -70,7 +70,6 @@ private:
 	void bezierTesting();
 	void createSpawnPoints(int numberOfSpawns);
 	void setupControllerPlayers();
-	std::vector<Path> drawNormals(std::shared_ptr<RenderObject> object);
 	Camera& getCamera();
 
 	static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
@@ -83,13 +82,7 @@ private:
 	void addCubes(int layers, float x, float z);
 
 	template <typename T>
-	entt::entity addCubePlayer(T input);
-
-	template <typename T>
 	entt::entity addPlayer(T input);
-
-	entt::entity addSwiper(Axis direction, float speed, int swiper);
-	void loadSwipers();
 
 	bool shiftPressed = false;
 

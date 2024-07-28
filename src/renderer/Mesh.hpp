@@ -33,9 +33,10 @@ struct Vertex {
 struct Mesh {
 	std::vector<Vertex> _vertices;
 	std::vector<uint32_t> _indices;
-	std::vector<std::string> _texturePaths;  // TODO: Fix this, it's not a good spot to have it saved.
 	std::shared_ptr<AllocatedBuffer> _vertexBuffer;
 	std::shared_ptr<AllocatedBuffer> _indexBuffer;
 
-	static std::shared_ptr<Mesh> LoadFromObj(const char* filename);
+	// TODO: Move to somesort of OBJ loader
+	[[nodiscard]] static std::shared_ptr<Mesh> LoadFromObj(std::string filename);
+	[[nodiscard]] static std::vector<std::string> MaterialPathsFromObj(std::string filename);
 };

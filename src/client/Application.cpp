@@ -220,36 +220,10 @@ void App::addCubes(int layers, float x, float z) {
 			registry.emplace<Transform>(entity);
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
 			registry.emplace<Networked>(entity);
-			registry.emplace<std::shared_ptr<RenderObject>>(
-				entity, std::make_shared<RenderObject>(meshes["raceCarGreen"], noMaterial));
+			registry.emplace<MeshHandle>(entity, meshes["raceCarGreen"]);
+			registry.emplace<Material>(entity, noMaterial);
 		}
 	}
-}
-
-template <typename T>
-entt::entity App::addCubePlayer(T input) {
-	int playerId = 0;
-	for (auto [entity, player] : registry.view<Player>().each()) {
-		if (player.id >= playerId) {
-			playerId = player.id + 1;
-		}
-	}
-	std::vector<SpawnPoint> spawnPoints;
-	for (auto [entity, spawnPoint] : registry.view<SpawnPoint>().each()) {
-		spawnPoints.push_back(spawnPoint);
-	}
-	auto entity = registry.create();
-	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
-	// TODO: rotate the car to face the spawn point
-	registry.emplace<T>(entity, input);
-	auto color = Color::playerColor(playerId);
-	registry.emplace<Player>(entity, playerId, color);
-	registry.emplace<Transform>(entity);
-	registry.emplace<PlayerCube>(entity);
-	auto body = physicsWorld->addBox(registry, entity, spawnPoint.position, glm::vec3(0.5f, 0.5f, 0.5f));
-	// physicsWorld->setScale(body, glm::vec3(5.f, 5.f, 5.f));
-	registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
-	return entity;
 }
 
 template <typename T>
@@ -266,8 +240,10 @@ entt::entity App::addPlayer(T input) {
 	}
 	auto entity = registry.create();
 	auto spawnPoint = spawnPoints[playerId % spawnPoints.size()];
+
+	auto carMesh = Mesh::LoadFromObj("resources/kenney/racing/raceCarOrange.obj");
 	std::vector<glm::vec3> vertices;
-	for (auto v : meshes["raceCarOrange"]->_vertices) {
+	for (auto v : carMesh->_vertices) {
 		vertices.emplace_back(v.pos);
 	}
 	physicsWorld->addConvexHullFromMesh(registry, entity, vertices, spawnPoint.position, glm::vec3(1.f),
@@ -276,8 +252,8 @@ entt::entity App::addPlayer(T input) {
 	LoadCar("resources/kenney/racing/raceCarOrange.obj", settings);
 	auto car = physicsWorld->createCarFromSettings(registry, entity);
 	for (auto wheel : car.wheels) {
-		auto& r = registry.emplace<std::shared_ptr<RenderObject>>(
-			wheel, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
+		registry.emplace<MeshHandle>(wheel, meshes["cube"]);
+		registry.emplace<Material>(wheel, noMaterial);
 	}
 	// TODO: rotate the car to face the spawn point
 	registry.emplace<T>(entity, input);
@@ -285,88 +261,11 @@ entt::entity App::addPlayer(T input) {
 	registry.emplace<Player>(entity, playerId, color);
 	registry.emplace<Transform>(entity);
 	registry.emplace<CarControl>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(
-		entity, std::make_shared<RenderObject>(meshes["raceCarOrange"], noMaterial));
+	registry.emplace<MeshHandle>(entity, meshes["raceCarOrange"]);
+	registry.emplace<Material>(entity, noMaterial);
 	registry.emplace<SelectedTag>(entity);
 	return entity;
 }
-
-entt::entity App::addSwiper(Axis direction, float speed, int swiper) {
-	auto mesh = meshes[swiperNames[swiper]];
-	auto entity = registry.create();
-	registry.emplace<Transform>(entity);
-	auto& object =
-		registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
-	object->transformMatrix.color = glm::vec4(Color::random(), 1.0f);
-	auto vertices = std::vector<glm::vec3>();
-	auto indices = std::vector<uint32_t>();
-	for (auto vertex : mesh->_vertices) {
-		vertices.push_back(vertex.pos);
-	}
-	for (auto index : mesh->_indices) {
-		indices.push_back(index);
-	}
-	physicsWorld->addMesh(registry, entity, vertices, indices, {swiper * 30, -10, 0}, glm::vec3(2.0f),
-						  MotionType::Kinematic);
-	registry.emplace<Swiper>(entity, direction, speed);
-	return entity;
-}
-
-void App::loadSwipers() {
-	std::vector<std::string> files;
-	std::vector<std::shared_ptr<RenderObject>> objects;
-	for (const auto& entry : std::filesystem::directory_iterator("resources")) {
-		if (entry.path().filename().string().find("swiper_") == 0 && entry.path().extension() == ".obj") {
-			files.push_back(entry.path().string());
-			swiperNames.push_back(entry.path().filename().string());
-			objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj(entry.path().string().c_str())));
-		}
-	}
-
-	for (int i = 0; i < files.size(); i++) {
-		meshes[swiperNames[i]] = objects[i]->mesh;
-		// Fix the origin of the mesh
-		auto& vertices = objects[i]->mesh->_vertices;
-		struct BoundingBox {
-			glm::vec3 min;
-			glm::vec3 max;
-		} boundingBox;
-
-		boundingBox.min = vertices[i].pos;
-		boundingBox.max = vertices[i].pos;
-
-		for (auto& vertex : vertices) {
-			boundingBox.min = glm::min(boundingBox.min, vertex.pos);
-			boundingBox.max = glm::max(boundingBox.max, vertex.pos);
-		}
-
-		// Make a new origin at the middle bottom of the bounding box
-		glm::vec3 origin = (boundingBox.min + boundingBox.max) / 2.0f;
-		origin.y = boundingBox.min.y;
-
-		for (auto& vertex : vertices) {
-			vertex.pos -= origin;
-			vertex.color = glm::vec4(1.0f);  // White
-		}
-	}
-
-	renderer->uploadMeshes(objects);
-}
-
-float bytesToMegaBytes(uint64_t bytes) {
-	return bytes / 1024.0f / 1024.0f;
-}
-
-// TODO: Move to circle path class
-// Path circleAroundPoint(glm::vec3 center, float radius, int segments) {
-//     Path path(true);
-//     for (int i = 0; i < segments; i++) {
-//         float angle = (float)i / (float)segments * 2.0f * 3.14159265359f;
-//         glm::vec3 point = center + glm::vec3(cos(angle) * radius, sin(angle) * radius, 0);
-//         path.addPoint({point, glm::vec3(1, 1, 1), glm::vec3(0, 1, 0)});
-//     }
-//     return path;
-// }
 
 Axis axis = X;
 
@@ -387,7 +286,6 @@ std::shared_ptr<Mesh> deformMesh(Bezier& bezier, std::shared_ptr<Mesh> baseMesh)
 	auto result = std::make_shared<Mesh>();
 	result->_vertices = baseMesh->_vertices;
 	result->_indices = baseMesh->_indices;
-	result->_texturePaths = baseMesh->_texturePaths;
 	result->_vertexBuffer = baseMesh->_vertexBuffer;
 	result->_indexBuffer = baseMesh->_indexBuffer;
 
@@ -435,17 +333,31 @@ int App::drawFrame(float delta) {
 	frameInfo.deltaTime = delta;
 	frameInfo.lights.push_back(light);
 
-	for (auto entity : registry.view<std::shared_ptr<RenderObject>, Transform>()) {
-		auto renderObject = registry.get<std::shared_ptr<RenderObject>>(entity);
+	for (auto entity : registry.view<MeshHandle, Material, Transform>()) {
+		auto mesh = registry.get<MeshHandle>(entity);
+		auto material = registry.get<Material>(entity);
 		auto transform = registry.get<Transform>(entity);
 		auto player = registry.try_get<Player>(entity);
+		auto color = glm::vec4(1.0f);
 		if (player != nullptr) {
 			if (player->isAlive == false) {
 				continue;  // Don't render dead players
 			}
-			renderObject->transformMatrix.color = glm::vec4(player->color, 1.0f);
+			color = glm::vec4(player->color, 1.0f);
 		}
-		renderObject->transformMatrix.model = transform.modelMatrix;
+
+		// Get back to this part later
+
+		RenderObjectNew renderObject = {
+			.mesh = mesh,
+			.material = material,
+			.transformMatrix =
+				{
+					.model = transform.modelMatrix,
+					.color = color,
+				},
+		};
+
 		frameInfo.objects.push_back(renderObject);
 	}
 
@@ -519,17 +431,18 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 		auto& mesh = meshes[std::string(currentItem)];
 		auto entity = registry.create();
 		registry.emplace<Transform>(entity);
-		registry.emplace<std::shared_ptr<RenderObject>>(entity, std::make_shared<RenderObject>(mesh, noMaterial));
+		registry.emplace<MeshHandle>(entity, mesh);
+		registry.emplace<Material>(entity, noMaterial);
 		// TODO: Fix this, this is nasty and dirty and ugly and slow
-		auto vertices = std::vector<glm::vec3>();
-		auto indices = std::vector<uint32_t>();
-		for (auto vertex : mesh->_vertices) {
-			vertices.push_back(vertex.pos);
-		}
-		for (auto index : mesh->_indices) {
-			indices.push_back(index);
-		}
-		physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0.f), glm::vec3(4.f, 1.f, 4.f));
+		// auto vertices = std::vector<glm::vec3>();
+		// auto indices = std::vector<uint32_t>();
+		// for (auto vertex : mesh->_vertices) {
+		// 	vertices.push_back(vertex.pos);
+		// }
+		// for (auto index : mesh->_indices) {
+		// 	indices.push_back(index);
+		// }
+		// physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0.f), glm::vec3(4.f, 1.f, 4.f));
 	}
 	ImGui::End();
 
@@ -541,7 +454,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 	ImGui::Begin("Frame Info");
 	ImGui::Text("Frame Time: %f", averageFrameTime);
 	ImGui::Text("FPS: %f", 1000.0 / averageFrameTime);
-	ImGui::Text("Memory Usage: %.1fmb", bytesToMegaBytes(memoryUsage));
+
+	ImGui::Text("Memory Usage: %.1fmb", memoryUsage / 1024.0f / 1024.0f);
 	ImGui::End();
 
 	auto& camera = getCamera();
@@ -613,13 +527,8 @@ void App::drawFrameDebugInfo(float delta, FrameInfo& frameInfo) {
 }
 
 void App::drawDebugForSelectedEntity(entt::entity selectedEntity, FrameInfo& frameInfo) {
-	auto renderObject = registry.try_get<std::shared_ptr<RenderObject>>(selectedEntity);
 	auto transform = registry.try_get<Transform>(selectedEntity);
 	auto showNormals = registry.try_get<ShowNormalsTag>(selectedEntity);
-	if (renderObject && transform && showNormals) {
-		auto normals = drawNormals(*renderObject);
-		frameInfo.paths.insert(frameInfo.paths.end(), normals.begin(), normals.end());
-	}
 
 	if (auto body = registry.try_get<PhysicsBody>(selectedEntity)) {
 		ImGui::InputFloat3("Position", glm::value_ptr(body->position));
@@ -655,28 +564,17 @@ void App::drawDebugForCarSettings(entt::entity entity, CarSettings* carSettings)
 		physicsWorld->createCarFromSettings(registry, entity);
 		auto car = physicsWorld->createCarFromSettings(registry, entity);
 		for (auto wheel : car.wheels) {
-			auto p = registry.emplace<std::shared_ptr<RenderObject>>(
-				wheel, std::make_shared<RenderObject>(meshes["cube"], noMaterial));
-			p->transformMatrix.color = glm::vec4(Color::DARK_GREEN, 1.f);
+			auto p = registry.emplace<MeshHandle>(wheel, meshes["cube"]);
+			auto m = registry.emplace<Material>(wheel, noMaterial);
 		}
 	}
 }
 
 void App::setupWorld() {
-	std::vector<std::shared_ptr<RenderObject>> objects;
-	// objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/lost_empire.obj"), Material{}));
-	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj")));
-	objects.push_back(std::make_shared<RenderObject>(createCubeMesh()));
-	objects.push_back(std::make_shared<RenderObject>(GenerateSphereSmooth(1, 10, 10)));
-	objects.push_back(std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/na_bil.obj")));
-
-	renderer->uploadMeshes(objects);
-	meshes["road"] = objects[0]->mesh;
-	meshes["cube"] = objects[1]->mesh;
-	meshes["sphere"] = objects[2]->mesh;
-	meshes["car"] = objects[3]->mesh;
-	noMaterial = objects[1]->material;
-	carMaterial = objects[3]->material;
+	meshes["road"] = renderer->uploadMesh("resources/road.obj");
+	meshes["car"] = renderer->uploadMesh("resources/na_bil.obj");
+	noMaterial = renderer->uploadMaterial("resources/white.png");
+	carMaterial = renderer->uploadMaterial("resources/na_bil.obj");
 
 	// Get all files in "resources/kenney/racing" and load them
 	std::vector<std::string> files;
@@ -686,11 +584,9 @@ void App::setupWorld() {
 		}
 	}
 	for (const auto& file : files) {
-		auto mesh = std::make_shared<RenderObject>(Mesh::LoadFromObj(file.c_str()));
-		renderer->uploadMeshes({mesh});
 		auto name = file.substr(file.find_last_of("/\\") + 1);  // Get the name of the file
 		name = name.substr(0, name.find_last_of("."));          // Remove extension
-		meshes[name] = mesh->mesh;
+		meshes[name] = renderer->uploadMesh(file);
 	}
 
 	createSpawnPoints(10);
@@ -722,34 +618,30 @@ void App::setupWorld() {
 }
 
 void App::spawnArena() {
-	auto arena = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/track.obj"));
-	for (auto& vertex : arena->mesh->_vertices) {
-		vertex.materialIndex = 0;
-	}
-	arena->mesh->_texturePaths = {"resources/white.png"};
-	renderer->uploadMeshes({arena});
 	auto entity = registry.create();
 	entities.insert(entity);
 	registry.emplace<Transform>(entity);
-	registry.emplace<std::shared_ptr<RenderObject>>(entity, arena);
+	registry.emplace<MeshHandle>(entity, renderer->uploadMesh("resources/track.obj"));
+	registry.emplace<Material>(entity, renderer->uploadMaterial("resources/white.png"));
 	auto vertices = std::vector<glm::vec3>();
 	auto indices = std::vector<uint32_t>();
-	for (auto vertex : arena->mesh->_vertices) {
+
+	auto arenaMesh = Mesh::LoadFromObj("resources/track.obj");
+	for (auto vertex : arenaMesh->_vertices) {
 		vertices.push_back(vertex.pos);
 	}
-	for (auto index : arena->mesh->_indices) {
+	for (auto index : arenaMesh->_indices) {
 		indices.push_back(index);
 	}
 	physicsWorld->addMesh(registry, entity, vertices, indices, glm::vec3(0, -1, 30), glm::vec3(1, 1, 1));
 }
 
 void App::spawnRandomCrap() {
-	auto rat = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/rat.obj"));
-	renderer->uploadMeshes({rat});
 	auto ratEntity = registry.create();
 	entities.insert(ratEntity);
 	auto& transform = registry.emplace<Transform>(ratEntity);
-	registry.emplace<std::shared_ptr<RenderObject>>(ratEntity, rat);
+	registry.emplace<MeshHandle>(ratEntity, renderer->uploadMesh("resources/rat.obj"));
+	registry.emplace<Material>(ratEntity, noMaterial);
 	auto position = glm::vec3(86, 5, 67);
 	auto forward = glm::vec3(1, 0, 1);
 	forward = glm::normalize(forward);
@@ -761,12 +653,6 @@ void App::spawnRandomCrap() {
 		glm::rotate(transform2, glm::angle(glm::quatLookAt(forward, up)), glm::axis(glm::quatLookAt(forward, up)));
 	transform2 = glm::scale(transform2, glm::vec3(scale));
 	transform.modelMatrix = transform2;
-
-	// Swipers
-	loadSwipers();
-	for (int i = 0; i < swiperNames.size(); i++) {
-		addSwiper(Axis::Z, -0.005f, i);
-	}
 }
 
 void App::bezierTesting() {
@@ -800,12 +686,12 @@ void App::bezierTesting() {
 
 	auto beziers = registry.view<Bezier>();
 	for (auto bezier : beziers) {
-		auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
-		auto& bezierComponent = registry.get<Bezier>(bezier);
-		bezierComponent.recomputeIfDirty();
-		road->mesh = deformMesh(bezierComponent, road->mesh);
-		registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
-		registry.emplace<Transform>(bezier);
+		// auto road = std::make_shared<RenderObject>(Mesh::LoadFromObj("resources/road.obj"));
+		// auto& bezierComponent = registry.get<Bezier>(bezier);
+		// bezierComponent.recomputeIfDirty();
+		// road->mesh = deformMesh(bezierComponent, road->mesh);
+		// registry.emplace<std::shared_ptr<RenderObject>>(bezier, road);
+		// registry.emplace<Transform>(bezier);
 		// Make a bullet3 polygonal mesh
 		// std::vector<btVector3> vertices;
 		// for (auto index : road->mesh->_indices) {
@@ -816,7 +702,7 @@ void App::bezierTesting() {
 		// auto body = physicsWorld->createWorldGeometry(vertices);
 		// body->setUserIndex((int)bezier);
 		// registry.emplace<RigidBody>(bezier, body);
-		renderer->uploadMeshes({road});
+		// renderer->uploadMeshes({road});
 	}
 }
 
@@ -898,9 +784,9 @@ void App::mainLoop() {
 			}
 		}
 
-		for (auto [entity, body, object] : registry.view<PhysicsBody, std::shared_ptr<RenderObject>>().each()) {
-			object->transformMatrix.color = glm::vec4(body.active ? Color::RED : Color::WHITE, 1.f);
-		}
+		// for (auto [entity, body, object] : registry.view<PhysicsBody, std::shared_ptr<RenderObject>>().each()) {
+		// 	object->transformMatrix.color = glm::vec4(body.active ? Color::RED : Color::WHITE, 1.f);
+		// }
 
 		// Stop hacking here
 		networkSystem->update(registry, physicsWorld.get(), delta.count() / 1000.f);
@@ -949,20 +835,6 @@ bool App::drawImGuizmo(glm::mat4* matrix, glm::mat4* deltaMatrix, glm::vec3 snap
 	ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
 	return ImGuizmo::Manipulate(value_ptr(camera.camera.viewMatrix()), value_ptr(proj), currentGizmoOperation,
 								ImGuizmo::LOCAL, value_ptr(*matrix), value_ptr(*deltaMatrix), value_ptr(snap));
-}
-
-// TODO: Enable this by inspection with debug window.
-std::vector<Path> App::drawNormals(std::shared_ptr<RenderObject> object) {
-	auto mesh = object->mesh;
-	auto transform = object->transformMatrix.model;
-	glm::mat4 view = glm::mat4(glm::mat3(transform));
-	std::vector<Path> paths;
-	for (const auto& vertex : mesh->_vertices) {
-		auto start = transform * glm::vec4(vertex.pos, 1.0f);
-		auto end = start + (view * glm::vec4(vertex.normal, 1.0f)) * 0.1f;
-		paths.push_back(LinePath(start, end, {0, 0, 1}));
-	}
-	return paths;
 }
 
 Camera& App::getCamera() {

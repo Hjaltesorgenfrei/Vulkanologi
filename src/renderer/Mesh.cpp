@@ -43,7 +43,7 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::getAttributeDescription
 	return attributeDescriptions;
 }
 
-std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
+std::shared_ptr<Mesh> Mesh::LoadFromObj(std::string filename) {
 	std::shared_ptr<Mesh> mesh = std::make_shared<Mesh>();
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -58,7 +58,7 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
 		fileDir = "./";
 	}
 
-	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename, fileDir.c_str())) {
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), fileDir.c_str())) {
 		throw std::runtime_error("RenderData failed to load!\n" + warn + err);
 	}
 
@@ -119,11 +119,34 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(const char *filename) {
 				mesh->_vertices[i].color = {material.diffuse[0], material.diffuse[1], material.diffuse[2]};
 			}
 		}
-		if (material.diffuse_texname.empty()) {
-			continue;
-		}
-		mesh->_texturePaths.push_back(fileDir + material.diffuse_texname);
 	}
 
 	return mesh;
+}
+
+std::vector<std::string> Mesh::MaterialPathsFromObj(std::string filename) {
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+	std::string warn, err;
+	// Get path from filename
+	std::string fileDir = filename;
+	size_t lastSlash = fileDir.find_last_of("/\\");
+	if (lastSlash != std::string::npos) {
+		fileDir = fileDir.substr(0, lastSlash + 1);
+	} else {
+		fileDir = "./";
+	}
+
+	if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), fileDir.c_str())) {
+		throw std::runtime_error("RenderData failed to load!\n" + warn + err);
+	}
+
+	std::vector<std::string> texturePaths;
+
+	for (int materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
+		auto &material = materials[materialIndex];
+		texturePaths.push_back(fileDir + material.diffuse_texname);
+	}
+	return texturePaths;
 }

@@ -58,7 +58,6 @@ std::shared_ptr<Mesh> createCubeMesh(std::string texturePath) {
 
 	mesh->_vertices = vertices;
 	mesh->_indices = indices;
-	mesh->_texturePaths = {texturePath};
 
 	return mesh;
 }

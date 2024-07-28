@@ -37,7 +37,6 @@ public:
 	int drawFrame(FrameInfo& frameInfo);
 	MeshHandle uploadMesh(std::string path);
 	Material uploadMaterial(std::string path);
-	Material createMaterial(std::vector<std::string>& texturePaths);
 	void recreateSwapchain();
 	uint64_t getMemoryUsage();
 	RendererMode rendererMode = RendererMode::NORMAL;

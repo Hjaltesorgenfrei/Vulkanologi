@@ -5,6 +5,7 @@ class MeshHandle {
 public:
 	MeshHandle();
 	uint64_t id;
+    std::string debugName;
 
 	bool operator==(const MeshHandle& other) const { return id == other.id; }
 };

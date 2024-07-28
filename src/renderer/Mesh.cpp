@@ -146,7 +146,9 @@ std::vector<std::string> Mesh::MaterialPathsFromObj(std::string filename) {
 
 	for (int materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
 		auto &material = materials[materialIndex];
-		texturePaths.push_back(fileDir + material.diffuse_texname);
+		if (!material.diffuse_texname.empty()) {
+			texturePaths.push_back(fileDir + material.diffuse_texname);			
+		}
 	}
 	return texturePaths;
 }

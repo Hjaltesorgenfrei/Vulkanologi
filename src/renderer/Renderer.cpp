@@ -59,7 +59,12 @@ Renderer::Renderer(std::shared_ptr<WindowWrapper> window, std::shared_ptr<BehDev
 		createComputeDescriptorSets();
 		createCommandBuffers();
 		createSyncObjects();
+		// TODO: This is a bit of a mess. Need some way to create a mesh without having to load it from a file.
 		cubeMesh = createCubeMesh();
+		cubeMesh->_vertexBuffer =
+			assetManager.createBuffer<Vertex>(cubeMesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
+		cubeMesh->_indexBuffer =
+			assetManager.createBuffer<uint32_t>(cubeMesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
 		// TODO: Move skybox to client, probably.
 		skyBox = uploadMaterial("resources/cubemap_yokohama_rgba.ktx");
 	} catch (const std::exception &e) {
@@ -686,37 +691,32 @@ uint32_t Renderer::findMemoryType(uint32_t typeFilter, vk::MemoryPropertyFlags p
 	throw std::runtime_error("failed to find suitable memory type!");
 }
 
-// void Renderer::uploadMeshes(const std::vector<std::shared_ptr<RenderObject>> &objects) {
-// 	for (const auto &model : objects) {
-// 		if (model->mesh->_texturePaths.empty()) {
-// 			// Use the default texture
-// 			model->mesh->_texturePaths.emplace_back("resources/no_texture.png");
-// 			for (auto &vertice : model->mesh->_vertices) {
-// 				vertice.materialIndex = 0;  // We are only uploading one texture, so we dont want to index out of it
-// 			}
-// 		}
-// 		model->mesh->_vertexBuffer =
-// 			assetManager.createBuffer<Vertex>(model->mesh->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
-// 		model->mesh->_indexBuffer =
-// 			assetManager.createBuffer<uint32_t>(model->mesh->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
-// 		model->material = createMaterial(model->mesh->_texturePaths);
-// 	}
-// }
-
 MeshHandle Renderer::uploadMesh(std::string path) {
 	// TODO: Move to asset manager
 	auto model = Mesh::LoadFromObj(path);
 	model->_vertexBuffer = assetManager.createBuffer<Vertex>(model->_vertices, vk::BufferUsageFlagBits::eVertexBuffer);
 	model->_indexBuffer = assetManager.createBuffer<uint32_t>(model->_indices, vk::BufferUsageFlagBits::eIndexBuffer);
 	auto handle = MeshHandle();
+	handle.debugName = path;
 	meshMap[handle] = model;
 	return handle;
 }
 
 Material Renderer::uploadMaterial(std::string path) {
 	std::vector<std::shared_ptr<UploadedTexture>> textures;
-	for (const auto &filename : Mesh::MaterialPathsFromObj(path)) {
-		textures.push_back(assetManager.getTexture(filename));
+	if (path.ends_with(".obj")) {
+		for (const auto &filename : Mesh::MaterialPathsFromObj(path)) {
+			textures.push_back(assetManager.getTexture(filename));
+		}
+	} else if (path.ends_with(".ktx") || path.ends_with(".dds") || path.ends_with(".ktx2") || path.ends_with(".hdr") ||
+			   path.ends_with(".png") || path.ends_with(".jpg")) {
+		textures = {assetManager.getTexture(path)};
+	} else {
+		throw std::runtime_error("Unsupported file type for material: " + path);
+	}
+
+	if (textures.size() == 0) {
+		throw std::runtime_error("No textures found for material for path: " + path);
 	}
 
 	std::vector<vk::DescriptorImageInfo> imageInfos;

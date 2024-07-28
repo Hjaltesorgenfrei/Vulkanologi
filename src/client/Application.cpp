@@ -252,7 +252,8 @@ entt::entity App::addPlayer(T input) {
 	LoadCar("resources/kenney/racing/raceCarOrange.obj", settings);
 	auto car = physicsWorld->createCarFromSettings(registry, entity);
 	for (auto wheel : car.wheels) {
-		registry.emplace<MeshHandle>(wheel, meshes["cube"]);
+		// TODO: Need to add back the wheels
+		// registry.emplace<MeshHandle>(wheel, meshes["cube"]);
 		registry.emplace<Material>(wheel, noMaterial);
 	}
 	// TODO: rotate the car to face the spawn point
@@ -574,7 +575,7 @@ void App::setupWorld() {
 	meshes["road"] = renderer->uploadMesh("resources/road.obj");
 	meshes["car"] = renderer->uploadMesh("resources/na_bil.obj");
 	noMaterial = renderer->uploadMaterial("resources/white.png");
-	carMaterial = renderer->uploadMaterial("resources/na_bil.obj");
+	carMaterial = noMaterial;
 
 	// Get all files in "resources/kenney/racing" and load them
 	std::vector<std::string> files;

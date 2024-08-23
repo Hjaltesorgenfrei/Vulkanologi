@@ -3,6 +3,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <ktx.h>
 #include <stb_image.h>
+#include <filesystem>
 
 std::shared_ptr<UploadedTexture> AssetManager::getTexture(const std::string& filename) {
 	if (uploadedTextures.find(filename) == uploadedTextures.end()) {
@@ -149,7 +150,9 @@ void AssetManager::createTextureImage(const char* filename, const std::shared_pt
 	texture->height = texHeight;
 
 	if (!pixels) {
-		throw std::runtime_error("Failed to load texture image \"" + std::string(filename) + "\"!");
+		std::string currentDir = std::filesystem::current_path().string();
+		throw std::runtime_error("Failed to load texture image \"" + std::string(filename) + "\"!\nCurrent dir: " +
+								 currentDir);
 	}
 
 	std::span<stbi_uc> dataSpan{pixels, static_cast<size_t>(imageSize)};

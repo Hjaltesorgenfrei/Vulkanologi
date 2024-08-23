@@ -731,7 +731,7 @@ Material Renderer::uploadMaterial(std::string path) {
 	}
 
 	Material material{};
-	material.data.resize(textures.size());
+	material.data.resize(128);
 
 	material.uniformBuffer = assetManager.createBuffer<MaterialData>(material.data, vk::BufferUsageFlagBits::eUniformBuffer);
 

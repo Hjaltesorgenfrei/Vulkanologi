@@ -136,6 +136,9 @@ std::vector<std::string> Mesh::MaterialPathsFromObj(std::string filename) {
 		if (!material.diffuse_texname.empty()) {
 			texturePaths.push_back(fileDir + material.diffuse_texname);			
 		}
+		else {
+			texturePaths.push_back("resources/white.png");
+		}
 	}
 	return texturePaths;
 }

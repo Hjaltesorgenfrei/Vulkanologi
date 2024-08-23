@@ -575,7 +575,7 @@ void App::setupWorld() {
 	meshes["road"] = renderer->uploadMesh("resources/road.obj");
 	meshes["car"] = renderer->uploadMesh("resources/na_bil.obj");
 	noMaterial = renderer->uploadMaterial("resources/white.png");
-	carMaterial = noMaterial;
+	carMaterial = renderer->uploadMaterial("resources/na_bil.obj");;
 
 	// Get all files in "resources/kenney/racing" and load them
 	std::vector<std::string> files;
@@ -623,7 +623,7 @@ void App::spawnArena() {
 	entities.insert(entity);
 	registry.emplace<Transform>(entity);
 	registry.emplace<MeshHandle>(entity, renderer->uploadMesh("resources/track.obj"));
-	registry.emplace<Material>(entity, renderer->uploadMaterial("resources/white.png"));
+	registry.emplace<Material>(entity, renderer->uploadMaterial("resources/track.obj"));
 	auto vertices = std::vector<glm::vec3>();
 	auto indices = std::vector<uint32_t>();
 
@@ -642,7 +642,7 @@ void App::spawnRandomCrap() {
 	entities.insert(ratEntity);
 	auto& transform = registry.emplace<Transform>(ratEntity);
 	registry.emplace<MeshHandle>(ratEntity, renderer->uploadMesh("resources/rat.obj"));
-	registry.emplace<Material>(ratEntity, noMaterial);
+	registry.emplace<Material>(ratEntity, renderer->uploadMaterial("resources/rat.obj"));
 	auto position = glm::vec3(86, 5, 67);
 	auto forward = glm::vec3(1, 0, 1);
 	forward = glm::normalize(forward);

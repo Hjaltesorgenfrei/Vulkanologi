@@ -45,6 +45,7 @@ private:
 	std::unordered_set<entt::entity> entities;
 	SystemGraph systemGraph;
 	std::unordered_map<std::string, MeshHandle> meshes;
+	std::unordered_map<std::string, Material> materials;
 	std::vector<std::string> swiperNames;
 	Material carMaterial;
 	Material noMaterial;

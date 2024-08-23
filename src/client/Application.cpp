@@ -221,7 +221,7 @@ void App::addCubes(int layers, float x, float z) {
 			auto body = physicsWorld->addBox(registry, entity, position, glm::vec3(0.5f, 0.5f, 0.5f));
 			registry.emplace<Networked>(entity);
 			registry.emplace<MeshHandle>(entity, meshes["raceCarGreen"]);
-			registry.emplace<Material>(entity, noMaterial);
+			registry.emplace<Material>(entity, materials["raceCarGreen"]);
 		}
 	}
 }
@@ -263,7 +263,7 @@ entt::entity App::addPlayer(T input) {
 	registry.emplace<Transform>(entity);
 	registry.emplace<CarControl>(entity);
 	registry.emplace<MeshHandle>(entity, meshes["raceCarOrange"]);
-	registry.emplace<Material>(entity, noMaterial);
+	registry.emplace<Material>(entity, materials["raceCarOrange"]);
 	registry.emplace<SelectedTag>(entity);
 	return entity;
 }
@@ -587,7 +587,10 @@ void App::setupWorld() {
 	for (const auto& file : files) {
 		auto name = file.substr(file.find_last_of("/\\") + 1);  // Get the name of the file
 		name = name.substr(0, name.find_last_of("."));          // Remove extension
-		meshes[name] = renderer->uploadMesh(file);
+		if (file.ends_with("obj")) {
+			meshes[name] = renderer->uploadMesh(file);
+			materials[name] = renderer->uploadMaterial(file);
+		}
 	}
 
 	createSpawnPoints(10);

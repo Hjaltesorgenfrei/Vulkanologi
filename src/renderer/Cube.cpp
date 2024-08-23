@@ -9,40 +9,38 @@ const std::vector<glm::vec3> cubeNormals = {{0.0f, 0.0f, -1.0f}, {0.0f, 0.0f, 1.
 
 const std::vector<glm::vec2> texCoords = {{0.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 1.0f}};
 
-const glm::vec3 white = {1.0f, 1.0f, 1.0f};
-
 std::shared_ptr<Mesh> createCubeMesh(std::string texturePath) {
 	auto mesh = std::make_shared<Mesh>();
 
-	std::vector<Vertex> vertices = {{cubePositions[2], white, cubeNormals[0], texCoords[0], 0},
-									{cubePositions[1], white, cubeNormals[0], texCoords[3], 0},
-									{cubePositions[3], white, cubeNormals[0], texCoords[1], 0},
-									{cubePositions[0], white, cubeNormals[0], texCoords[2], 0},
+	std::vector<Vertex> vertices = {{cubePositions[2], cubeNormals[0], texCoords[0], 0},
+									{cubePositions[1], cubeNormals[0], texCoords[3], 0},
+									{cubePositions[3], cubeNormals[0], texCoords[1], 0},
+									{cubePositions[0], cubeNormals[0], texCoords[2], 0},
 
-									{cubePositions[4], white, cubeNormals[1], texCoords[3], 0},
-									{cubePositions[5], white, cubeNormals[1], texCoords[2], 0},
-									{cubePositions[7], white, cubeNormals[1], texCoords[0], 0},
-									{cubePositions[6], white, cubeNormals[1], texCoords[1], 0},
+									{cubePositions[4], cubeNormals[1], texCoords[3], 0},
+									{cubePositions[5], cubeNormals[1], texCoords[2], 0},
+									{cubePositions[7], cubeNormals[1], texCoords[0], 0},
+									{cubePositions[6], cubeNormals[1], texCoords[1], 0},
 
-									{cubePositions[0], white, cubeNormals[4], texCoords[3], 0},
-									{cubePositions[3], white, cubeNormals[4], texCoords[0], 0},
-									{cubePositions[7], white, cubeNormals[4], texCoords[1], 0},
-									{cubePositions[4], white, cubeNormals[4], texCoords[2], 0},
+									{cubePositions[0], cubeNormals[4], texCoords[3], 0},
+									{cubePositions[3], cubeNormals[4], texCoords[0], 0},
+									{cubePositions[7], cubeNormals[4], texCoords[1], 0},
+									{cubePositions[4], cubeNormals[4], texCoords[2], 0},
 
-									{cubePositions[1], white, cubeNormals[5], texCoords[2], 0},
-									{cubePositions[2], white, cubeNormals[5], texCoords[1], 0},
-									{cubePositions[6], white, cubeNormals[5], texCoords[0], 0},
-									{cubePositions[5], white, cubeNormals[5], texCoords[3], 0},
+									{cubePositions[1], cubeNormals[5], texCoords[2], 0},
+									{cubePositions[2], cubeNormals[5], texCoords[1], 0},
+									{cubePositions[6], cubeNormals[5], texCoords[0], 0},
+									{cubePositions[5], cubeNormals[5], texCoords[3], 0},
 
-									{cubePositions[3], white, cubeNormals[3], texCoords[1], 0},
-									{cubePositions[2], white, cubeNormals[3], texCoords[0], 0},
-									{cubePositions[6], white, cubeNormals[3], texCoords[3], 0},
-									{cubePositions[7], white, cubeNormals[3], texCoords[2], 0},
+									{cubePositions[3], cubeNormals[3], texCoords[1], 0},
+									{cubePositions[2], cubeNormals[3], texCoords[0], 0},
+									{cubePositions[6], cubeNormals[3], texCoords[3], 0},
+									{cubePositions[7], cubeNormals[3], texCoords[2], 0},
 
-									{cubePositions[0], white, cubeNormals[2], texCoords[0], 0},
-									{cubePositions[1], white, cubeNormals[2], texCoords[1], 0},
-									{cubePositions[5], white, cubeNormals[2], texCoords[2], 0},
-									{cubePositions[4], white, cubeNormals[2], texCoords[3], 0}};
+									{cubePositions[0], cubeNormals[2], texCoords[0], 0},
+									{cubePositions[1], cubeNormals[2], texCoords[1], 0},
+									{cubePositions[5], cubeNormals[2], texCoords[2], 0},
+									{cubePositions[4], cubeNormals[2], texCoords[3], 0}};
 
 	std::vector<uint32_t> indices = {0,  1,  2,  1,  3,  2,
 

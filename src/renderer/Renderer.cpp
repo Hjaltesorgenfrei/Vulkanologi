@@ -358,9 +358,10 @@ void Renderer::createGlobalDescriptorSetLayout() {
 
 void Renderer::createMaterialDescriptorSetLayout() {
 	auto success = DescriptorSetLayoutBuilder::begin(&descriptorLayoutCache)
-					   .addBinding(0, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eFragment,
-								   256, vk::DescriptorBindingFlagBits::ePartiallyBound)
-					   .build(materialDescriptorSetLayout);
+						.addBinding(0, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eAllGraphics)
+						.addBinding(1, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eAllGraphics,
+									256, vk::DescriptorBindingFlagBits::ePartiallyBound)
+						.build(materialDescriptorSetLayout);
 
 	if (!success) {
 		throw std::runtime_error("Failed to create material descriptor set layout");
@@ -730,9 +731,15 @@ Material Renderer::uploadMaterial(std::string path) {
 	}
 
 	Material material{};
+	material.data.resize(textures.size());
+
+	material.uniformBuffer = assetManager.createBuffer<MaterialData>(material.data, vk::BufferUsageFlagBits::eUniformBuffer);
+
+	vk::DescriptorBufferInfo bufferInfo{.buffer = material.uniformBuffer->_buffer, .offset = 0, .range = sizeof(MaterialData) * material.data.size()};
 
 	auto textureResult = DescriptorSetBuilder::begin(materialDescriptorSetLayout, &descriptorAllocator)
-							 .bindImages(0, imageInfos, vk::DescriptorType::eCombinedImageSampler)
+							 .bindBuffer(0, &bufferInfo, vk::DescriptorType::eUniformBuffer)
+							 .bindImages(1, imageInfos, vk::DescriptorType::eCombinedImageSampler)
 							 .build(material.textureSet);
 
 	if (!textureResult) {
@@ -744,12 +751,6 @@ Material Renderer::uploadMaterial(std::string path) {
 
 void Renderer::createUniformBuffers() {
 	uniformBuffers.resize(swapChainImages.size());
-	VkBufferCreateInfo create{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-							  .size = sizeof(GlobalUbo),
-							  .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT};
-
-	VmaAllocationCreateInfo allocCreate{.usage = VMA_MEMORY_USAGE_CPU_TO_GPU};
-
 	for (size_t i = 0; i < swapChainImages.size(); i++) {
 		uniformBuffers[i] =
 			assetManager.allocatePersistentBuffer<GlobalUbo>(1, vk::BufferUsageFlagBits::eUniformBuffer);

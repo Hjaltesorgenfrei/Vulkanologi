@@ -7,7 +7,7 @@ layout(set = 0, binding = 0) uniform UniformBufferObject {
 	GlobalUbo ubo;
 };
 
-layout(set = 1, binding = 0) uniform samplerCube samplerCubeMaps[];
+layout(set = 1, binding = 1) uniform samplerCube samplerCubeMaps[];
 
 layout(location = 0) in vec3 inUVW;
 

@@ -15,13 +15,12 @@ struct CarSettings;
 
 struct Vertex {
 	glm::vec3 pos;
-	glm::vec3 color;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 	uint8_t materialIndex;
 
 	bool operator==(const Vertex& other) const {
-		return pos == other.pos && color == other.color && normal == other.normal && texCoord == other.texCoord &&
+		return pos == other.pos && normal == other.normal && texCoord == other.texCoord &&
 			   materialIndex == other.materialIndex;
 	}
 

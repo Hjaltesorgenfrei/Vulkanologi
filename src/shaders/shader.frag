@@ -3,7 +3,8 @@
 #extension GL_GOOGLE_include_directive : enable
 
 #include "utils/global_ubo.glsl"
-layout(set = 0, binding = 0) uniform UniformBufferObject {
+#include "utils/material_ubo.glsl"
+layout(set = 0, binding = 0) uniform GlobalUniformBufferObject {
 	GlobalUbo ubo;
 };
 
@@ -13,7 +14,10 @@ layout(push_constant) uniform constants {
 }
 pushConstants;
 
-layout(set = 1, binding = 0) uniform sampler2D texSampler[];
+layout(set = 1, binding = 0) buffer MaterialUniformBufferObject {
+	Material material[128];
+};
+layout(set = 1, binding = 1) uniform sampler2D texSampler[];
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexCoord;

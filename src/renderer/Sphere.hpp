@@ -45,7 +45,6 @@ std::shared_ptr<Mesh> GenerateSphereSmooth(int radius, int latitudes, int longit
 			Vertex vertex;
 			vertex.pos = glm::vec3(x, y, z);
 			vertex.texCoord = glm::vec2(s, t);
-			vertex.color = color;
 
 			// normalized tVertex normal
 			nx = x * lengthInv;

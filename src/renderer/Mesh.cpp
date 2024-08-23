@@ -13,11 +13,10 @@ template <>
 struct hash<Vertex> {
 	size_t operator()(Vertex const &vertex) const {
 		auto h1 = std::hash<glm::vec3>{}(vertex.pos);
-		auto h2 = std::hash<glm::vec3>{}(vertex.color);
-		auto h3 = std::hash<glm::vec3>{}(vertex.normal);
-		auto h4 = std::hash<glm::vec2>{}(vertex.texCoord);
-		auto h5 = std::hash<uint8_t>{}(vertex.materialIndex);
-		return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);  // TODO: Improve this hash function
+		auto h2 = std::hash<glm::vec3>{}(vertex.normal);
+		auto h3 = std::hash<glm::vec2>{}(vertex.texCoord);
+		auto h4 = std::hash<uint8_t>{}(vertex.materialIndex);
+		return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3);  // TODO: Improve this hash function
 	}
 };
 }  // namespace std
@@ -32,13 +31,11 @@ std::vector<vk::VertexInputAttributeDescription> Vertex::getAttributeDescription
 		vk::VertexInputAttributeDescription{
 			.location = 0, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, pos)},
 		vk::VertexInputAttributeDescription{
-			.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, color)},
+			.location = 1, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, normal)},
 		vk::VertexInputAttributeDescription{
-			.location = 2, .binding = 0, .format = vk::Format::eR32G32B32Sfloat, .offset = offsetof(Vertex, normal)},
+			.location = 2, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, texCoord)},
 		vk::VertexInputAttributeDescription{
-			.location = 3, .binding = 0, .format = vk::Format::eR32G32Sfloat, .offset = offsetof(Vertex, texCoord)},
-		vk::VertexInputAttributeDescription{
-			.location = 4, .binding = 0, .format = vk::Format::eR8Uint, .offset = offsetof(Vertex, materialIndex)},
+			.location = 3, .binding = 0, .format = vk::Format::eR8Uint, .offset = offsetof(Vertex, materialIndex)},
 	};
 	return attributeDescriptions;
 }
@@ -85,7 +82,6 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(std::string filename) {
 				Vertex vertex{
 					.pos = {attrib.vertices[3 * index.vertex_index + 0], attrib.vertices[3 * index.vertex_index + 1],
 							attrib.vertices[3 * index.vertex_index + 2]},
-					.color = {1.0f, 1.0f, 1.0f},
 					.materialIndex =
 						static_cast<uint8_t>(shape.mesh.material_ids[f])  // Index of material which is loaded later
 				};
@@ -109,15 +105,6 @@ std::shared_ptr<Mesh> Mesh::LoadFromObj(std::string filename) {
 				mesh->_indices.push_back(uniqueVertices[vertex]);
 			}
 			index_offset += fv;
-		}
-	}
-
-	for (int materialIndex = 0; materialIndex < materials.size(); materialIndex++) {
-		auto &material = materials[materialIndex];
-		for (int i = 0; i < mesh->_vertices.size(); i++) {
-			if (mesh->_vertices[i].materialIndex == materialIndex) {
-				mesh->_vertices[i].color = {material.diffuse[0], material.diffuse[1], material.diffuse[2]};
-			}
 		}
 	}
 
